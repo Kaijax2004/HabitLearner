@@ -1,0 +1,28 @@
+# HabitLearner 无缓存版本
+# 强制清除所有缓存
+
+# 启用URL重写
+RewriteEngine On
+RewriteBase /
+
+# 处理SPA路由
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ /index.html [L,QSA]
+
+# 强制所有文件不缓存
+<FilesMatch "\.(html|htm|css|js|png|jpg|jpeg|gif|svg|ico|webp|woff|woff2|ttf|eot)$">
+    Header set Cache-Control "no-cache, no-store, must-revalidate, max-age=0"
+    Header set Pragma "no-cache"
+    Header set Expires "Thu, 01 Jan 1970 00:00:00 GMT"
+    Header set Last-Modified "Thu, 01 Jan 1970 00:00:00 GMT"
+</FilesMatch>
+
+# 错误页面配置
+ErrorDocument 404 /index.html
+
+# 防止访问敏感文件
+<FilesMatch "\.(htaccess|htpasswd|ini|log|sh|inc|bak)$">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>

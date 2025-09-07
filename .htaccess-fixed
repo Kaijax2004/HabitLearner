@@ -1,0 +1,35 @@
+# HabitLearner 修复版配置
+# 解决所有SPA路由和缓存问题
+
+# 启用URL重写
+RewriteEngine On
+
+# 设置基础路径
+RewriteBase /
+
+# 处理SPA路由 - 核心配置
+# 如果请求的文件不存在，重定向到index.html
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ /index.html [L,QSA]
+
+# 强制HTML文件不缓存
+<FilesMatch "\.(html)$">
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
+    Header set Pragma "no-cache"
+    Header set Expires "0"
+</FilesMatch>
+
+# 静态资源缓存
+<FilesMatch "\.(css|js|png|jpg|jpeg|gif|svg|ico|webp)$">
+    Header set Cache-Control "public, max-age=31536000"
+</FilesMatch>
+
+# 错误页面配置
+ErrorDocument 404 /index.html
+
+# 防止访问敏感文件
+<FilesMatch "\.(htaccess|htpasswd|ini|log|sh|inc|bak)$">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>

@@ -1,0 +1,12 @@
+# HabitLearner 基础配置
+# 最简化的SPA路由配置
+
+RewriteEngine On
+
+# 处理SPA路由 - 最基础配置
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ index.html [L]
+
+# 错误页面
+ErrorDocument 404 /index.html
