@@ -6,12 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "build:prod": "vite build --mode production --config vite.config.prod.js",
-    "preview": "vite preview",
-    "deploy": "npm run build:prod && echo 'Build completed! Ready for deployment.'",
-    "clean": "rm -rf dist node_modules/.vite",
-    "lint": "echo 'Linting not configured yet'",
-    "test": "echo 'Tests not configured yet'"
+    "preview": "vite preview"
   },
   "dependencies": {
     "axios": "^1.6.0",
