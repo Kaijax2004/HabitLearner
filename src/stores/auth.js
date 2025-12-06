@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import * as authAPI from '@/api/auth.js'
 
 export const useAuthStore = defineStore('auth', () => {
   // 状态
@@ -14,28 +15,19 @@ export const useAuthStore = defineStore('auth', () => {
   const login = async (credentials) => {
     isLoading.value = true
     try {
-      // 模拟API调用
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      const response = await authAPI.login(credentials)
       
-      // 模拟登录成功
-      const mockUser = {
-        id: 1,
-        name: '用户',
-        email: credentials.email,
-        avatar: null,
-        createdAt: new Date().toISOString()
+      if (response.success) {
+        user.value = response.data.user // 仅在内存中维护用户数据
+        token.value = response.data.token
+        localStorage.setItem('token', response.data.token) // 只保存token到本地存储
+        
+        return { success: true, user: response.data.user }
+      } else {
+        return { success: false, error: response.error }
       }
-      
-      const mockToken = 'mock-jwt-token-' + Date.now()
-      
-      user.value = mockUser
-      token.value = mockToken
-      localStorage.setItem('token', mockToken)
-      localStorage.setItem('user', JSON.stringify(mockUser))
-      
-      return { success: true, user: mockUser }
     } catch (error) {
-      return { success: false, error: error.message }
+      return { success: false, error: error.error || error.message }
     } finally {
       isLoading.value = false
     }
@@ -44,70 +36,82 @@ export const useAuthStore = defineStore('auth', () => {
   const register = async (userData) => {
     isLoading.value = true
     try {
-      // 模拟API调用
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      const response = await authAPI.register(userData)
       
-      // 模拟注册成功
-      const mockUser = {
-        id: Date.now(),
-        name: userData.name,
-        email: userData.email,
-        avatar: null,
-        createdAt: new Date().toISOString()
+      if (response.success) {
+        user.value = response.data.user // 仅在内存中维护用户数据
+        token.value = response.data.token
+        localStorage.setItem('token', response.data.token) // 只保存token到本地存储
+        
+        return { success: true, user: response.data.user }
+      } else {
+        return { success: false, error: response.error }
       }
-      
-      const mockToken = 'mock-jwt-token-' + Date.now()
-      
-      user.value = mockUser
-      token.value = mockToken
-      localStorage.setItem('token', mockToken)
-      localStorage.setItem('user', JSON.stringify(mockUser))
-      
-      return { success: true, user: mockUser }
     } catch (error) {
-      return { success: false, error: error.message }
+      return { success: false, error: error.error || error.message }
     } finally {
       isLoading.value = false
     }
   }
 
-  const logout = () => {
-    user.value = null
-    token.value = null
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
+  const logout = async () => {
+    try {
+      await authAPI.logout()
+    } catch (error) {
+      console.error('Logout error:', error)
+    } finally {
+      user.value = null
+      token.value = null
+      localStorage.removeItem('token') // 只移除token，不涉及用户数据
+    }
   }
 
   const checkAuth = () => {
+    // 只从localStorage获取token，不获取用户数据
     const storedToken = localStorage.getItem('token')
-    const storedUser = localStorage.getItem('user')
     
-    if (storedToken && storedUser) {
+    if (storedToken) {
       token.value = storedToken
-      user.value = JSON.parse(storedUser)
+      // 注意：这里不再从localStorage获取用户数据
+      // 在实际应用中，应该使用token向后端请求当前用户信息
     }
+  }
+
+  // 测试模式登录 - 修改为不再从localStorage获取用户数据
+  const testLogin = () => {
+    const storedToken = localStorage.getItem('token')
+    
+    if (storedToken) {
+      token.value = storedToken
+      // 在测试模式下，如果有token但没有用户数据，应该向后端获取用户信息
+      console.log('🧪 测试模式：检测到token，需要通过API获取用户信息')
+      return !!token.value
+    }
+    return false
   }
 
   const updateProfile = async (profileData) => {
     isLoading.value = true
     try {
-      // 模拟API调用
-      await new Promise(resolve => setTimeout(resolve, 500))
+      const response = await authAPI.updateProfile(profileData)
       
-      user.value = { ...user.value, ...profileData }
-      localStorage.setItem('user', JSON.stringify(user.value))
-      
-      return { success: true, user: user.value }
+      if (response.success) {
+        user.value = response.data // 仅在内存中更新用户数据
+        
+        return { success: true, user: response.data }
+      } else {
+        return { success: false, error: response.error }
+      }
     } catch (error) {
-      return { success: false, error: error.message }
+      return { success: false, error: error.error || error.message }
     } finally {
       isLoading.value = false
     }
   }
 
   const updateUser = (userData) => {
-    user.value = userData
-    localStorage.setItem('user', JSON.stringify(userData))
+    user.value = userData // 仅在内存中更新用户数据
+    // 不再保存到localStorage
   }
 
   return {
@@ -122,6 +126,7 @@ export const useAuthStore = defineStore('auth', () => {
     register,
     logout,
     checkAuth,
+    testLogin,
     updateProfile,
     updateUser
   }

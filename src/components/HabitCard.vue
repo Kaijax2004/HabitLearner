@@ -1,5 +1,5 @@
 <template>
-  <BaseCard class="relative overflow-hidden" :hover="false" :class="{ 'ring-2 ring-primary-500': isEditMode && isSelected }">
+  <BaseCard class="relative overflow-hidden card-enhanced" :hover="false" :class="{ 'ring-2 ring-primary-500': isEditMode && isSelected }">
     <!-- 选择框 -->
     <div v-if="isEditMode" class="absolute top-3 left-3 z-10">
       <div 
@@ -18,16 +18,24 @@
       <div class="flex items-center space-x-3 flex-1 cursor-pointer" @click.stop="handleCardClick">
         <!-- 习惯图标 -->
         <div 
-          class="w-12 h-12 rounded-apple flex items-center justify-center text-2xl flex-shrink-0"
+          class="w-12 h-12 rounded-apple flex items-center justify-center text-2xl flex-shrink-0 overflow-hidden icon-enhanced"
           :style="{ backgroundColor: habit.color + '20' }"
         >
-          {{ habit.icon }}
+          <!-- 如果是图片URL -->
+          <img 
+            v-if="habit.icon && (habit.icon.startsWith('data:image') || habit.icon.startsWith('http'))" 
+            :src="habit.icon" 
+            alt="习惯图标" 
+            class="w-full h-full object-cover rounded-apple"
+          />
+          <!-- 如果是文字图标 -->
+          <span v-else class="text-2xl">{{ habit.icon || '📝' }}</span>
         </div>
         
         <!-- 习惯详情 -->
         <div class="flex-1 min-w-0">
-          <h3 class="font-medium text-gray-900 dark:text-gray-100 truncate">{{ habit.name }}</h3>
-          <p class="text-sm text-gray-500 dark:text-gray-400 truncate">{{ habit.category }}</p>
+          <h3 class="title-tertiary truncate">{{ habit.name }}</h3>
+          <p class="text-body-small truncate">{{ habit.category }}</p>
           <div class="flex items-center space-x-2 mt-1">
             <span class="text-xs text-gray-400 dark:text-gray-500">连续</span>
             <span class="text-sm font-medium text-primary-500">{{ habit.streak }}天</span>
@@ -51,7 +59,7 @@
       <button
         v-if="!isEditMode"
         @click.stop="handleCheckIn"
-        :disabled="isLoading"
+        :disabled="isLoading || isCompleted"
         class="w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200 flex-shrink-0 ml-3"
         :class="[
           isCompleted 
@@ -164,14 +172,14 @@
             <button
               @click="handleCompleteWithComment"
               :disabled="isLoading"
-              class="flex-1 px-4 py-2 text-sm font-medium text-white bg-primary-500 rounded-apple hover:bg-primary-600 transition-colors disabled:opacity-50"
+              class="flex-1 px-4 py-2 text-sm font-medium text-white bg-primary-500 rounded-apple btn-enhanced disabled:opacity-50"
             >
               {{ isLoading ? '打卡中...' : '打卡' }}
             </button>
             <button
               @click="handleCompleteWithoutComment"
               :disabled="isLoading"
-              class="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-apple hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+              class="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-apple btn-enhanced"
             >
               跳过留言
             </button>
@@ -220,9 +228,12 @@ const isProcessing = ref(false) // 防止重复处理
 
 // 计算属性
 const todayProgress = computed(() => {
+  // 依赖store的全局forceUpdate触发器，确保立即更新
+  habitStore.forceUpdate
+  
   if (!props.habit.checkIns) return null
   
-  const today = new Date().toDateString()
+  const today = new Date().toISOString().split('T')[0] // 格式: YYYY-MM-DD
   return props.habit.checkIns.find(checkIn => checkIn.date === today) || null
 })
 
@@ -264,6 +275,12 @@ const closeCommentModal = () => {
 
 // 处理打卡点击
 const handleCheckIn = () => {
+  // 如果已经完成，不允许再次打卡
+  if (isCompleted.value) {
+    console.log('⚠️ 今日打卡次数已达上限，禁止打卡:', props.habit.name)
+    return
+  }
+  
   // 防止重复处理
   if (isProcessing.value || showCommentModal.value) {
     return
@@ -304,6 +321,8 @@ const handleCompleteWithComment = async () => {
       
       // 触发完成事件
       emit('complete', props.habit.id)
+      
+      console.log('✅ 带留言打卡成功，UI已立即更新')
     } else {
       // 处理错误
       console.error('完成习惯失败:', result.error)
@@ -319,7 +338,7 @@ const handleCompleteWithoutComment = async () => {
   isLoading.value = true
   
   try {
-    const result = await habitStore.completeHabit(props.habit.id, '')
+    const result = await habitStore.completeHabit(props.habit.id, null)
     
     if (result.success) {
       // 关闭弹窗并重置状态
@@ -333,6 +352,8 @@ const handleCompleteWithoutComment = async () => {
       
       // 触发完成事件
       emit('complete', props.habit.id)
+      
+      console.log('✅ 直接打卡成功，UI已立即更新')
     } else {
       // 处理错误
       console.error('完成习惯失败:', result.error)

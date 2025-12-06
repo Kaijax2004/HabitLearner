@@ -1,0 +1,156 @@
+openapi: 3.0.3
+info:
+  title: Plan Module API
+  version: 1.0.0
+servers:
+  - url: /api
+paths:
+  /plans:
+    get:
+      summary: List plans
+      responses:
+        '200':
+          description: OK
+    post:
+      summary: Create plan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlanCreate'
+      responses:
+        '200': { description: OK }
+  /plans/{id}:
+    patch:
+      summary: Update plan
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlanUpdate'
+      responses:
+        '200': { description: OK }
+    delete:
+      summary: Delete plan
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: OK }
+  /plans/{id}/blocks:
+    get:
+      summary: List blocks by plan
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: OK }
+  /plan-blocks:
+    post:
+      summary: Create block
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BlockCreate'
+      responses:
+        '200': { description: OK }
+  /plan-blocks/{id}:
+    patch:
+      summary: Update block
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BlockUpdate'
+      responses:
+        '200': { description: OK }
+    delete:
+      summary: Delete block
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: OK }
+  /plans/{id}/blocks/reorder:
+    post:
+      summary: Reorder blocks within a plan
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                orders:
+                  type: object
+                  additionalProperties:
+                    type: integer
+      responses:
+        '200': { description: OK }
+components:
+  schemas:
+    Plan:
+      type: object
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        status: { type: string, enum: [not_started, in_progress, done] }
+        due_date: { type: string, nullable: true }
+        createdAt: { type: string }
+    PlanCreate:
+      type: object
+      required: [title]
+      properties:
+        title: { type: string }
+        status: { type: string, enum: [not_started, in_progress, done] }
+        due_date: { type: string, nullable: true }
+    PlanUpdate:
+      type: object
+      properties:
+        title: { type: string }
+        status: { type: string, enum: [not_started, in_progress, done] }
+        due_date: { type: string, nullable: true }
+    Block:
+      type: object
+      properties:
+        id: { type: integer }
+        plan_id: { type: integer }
+        type: { type: string, enum: [text, heading, todo, video, image] }
+        content: { type: object }
+        order: { type: integer }
+    BlockCreate:
+      allOf:
+        - $ref: '#/components/schemas/Block'
+      required: [plan_id, type]
+    BlockUpdate:
+      type: object
+      properties:
+        type: { type: string, enum: [text, heading, todo, video, image] }
+        content: { type: object }
+

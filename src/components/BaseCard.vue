@@ -9,7 +9,7 @@
   >
     <!-- 标题区域 -->
     <div v-if="title || $slots.header" class="flex items-center justify-between mb-4">
-      <h3 v-if="title" class="text-lg font-medium text-gray-900 dark:text-gray-100">{{ title }}</h3>
+      <h3 v-if="title" class="title-secondary">{{ title }}</h3>
       <slot name="header"></slot>
     </div>
     

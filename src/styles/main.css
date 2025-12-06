@@ -46,10 +46,17 @@
   }
   
   .btn-primary {
-    @apply btn-apple bg-primary-500 text-white shadow-apple;
-    @apply hover:bg-primary-600 hover:shadow-apple-md hover:-translate-y-0.5;
-    @apply focus:ring-primary-500/50;
+    @apply btn-apple bg-black text-white shadow-apple;
+    @apply hover:bg-gray-800 hover:shadow-apple-md hover:-translate-y-0.5;
+    @apply focus:ring-gray-500/50;
+    @apply dark:bg-white dark:text-black dark:hover:bg-gray-100;
     @apply dark:shadow-apple-glow;
+  }
+  
+  .btn-danger {
+    @apply btn-apple bg-red-500 text-white shadow-apple;
+    @apply hover:bg-red-600 hover:shadow-apple-md hover:-translate-y-0.5;
+    @apply focus:ring-red-500/50;
   }
   
   .btn-secondary {

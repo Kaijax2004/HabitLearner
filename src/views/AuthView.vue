@@ -20,15 +20,15 @@
                <Logo size="default" class="custom-logo-navbar-fill" />
              </div>
             <div>
-              <h1 class="text-lg font-bold text-black dark:text-white">习知</h1>
-              <p class="text-xs text-gray-500 dark:text-gray-400">HabitLearner</p>
+              <h1 class="title-primary text-black dark:text-white">习知</h1>
+              <p class="text-body-small">HabitLearner</p>
             </div>
           </div>
           
           <!-- 移动端主题切换按钮 -->
           <button
             @click="themeStore.toggleTheme()"
-            class="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-900 transition-all duration-200"
+            class="p-2 rounded-xl btn-enhanced"
             :title="themeStore.isDarkMode ? '切换到浅色模式' : '切换到深色模式'"
           >
             <svg v-if="themeStore.isDarkMode" class="w-5 h-5 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -141,16 +141,16 @@
             <div>
               <label class="block text-sm font-semibold text-black dark:text-white mb-3">邮箱地址</label>
               <div class="relative">
-                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
+                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
+                  <svg class="h-5 w-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                   </svg>
                 </div>
                 <input
                   v-model="loginForm.email"
                   type="email"
                   required
-                  class="w-full pl-12 pr-4 py-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl text-black dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white focus:border-transparent transition-all duration-200"
+                  class="w-full pl-12 pr-4 py-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl text-black dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white focus:border-transparent input-enhanced"
                   placeholder="请输入邮箱地址"
                 />
               </div>
@@ -158,8 +158,8 @@
             <div>
               <label class="block text-sm font-semibold text-black dark:text-white mb-3">密码</label>
               <div class="relative">
-                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
+                  <svg class="h-5 w-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                   </svg>
                 </div>
@@ -190,7 +190,7 @@
           <button
             type="submit"
             :disabled="authStore.isLoading"
-            class="w-full py-4 bg-black dark:bg-white text-white dark:text-black rounded-2xl font-semibold text-lg hover:bg-gray-800 dark:hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white focus:ring-offset-2 dark:focus:ring-offset-black transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            class="w-full py-4 bg-black dark:bg-white text-white dark:text-black rounded-2xl font-semibold text-lg btn-enhanced disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <span v-if="authStore.isLoading" class="flex items-center justify-center">
               <svg class="animate-spin -ml-1 mr-3 h-5 w-5" fill="none" viewBox="0 0 24 24">
@@ -238,7 +238,7 @@
               <div class="relative">
                 <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                   <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                   </svg>
                 </div>
                 <input
@@ -346,12 +346,14 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useToast } from '@/composables/useToast'
 import { useThemeStore } from '@/stores/theme'
 import Logo from '@/components/Logo.vue'
 
 // Store
 const authStore = useAuthStore()
 const themeStore = useThemeStore()
+const { error } = useToast()
 const router = useRouter()
 
 // 响应式数据
@@ -398,18 +400,21 @@ const handleLogin = async () => {
     router.push('/dashboard')
   } else {
     // 处理登录失败
-    alert('登录失败：' + result.error)
+    const errorMessage = getErrorMessage(result.error, result.code)
+    error('登录失败', {
+      description: errorMessage
+    })
   }
 }
 
 const handleRegister = async () => {
   if (!isPasswordMatch.value) {
-    alert('密码不匹配')
+    error('密码不匹配')
     return
   }
 
   const result = await authStore.register({
-    name: registerForm.value.name,
+    username: registerForm.value.name,
     email: registerForm.value.email,
     password: registerForm.value.password
   })
@@ -418,7 +423,25 @@ const handleRegister = async () => {
     router.push('/dashboard')
   } else {
     // 处理注册失败
-    alert('注册失败：' + result.error)
+    const errorMessage = getErrorMessage(result.error, result.code)
+    error('注册失败', {
+      description: errorMessage
+    })
+  }
+}
+
+// 错误信息处理函数
+const getErrorMessage = (error, code) => {
+  if (code === 404 || error.includes('服务暂时不可用')) {
+    return '后端服务未启动，请联系管理员启动服务'
+  } else if (code === 503 || error.includes('网络连接失败')) {
+    return '网络连接失败，请检查网络连接'
+  } else if (code === 409 || error.includes('已存在')) {
+    return '该邮箱已被注册，请使用其他邮箱或直接登录'
+  } else if (code === 422 || error.includes('验证失败')) {
+    return '输入信息格式不正确，请检查后重试'
+  } else {
+    return error || '未知错误，请稍后再试'
   }
 }
 </script>

@@ -1,18 +1,21 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import * as habitAPI from '@/api/habits.js'
+import { getIsNewUser, hasCompletedOnboarding } from '@/api/index.js'
 
 export const useHabitStore = defineStore('habit', () => {
   // 状态
   const habits = ref([])
   const isLoading = ref(false)
   const currentHabit = ref(null)
+  const forceUpdate = ref(0) // 全局强制更新触发器
 
   // 计算属性
   const totalHabits = computed(() => habits.value.length)
   const completedToday = computed(() => {
-    const today = new Date().toDateString()
+    const today = new Date().toISOString().split('T')[0] // 格式: YYYY-MM-DD
     return habits.value.filter(habit => 
-      habit.lastCompleted && new Date(habit.lastCompleted).toDateString() === today
+      habit.lastCompleted && new Date(habit.lastCompleted).toISOString().split('T')[0] === today
     ).length
   })
   const totalStreak = computed(() => {
@@ -23,98 +26,99 @@ export const useHabitStore = defineStore('habit', () => {
   const fetchHabits = async () => {
     isLoading.value = true
     try {
-      // 模拟API调用
-      await new Promise(resolve => setTimeout(resolve, 100))
+      console.log('🔄 开始获取习惯数据...')
       
-      // 从localStorage获取数据，如果没有则使用默认数据
-      const savedHabits = localStorage.getItem('habits')
-      console.log('从localStorage获取的数据:', savedHabits)
+      const response = await habitAPI.getHabits()
       
-      if (savedHabits) {
-        habits.value = JSON.parse(savedHabits)
-        console.log('加载的习惯数据:', habits.value)
+      if (response.success) {
+        console.log('✅ 成功获取习惯数据:', response.data)
+        
+        // 直接使用后端返回的数据，确保数据完整性
+        habits.value = response.data || []
+        
+        // 保存到本地存储作为缓存
+        localStorage.setItem('habits', JSON.stringify(habits.value))
+        
+        return { success: true, habits: response.data }
       } else {
-        // 默认数据
-        const mockHabits = [
-          {
-            id: 1,
-            name: '每日阅读',
-            icon: '📚',
-            category: '学习',
-            target: 3,
-            frequency: 'daily',
-            streak: 7,
-            lastCompleted: new Date().toISOString(),
-            createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-            color: '#007AFF',
-            enableComments: true,
-            checkIns: [],
-            dailyComments: []
-          },
-          {
-            id: 2,
-            name: '晨间运动',
-            icon: '🏃‍♂️',
-            category: '健康',
-            target: 1,
-            frequency: 'daily',
-            streak: 3,
-            lastCompleted: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-            createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-            color: '#34C759',
-            enableComments: true,
-            checkIns: [],
-            dailyComments: []
-          },
-          {
-            id: 3,
-            name: '冥想练习',
-            icon: '🧘‍♀️',
-            category: '健康',
-            target: 5,
-            frequency: 'weekly',
-            streak: 0,
-            lastCompleted: null,
-            createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-            color: '#FF9500',
-            enableComments: true,
-            checkIns: [],
-            dailyComments: []
-          }
-        ]
-        habits.value = mockHabits
-        localStorage.setItem('habits', JSON.stringify(mockHabits))
-        console.log('初始化默认数据:', mockHabits)
+        console.error('❌ 获取习惯数据失败:', response.error)
+        
+        // 如果后端失败，尝试使用本地缓存
+        const storedHabits = localStorage.getItem('habits')
+        if (storedHabits) {
+          console.log('📱 后端失败，使用本地缓存数据')
+          const parsedHabits = JSON.parse(storedHabits)
+          habits.value = parsedHabits
+          return { success: true, data: habits.value, fromCache: true }
+        }
+        
+        return { success: false, error: response.error }
+      }
+    } catch (error) {
+      console.error('❌ 获取习惯数据异常:', error)
+      
+      // 网络异常时尝试使用本地缓存
+      const storedHabits = localStorage.getItem('habits')
+      if (storedHabits) {
+        console.log('📱 网络异常，使用本地缓存数据')
+        const parsedHabits = JSON.parse(storedHabits)
+        habits.value = parsedHabits
+        return { success: true, data: habits.value, fromCache: true }
       }
       
-      return { success: true, habits: habits.value }
-    } catch (error) {
-      return { success: false, error: error.message }
+      return { success: false, error: error.message || '网络错误' }
     } finally {
       isLoading.value = false
     }
   }
 
   const createHabit = async (habitData) => {
+    // 防止重复请求
+    if (isLoading.value) {
+      console.log('createHabit 正在加载中，忽略重复请求')
+      return { success: false, error: '正在处理中，请稍后重试' }
+    }
+    
+    console.log('🔄 开始创建习惯，数据:', habitData)
     isLoading.value = true
+    
     try {
-      // 模拟API调用
-      await new Promise(resolve => setTimeout(resolve, 500))
-      
-      const newHabit = {
-        id: Date.now(),
-        ...habitData,
-        streak: 0,
-        lastCompleted: null,
-        createdAt: new Date().toISOString()
+      // 验证并规范化图标数据
+      if (!habitData.icon || typeof habitData.icon !== 'string' || habitData.icon.trim() === '') {
+        habitData.icon = '📚' // 设置默认图标
+        console.warn('图标数据无效，使用默认图标')
       }
       
-      habits.value.push(newHabit)
-      // 保存到localStorage
-      localStorage.setItem('habits', JSON.stringify(habits.value))
-      return { success: true, habit: newHabit }
+      // 发送API请求
+      const response = await habitAPI.createHabit(habitData)
+      console.log('✅ createHabit API 响应:', response)
+      
+      if (response && response.success) {
+        // 使用后端返回的完整习惯数据
+        const newHabit = response.data
+        
+        // 添加到本地状态
+        habits.value = [...habits.value, newHabit]
+        
+        // 触发响应式更新
+        forceUpdate.value++
+        
+        // 更新本地缓存
+        localStorage.setItem('habits', JSON.stringify(habits.value))
+        
+        console.log('✅ 创建习惯成功:', newHabit)
+        return { success: true, habit: newHabit }
+      } else {
+        const errorMessage = response?.error || '创建习惯失败'
+        console.error('❌ createHabit API 错误:', response)
+        return { success: false, error: errorMessage }
+      }
     } catch (error) {
-      return { success: false, error: error.message }
+      console.error('❌ createHabit 网络错误:', error)
+      return { 
+        success: false, 
+        error: error.message || '网络错误，请检查连接后重试' 
+      }
     } finally {
       isLoading.value = false
     }
@@ -123,230 +127,333 @@ export const useHabitStore = defineStore('habit', () => {
   const updateHabit = async (id, habitData) => {
     isLoading.value = true
     try {
-      console.log('开始更新习惯，ID:', id, '数据:', habitData)
-      console.log('当前习惯列表:', habits.value.map(h => ({ id: h.id, name: h.name, enableComments: h.enableComments })))
+      const response = await habitAPI.updateHabit(id, habitData)
       
-      // 模拟API调用
-      await new Promise(resolve => setTimeout(resolve, 500))
-      
-      const index = habits.value.findIndex(habit => habit.id === parseInt(id))
-      console.log('找到习惯索引:', index)
-      
-      if (index !== -1) {
-        // 创建新的习惯对象，保持原有数据并更新
-        const updatedHabit = { ...habits.value[index], ...habitData }
-        habits.value[index] = updatedHabit
-        // 保存到localStorage
-        localStorage.setItem('habits', JSON.stringify(habits.value))
-        console.log('更新后的习惯:', updatedHabit)
-        console.log('保存到localStorage成功')
-        return { success: true, habit: updatedHabit }
+      if (response.success) {
+        const index = habits.value.findIndex(habit => habit.id === parseInt(id))
+        if (index !== -1) {
+          habits.value[index] = response.data
+        }
+        return { success: true, habit: response.data }
+      } else {
+        return { success: false, error: response.error }
       }
-      console.log('习惯不存在')
-      return { success: false, error: '习惯不存在' }
     } catch (error) {
-      console.error('更新习惯错误:', error)
-      return { success: false, error: error.message }
+      return { success: false, error: error.error || error.message }
     } finally {
       isLoading.value = false
     }
   }
 
   const deleteHabit = async (id) => {
-    isLoading.value = true
-    try {
-      console.log('开始删除习惯，ID:', id)
-      console.log('删除前习惯列表:', habits.value.map(h => ({ id: h.id, name: h.name })))
-      
-      // 模拟API调用
-      await new Promise(resolve => setTimeout(resolve, 500))
-      
-      const index = habits.value.findIndex(habit => habit.id === parseInt(id))
-      console.log('找到习惯索引:', index)
-      
+    // 检查是否是测试习惯
+    const habit = habits.value.find(h => h.id === parseInt(id) || h.id === id)
+    if (habit && habit.isTestHabit) {
+      console.log('🧪 删除测试习惯，跳过后端请求')
+      // 只从本地数据中删除
+      const index = habits.value.findIndex(h => h.id === parseInt(id) || h.id === id)
       if (index !== -1) {
         habits.value.splice(index, 1)
-        // 保存到localStorage
-        localStorage.setItem('habits', JSON.stringify(habits.value))
-        console.log('删除后习惯列表:', habits.value.map(h => ({ id: h.id, name: h.name })))
-        console.log('保存到localStorage成功')
-        return { success: true }
       }
-      console.log('习惯不存在')
-      return { success: false, error: '习惯不存在' }
+      return { success: true }
+    }
+    
+    isLoading.value = true
+    try {
+      const response = await habitAPI.deleteHabit(id)
+      
+      if (response.success) {
+        const index = habits.value.findIndex(habit => habit.id === parseInt(id))
+        if (index !== -1) {
+          habits.value.splice(index, 1)
+        }
+        return { success: true }
+      } else {
+        return { success: false, error: response.error }
+      }
     } catch (error) {
-      console.error('删除习惯错误:', error)
-      return { success: false, error: error.message }
+      return { success: false, error: error.error || error.message }
     } finally {
       isLoading.value = false
     }
   }
 
   const deleteHabits = async (ids) => {
+    console.log('deleteHabits 开始，IDs:', ids)
     isLoading.value = true
     try {
-      // 模拟API调用
-      await new Promise(resolve => setTimeout(resolve, 500))
+      // 分离测试习惯和真实习惯
+      const testHabits = []
+      const realHabits = []
       
-      habits.value = habits.value.filter(habit => !ids.includes(habit.id))
+      ids.forEach(id => {
+        const habit = habits.value.find(h => h.id === parseInt(id) || h.id === id)
+        if (habit && habit.isTestHabit) {
+          testHabits.push(id)
+        } else {
+          realHabits.push(id)
+        }
+      })
+      
+      console.log('测试习惯IDs:', testHabits)
+      console.log('真实习惯IDs:', realHabits)
+      
+      // 处理测试习惯（本地删除）
+      testHabits.forEach(id => {
+        const index = habits.value.findIndex(h => h.id === parseInt(id) || h.id === id)
+        if (index !== -1) {
+          habits.value.splice(index, 1)
+        }
+      })
+      
+      // 处理真实习惯（后端删除）
+      if (realHabits.length > 0) {
+        const deletePromises = realHabits.map(id => habitAPI.deleteHabit(id))
+        const responses = await Promise.all(deletePromises)
+        console.log('deleteHabits API 响应:', responses)
+        
+        // 检查所有删除操作是否成功
+        const failedDeletes = responses.filter(response => !response.success)
+        
+        if (failedDeletes.length > 0) {
+          // 有删除失败的情况
+          const errorMessages = failedDeletes.map(response => response.error).join(', ')
+          console.error('部分删除失败:', errorMessages)
+          return { success: false, error: `删除失败: ${errorMessages}` }
+        }
+        
+        // 成功删除后，从本地数组中移除这些习惯
+        realHabits.forEach(id => {
+          const index = habits.value.findIndex(h => h.id === parseInt(id) || h.id === id)
+          if (index !== -1) {
+            habits.value.splice(index, 1)
+          }
+        })
+      }
+      
+      console.log('删除后的习惯列表:', habits.value)
       return { success: true, deletedCount: ids.length }
     } catch (error) {
-      return { success: false, error: error.message }
+      console.error('删除习惯时发生错误:', error)
+      return { success: false, error: error.error || error.message }
     } finally {
       isLoading.value = false
     }
   }
 
-  const completeHabit = async (id, comment = '') => {
-    try {
-      console.log('开始完成习惯，ID:', id, '留言:', comment)
-      // 模拟API调用
-      await new Promise(resolve => setTimeout(resolve, 100))
-      
-      const habitIndex = habits.value.findIndex(h => h.id === id)
-      console.log('找到习惯索引:', habitIndex)
+  const completeHabit = async (id, comment = null) => {
+    console.log('completeHabit 开始，ID:', id, 'comment:', comment)
+    
+    // 检查是否是测试习惯
+    const habit = habits.value.find(h => h.id === parseInt(id) || h.id === id)
+    if (!habit) {
+      return { success: false, error: '习惯不存在' }
+    }
+    
+    // 检查是否已经达到今日打卡频率限制
+    const today = new Date().toISOString().split('T')[0]
+    const todayCheckIn = habit.checkIns?.find(checkIn => checkIn.date === today)
+    const todayCount = todayCheckIn?.count || 0
+    
+    // 检查是否已达到目标次数
+    if (habit.frequency === 'daily' && todayCount >= habit.target) {
+      console.log('⚠️ 今日打卡次数已达上限，禁止打卡:', habit.name, `(${todayCount}/${habit.target})`)
+      return { 
+        success: false, 
+        error: `今日打卡次数已达上限 (${todayCount}/${habit.target})`,
+        isLimitReached: true
+      }
+    }
+
+    // 🚀 乐观更新：立即更新UI状态
+    console.log('🚀 执行乐观更新，立即显示最新状态')
+    const optimisticUpdate = () => {
+      const habitIndex = habits.value.findIndex(h => h.id === parseInt(id))
       if (habitIndex !== -1) {
-        const habit = habits.value[habitIndex]
-        const today = new Date().toDateString()
+        const currentHabit = habits.value[habitIndex]
         
-        // 创建新的习惯对象，避免直接修改
-        const updatedHabit = { ...habit }
+        // 立即更新checkIns
+        if (!currentHabit.checkIns) currentHabit.checkIns = []
+        const existingTodayCheckIn = currentHabit.checkIns.find(checkIn => checkIn.date === today)
         
-        // 初始化数组
-        if (!updatedHabit.checkIns) {
-          updatedHabit.checkIns = []
-        }
-        if (!updatedHabit.dailyComments) {
-          updatedHabit.dailyComments = []
-        }
-        
-        // 查找今天的打卡记录
-        const todayCheckIn = updatedHabit.checkIns.find(checkIn => checkIn.date === today)
-        const isFirstCheckIn = !todayCheckIn
-        
-        if (todayCheckIn) {
-          // 今天已有打卡记录，增加次数
-          todayCheckIn.count += 1
-          if (comment && isFirstCheckIn) {
-            todayCheckIn.comments = todayCheckIn.comments || []
-            todayCheckIn.comments.push(comment)
-          }
-        } else {
-          // 今天第一次打卡
-          updatedHabit.checkIns.push({
+        if (!existingTodayCheckIn) {
+          currentHabit.checkIns.push({
             date: today,
             count: 1,
-            comments: comment ? [comment] : []
+            time: new Date().toLocaleTimeString('zh-CN', { 
+              hour12: false, 
+              hour: '2-digit', 
+              minute: '2-digit' 
+            })
+          })
+        } else {
+          existingTodayCheckIn.count += 1
+          existingTodayCheckIn.time = new Date().toLocaleTimeString('zh-CN', { 
+            hour12: false, 
+            hour: '2-digit', 
+            minute: '2-digit' 
           })
         }
         
-        // 处理每日留言（仅在首次打卡时）
-        if (comment && isFirstCheckIn && updatedHabit.enableComments) {
-          // 查找是否已有今日留言
-          const existingComment = updatedHabit.dailyComments.find(c => c.date === today)
-          if (existingComment) {
-            existingComment.title = comment.title || ''
-            existingComment.content = comment.content || ''
+        // 更新其他状态
+        currentHabit.lastCompleted = new Date().toISOString()
+        currentHabit.todayCount = existingTodayCheckIn ? existingTodayCheckIn.count : 1
+        
+        // 处理留言数据
+        if (comment && (comment.title || comment.content)) {
+          if (!currentHabit.dailyComments) currentHabit.dailyComments = []
+          
+          const todayComment = currentHabit.dailyComments.find(c => c.date === today)
+          if (todayComment) {
+            // 更新今天的留言
+            todayComment.title = comment.title || todayComment.title
+            todayComment.content = comment.content || todayComment.content
           } else {
-            updatedHabit.dailyComments.push({
+            // 添加今天的留言
+            currentHabit.dailyComments.push({
               date: today,
               title: comment.title || '',
               content: comment.content || ''
             })
           }
-          
-          // 保持30天内的留言记录
-          const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toDateString()
-          updatedHabit.dailyComments = updatedHabit.dailyComments.filter(c => c.date >= thirtyDaysAgo)
         }
         
-        // 检查是否完成今日目标
-        const currentCheckIn = updatedHabit.checkIns.find(checkIn => checkIn.date === today)
-        const isCompleted = updatedHabit.frequency === 'daily' 
-          ? currentCheckIn.count >= updatedHabit.target
-          : currentCheckIn.count > 0  // 每周习惯：今日有打卡就算完成
+        // 强制触发响应式更新
+        habits.value = [...habits.value]
         
-        if (isCompleted) {
-          // 更新连续天数和最后完成时间
-          const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toDateString()
-          const lastCompleted = habit.lastCompleted ? new Date(habit.lastCompleted).toDateString() : null
+        // 触发全局强制更新，确保所有页面立即响应
+        forceUpdate.value++
+        
+        console.log('✅ 乐观更新完成，UI已立即更新，全局强制更新已触发')
+      }
+    }
+    
+    // 立即执行乐观更新
+    optimisticUpdate()
+    
+    if (habit.isTestHabit) {
+      console.log('🧪 测试习惯打卡，跳过后端请求')
+      // 测试习惯已经通过乐观更新处理，直接返回成功
+      return { success: true, habit: habit }
+    }
+    
+    // 对于真实习惯，在后台同步到服务器
+    try {
+      console.log('🔄 后台同步到服务器...')
+      const response = await habitAPI.checkInHabit(id, comment)
+      console.log('API 响应:', response)
+      
+      if (response.success) {
+        console.log('✅ 后端同步成功')
+        // 后端同步成功，使用后端返回的数据进行最终确认
+        const habitIndex = habits.value.findIndex(h => h.id === parseInt(id))
+        if (habitIndex !== -1) {
+          const existingHabit = habits.value[habitIndex]
+          const updatedHabit = response.habit || response
           
-          if (lastCompleted === yesterday) {
-            updatedHabit.streak += 1
-          } else if (lastCompleted !== today) {
-            updatedHabit.streak = 1
+          // 使用后端返回的checkIns数据确保数据一致性
+          if (updatedHabit.checkIns) {
+            console.log('使用后端返回的checkIns数据进行最终确认')
+            existingHabit.checkIns = updatedHabit.checkIns
           }
           
-          updatedHabit.lastCompleted = new Date().toISOString()
+          // 更新其他后端返回的数据
+          if (updatedHabit.streak !== undefined) {
+            existingHabit.streak = updatedHabit.streak
+          }
+          if (updatedHabit.lastCompleted) {
+            existingHabit.lastCompleted = updatedHabit.lastCompleted
+          }
+          
+          // 强制触发响应式更新
+          habits.value = [...habits.value]
         }
-        
-        // 替换数组中的对象，保持顺序
-        habits.value[habitIndex] = updatedHabit
-        // 保存到localStorage
-        localStorage.setItem('habits', JSON.stringify(habits.value))
-        console.log('习惯更新成功:', updatedHabit)
         
         return { 
           success: true, 
-          habit: updatedHabit,
-          isCompleted,
-          todayCount: currentCheckIn.count,
-          target: updatedHabit.target,
-          isFirstCheckIn
+          habit: habits.value.find(h => h.id === parseInt(id)),
+          isCompleted: response.isCompleted || false,
+          todayCount: todayCount + 1,
+          target: habit.target || 1,
+          isFirstCheckIn: response.isFirstCheckIn || false
+        }
+      } else {
+        console.warn('⚠️ 后端同步失败，但前端已更新:', response.error)
+        // 后端失败但前端已更新，返回成功但标记为部分成功
+        return { 
+          success: true, 
+          habit: habits.value.find(h => h.id === parseInt(id)),
+          isCompleted: (todayCount + 1) >= (habit.target || 1),
+          todayCount: todayCount + 1,
+          target: habit.target || 1,
+          isFirstCheckIn: todayCount === 0,
+          warning: '后端同步失败，数据可能不同步'
         }
       }
-      return { success: false, error: '习惯不存在' }
     } catch (error) {
-      return { success: false, error: error.message }
+      console.error('❌ 后端同步异常:', error)
+      // 后端异常但前端已更新，返回成功但标记为部分成功
+      return { 
+        success: true, 
+        habit: habits.value.find(h => h.id === parseInt(id)),
+        isCompleted: (todayCount + 1) >= (habit.target || 1),
+        todayCount: todayCount + 1,
+        target: habit.target || 1,
+        isFirstCheckIn: todayCount === 0,
+        warning: '网络异常，数据可能不同步'
+      }
     }
   }
 
   // 添加每日留言
   const addDailyComment = async (id, comment) => {
     try {
-      const habitIndex = habits.value.findIndex(h => h.id === parseInt(id))
+      const response = await habitAPI.addDailyComment(id, comment)
       
-      if (habitIndex !== -1) {
-        const habit = habits.value[habitIndex]
-        const today = new Date().toDateString()
-        
-        // 创建新的习惯对象
-        const updatedHabit = { ...habit }
-        updatedHabit.dailyComments = [...(habit.dailyComments || [])]
-        
-        // 查找是否已有今日留言
-        const existingCommentIndex = updatedHabit.dailyComments.findIndex(c => c.date === today)
-        
-        if (existingCommentIndex !== -1) {
-          // 更新现有留言
-          updatedHabit.dailyComments[existingCommentIndex] = {
-            date: today,
-            title: comment.title || '',
-            content: comment.content || ''
+      if (response.success) {
+        const habitIndex = habits.value.findIndex(h => h.id === parseInt(id))
+        if (habitIndex !== -1) {
+          const existingHabit = habits.value[habitIndex]
+          const updatedHabit = response.data.habit || response.habit || response
+          const today = new Date().toISOString().split('T')[0] // 格式: YYYY-MM-DD
+          
+          // 处理留言数据
+          let updatedDailyComments = updatedHabit.dailyComments || existingHabit.dailyComments || []
+          
+          // 确保今天的留言被保存
+          if (comment && (comment.title || comment.content)) {
+            const todayComment = updatedDailyComments.find(c => c.date === today)
+            if (todayComment) {
+              // 更新今天的留言
+              updatedDailyComments = updatedDailyComments.map(c => 
+                c.date === today 
+                  ? { ...c, title: comment.title || c.title, content: comment.content || c.content }
+                  : c
+              )
+            } else {
+              // 添加今天的留言
+              updatedDailyComments = [...updatedDailyComments, {
+                date: today,
+                title: comment.title || '',
+                content: comment.content || ''
+              }]
+            }
           }
-        } else {
-          // 添加新留言
-          updatedHabit.dailyComments.push({
-            date: today,
-            title: comment.title || '',
-            content: comment.content || ''
-          })
+          
+          // 更新habit数据
+          habits.value[habitIndex] = {
+            ...existingHabit,
+            ...updatedHabit,
+            dailyComments: updatedDailyComments
+          }
         }
         
-        // 保持30天内的留言记录
-        const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toDateString()
-        updatedHabit.dailyComments = updatedHabit.dailyComments.filter(c => c.date >= thirtyDaysAgo)
-        
-        // 更新习惯 - 使用数组替换确保响应式更新
-        habits.value.splice(habitIndex, 1, updatedHabit)
-        // 保存到localStorage
-        localStorage.setItem('habits', JSON.stringify(habits.value))
-        
-        return { success: true, habit: updatedHabit }
+        return { success: true, habit: habits.value[habitIndex] }
+      } else {
+        return { success: false, error: response.error }
       }
-      return { success: false, error: '习惯不存在' }
     } catch (error) {
-      return { success: false, error: error.message }
+      return { success: false, error: error.error || error.message }
     }
   }
 
@@ -379,17 +486,28 @@ export const useHabitStore = defineStore('habit', () => {
     currentHabit.value = habit
   }
 
+  // 强制刷新习惯数据（清除缓存）
+  const forceRefreshHabits = async () => {
+    console.log('强制刷新习惯数据，清除所有缓存...')
+    // 清除当前的习惯数据
+    habits.value = []
+    // 重新获取数据
+    return await fetchHabits()
+  }
+
   return {
     // 状态
     habits,
     isLoading,
     currentHabit,
+    forceUpdate,
     // 计算属性
     totalHabits,
     completedToday,
     totalStreak,
     // 动作
     fetchHabits,
+    forceRefreshHabits,
     createHabit,
     updateHabit,
     deleteHabit,

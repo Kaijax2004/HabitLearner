@@ -20,8 +20,8 @@
             <Logo size="xl" />
           </div>
           <div>
-            <h1 class="text-xl font-bold text-gray-900 dark:text-white">习知</h1>
-            <p class="text-sm text-gray-500 dark:text-gray-400">HabitLearner</p>
+            <h1 class="title-primary">习知</h1>
+            <p class="text-body-small">HabitLearner</p>
           </div>
         </div>
         
@@ -31,12 +31,12 @@
             v-for="item in navigationItems"
             :key="item.name"
             :to="item.to"
-            class="flex items-center px-4 py-3 text-sm font-medium rounded-apple transition-colors duration-150"
+            class="flex items-center px-4 py-3 text-sm font-medium rounded-apple list-item-enhanced transition-colors duration-150"
             :class="isActive(item.to) 
               ? 'bg-primary-50 dark:bg-primary-500/20 text-primary-700 dark:text-primary-400 border-r-2 border-primary-500 shadow-apple-glow' 
               : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100'"
           >
-            <component :is="item.icon" class="w-5 h-5 mr-3" :class="isActive(item.to) ? 'text-primary-700 dark:text-primary-400' : 'text-gray-600 dark:text-gray-400'" />
+            <component :is="item.icon" class="w-5 h-5 mr-3 icon-enhanced" :class="isActive(item.to) ? 'text-primary-700 dark:text-primary-400' : 'text-gray-600 dark:text-gray-400'" />
             {{ item.label }}
           </router-link>
         </nav>
@@ -185,10 +185,10 @@ const navigationItems = [
     icon: 'HomeIcon'
   },
   {
-    name: 'habits',
-    label: '习惯',
-    to: '/habit/create',
-    icon: 'PlusIcon'
+    name: 'plan',
+    label: '计划',
+    to: '/plan',
+    icon: 'CalendarIcon'
   },
   {
     name: 'learning',
@@ -265,6 +265,14 @@ const BookOpenIcon = {
   `
 }
 
+const CalendarIcon = {
+  template: `
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2h-3V3m-8 2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+    </svg>
+  `
+}
+
 const UserIcon = {
   template: `
     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -277,6 +285,7 @@ export default {
   components: {
     HomeIcon,
     PlusIcon,
+    CalendarIcon,
     BookOpenIcon,
     UserIcon
   }

@@ -149,12 +149,15 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import * as learningAPI from '@/api/learning.js'
+import { useToast } from '@/composables/useToast'
 import AppLayout from '@/components/AppLayout.vue'
 import BaseCard from '@/components/BaseCard.vue'
 
 const router = useRouter()
+const { success, error, warning } = useToast()
 
 // 响应式数据
 const isCompleted = ref(false)
@@ -169,71 +172,19 @@ const uploadForm = ref({
   file: null
 })
 
-// 课程分类
-const courseCategories = [
-  { id: 'all', name: '全部' },
-  { id: 'time', name: '时间管理' },
-  { id: 'productivity', name: '效率提升' },
-  { id: 'health', name: '健康生活' },
-  { id: 'learning', name: '学习方法' },
-  { id: 'career', name: '职业发展' }
-]
-
-// 课程数据
-const courses = [
-  {
-    id: 1,
-    title: '高效时间管理',
-    description: '学习如何更好地管理时间，提高工作效率',
-    duration: '7分钟',
-    category: '时间管理',
-    rating: '4.8',
-    categoryId: 'time'
-  },
-  {
-    id: 2,
-    title: '专注力训练',
-    description: '提升专注力，减少分心，提高学习效率',
-    duration: '5分钟',
-    category: '效率提升',
-    rating: '4.6',
-    categoryId: 'productivity'
-  },
-  {
-    id: 3,
-    title: '健康饮食指南',
-    description: '了解营养搭配，养成健康饮食习惯',
-    duration: '6分钟',
-    category: '健康生活',
-    rating: '4.7',
-    categoryId: 'health'
-  },
-  {
-    id: 4,
-    title: '记忆技巧',
-    description: '掌握高效记忆方法，提升学习效果',
-    duration: '8分钟',
-    category: '学习方法',
-    rating: '4.9',
-    categoryId: 'learning'
-  },
-  {
-    id: 5,
-    title: '职场沟通技巧',
-    description: '提升职场沟通能力，建立良好人际关系',
-    duration: '9分钟',
-    category: '职业发展',
-    rating: '4.5',
-    categoryId: 'career'
-  }
-]
+// 响应式数据
+const courseCategories = ref([
+  { id: 'all', name: '全部' }
+])
+const courses = ref([])
+const isLoading = ref(false)
 
 // 计算属性
 const filteredCourses = computed(() => {
   if (selectedCategory.value === 'all') {
-    return courses
+    return courses.value
   }
-  return courses.filter(course => course.categoryId === selectedCategory.value)
+  return courses.value.filter(course => course.categoryId === selectedCategory.value)
 })
 
 // 方法
@@ -242,33 +193,87 @@ const goToVideoPage = (course) => {
   router.push(`/learning/video/${course.id}`)
 }
 
+// 加载数据
+const loadData = async () => {
+  isLoading.value = true
+  try {
+    // 加载课程分类
+    const categoriesResponse = await learningAPI.getCourseCategories()
+    if (categoriesResponse.success) {
+      courseCategories.value = [
+        { id: 'all', name: '全部' },
+        ...categoriesResponse.data
+      ]
+    }
+    
+    // 加载课程列表
+    const coursesResponse = await learningAPI.getCourses()
+    if (coursesResponse.success) {
+      courses.value = coursesResponse.data.courses || []
+    }
+  } catch (error) {
+    console.error('加载数据失败:', error)
+  } finally {
+    isLoading.value = false
+  }
+}
+
 const handleVideoUpload = (event) => {
   const file = event.target.files[0]
   if (file) {
     if (file.size > 100 * 1024 * 1024) {
-      alert('视频大小不能超过100MB')
+      warning('视频大小不能超过100MB')
       return
     }
     uploadForm.value.file = file
   }
 }
 
-const uploadVideo = () => {
+const uploadVideo = async () => {
   if (!uploadForm.value.title.trim() || !uploadForm.value.description.trim() || !uploadForm.value.file) {
-    alert('请填写完整信息并选择视频文件')
+    warning('请填写完整信息并选择视频文件')
     return
   }
   
-  // 这里应该调用API上传视频
-  console.log('上传视频:', uploadForm.value)
-  alert('视频上传成功，等待审核')
-  
-  // 重置表单
-  uploadForm.value = {
-    title: '',
-    description: '',
-    file: null
+  try {
+    const formData = new FormData()
+    formData.append('title', uploadForm.value.title)
+    formData.append('description', uploadForm.value.description)
+    formData.append('category', selectedCategory.value)
+    formData.append('video', uploadForm.value.file)
+    
+    const response = await learningAPI.uploadVideo(formData)
+    
+    if (response.success) {
+      success('视频上传成功', {
+        description: response.data.message || '等待审核'
+      })
+      showUploadModal.value = false
+      
+      // 重置表单
+      uploadForm.value = {
+        title: '',
+        description: '',
+        file: null
+      }
+      
+      // 重新加载课程列表
+      await loadData()
+    } else {
+      error('视频上传失败', {
+        description: response.error || '请重试'
+      })
+    }
+  } catch (error) {
+    console.error('上传视频失败:', error)
+    error('视频上传失败', {
+      description: error.error || '请重试'
+    })
   }
-  showUploadModal.value = false
 }
+
+// 组件挂载时加载数据
+onMounted(() => {
+  loadData()
+})
 </script>

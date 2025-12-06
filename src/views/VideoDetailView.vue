@@ -222,6 +222,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
+import * as learningAPI from '@/api/learning.js'
 import AppLayout from '@/components/AppLayout.vue'
 import BaseCard from '@/components/BaseCard.vue'
 
@@ -278,21 +279,44 @@ const courses = [
 ]
 
 // 方法
-const setRating = (rating) => {
+const setRating = async (rating) => {
   userRating.value = rating
-  // 这里可以调用API保存用户评分
-  console.log('用户评分:', rating)
+  try {
+    const response = await learningAPI.rateCourse(course.value.id, rating)
+    if (response.success) {
+      course.value.rating = response.data.averageRating
+    }
+  } catch (error) {
+    console.error('评分失败:', error)
+  }
 }
 
-const markAsCompleted = () => {
-  isCompleted.value = true
-  // 这里可以调用API标记课程为已完成
-  console.log('课程已完成')
+const markAsCompleted = async () => {
+  try {
+    const response = await learningAPI.completeCourse(course.value.id)
+    if (response.success) {
+      isCompleted.value = true
+    }
+  } catch (error) {
+    console.error('标记完成失败:', error)
+  }
+}
+
+// 加载课程详情
+const loadCourse = async () => {
+  try {
+    const courseId = parseInt(route.params.id)
+    const response = await learningAPI.getCourseById(courseId)
+    if (response.success) {
+      course.value = response.data
+    }
+  } catch (error) {
+    console.error('加载课程详情失败:', error)
+  }
 }
 
 // 生命周期
 onMounted(() => {
-  const courseId = parseInt(route.params.id)
-  course.value = courses.find(c => c.id === courseId) || courses[0]
+  loadCourse()
 })
 </script>

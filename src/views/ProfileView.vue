@@ -10,16 +10,17 @@
             <div class="text-center py-6">
               <div class="w-20 h-20 bg-primary-500 rounded-full flex items-center justify-center mx-auto mb-4 overflow-hidden">
                 <img 
-                  v-if="user?.avatar" 
-                  :src="user.avatar" 
+                  v-if="getDisplayAvatar()" 
+                  :src="getDisplayAvatar()" 
                   alt="用户头像" 
                   class="w-full h-full object-cover"
+                  @error="handleAvatarError"
                 />
                 <svg v-else class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
               </div>
-              <h2 class="text-xl font-medium text-gray-900 dark:text-gray-100">{{ user?.name || '用户' }}</h2>
+              <h2 class="text-xl font-medium text-gray-900 dark:text-gray-100">{{ user?.username || '用户' }}</h2>
               <p class="text-gray-500 dark:text-gray-400">{{ user?.email }}</p>
               <button @click="showEditModal = true" class="mt-3 text-primary-500 text-sm font-medium">
                 编辑资料
@@ -31,19 +32,19 @@
           <BaseCard title="数据统计">
             <div class="grid grid-cols-2 gap-4">
               <div class="text-center py-4">
-                <div class="text-2xl font-bold text-primary-500">{{ habitStore.totalHabits }}</div>
+                <div class="text-2xl font-bold text-primary-500">{{ statsData.totalHabits }}</div>
                 <div class="text-sm text-gray-500 dark:text-gray-400">总习惯</div>
               </div>
               <div class="text-center py-4">
-                <div class="text-2xl font-bold text-green-500">{{ habitStore.totalStreak }}</div>
+                <div class="text-2xl font-bold text-green-500">{{ statsData.totalStreak }}</div>
                 <div class="text-sm text-gray-500 dark:text-gray-400">总连续天数</div>
               </div>
               <div class="text-center py-4">
-                <div class="text-2xl font-bold text-orange-500">15</div>
+                <div class="text-2xl font-bold text-orange-500">{{ statsData.learningCourses }}</div>
                 <div class="text-sm text-gray-500 dark:text-gray-400">学习课程</div>
               </div>
               <div class="text-center py-4">
-                <div class="text-2xl font-bold text-purple-500">7</div>
+                <div class="text-2xl font-bold text-purple-500">{{ statsData.usageDays }}</div>
                 <div class="text-sm text-gray-500 dark:text-gray-400">使用天数</div>
               </div>
             </div>
@@ -189,11 +190,11 @@
             <div class="flex-1">
               <input
                 type="file"
-                accept="image/*"
+                accept="image/jpeg,image/jpg,image/png,image/gif,image/webp,image/bmp,image/svg+xml,image/tiff,image/ico"
                 @change="handleAvatarChange"
                 class="input-apple w-full"
               />
-              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">支持JPG、PNG等格式，大小不超过10MB</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">支持JPG、PNG、GIF、WebP、BMP、SVG、TIFF、ICO格式，大小不超过20MB</p>
             </div>
           </div>
         </div>
@@ -202,7 +203,7 @@
         <div class="mb-6">
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">用户名</label>
           <input
-            v-model="editForm.name"
+            v-model="editForm.username"
             type="text"
             placeholder="请输入用户名"
             class="input-apple w-full"
@@ -487,8 +488,8 @@
 
         <!-- 弹窗底部 -->
         <div class="sticky bottom-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-6 py-4 rounded-b-apple-lg">
-          <button @click="showNotificationModal = false" class="btn-primary w-full">
-            保存设置
+          <button @click="saveNotificationSettings" :disabled="isSavingNotifications" class="btn-primary w-full disabled:opacity-50">
+            {{ isSavingNotifications ? '保存中...' : '保存设置' }}
           </button>
         </div>
       </div>
@@ -596,8 +597,8 @@
         </div>
 
         <div class="sticky bottom-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-6 py-4 rounded-b-apple-lg">
-          <button @click="showPrivacyModal = false" class="btn-primary w-full">
-            保存设置
+          <button @click="savePrivacySettings" :disabled="isSavingPrivacy" class="btn-primary w-full disabled:opacity-50">
+            {{ isSavingPrivacy ? '保存中...' : '保存设置' }}
           </button>
         </div>
       </div>
@@ -628,6 +629,28 @@
               <label class="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-apple cursor-pointer">
                 <input type="radio" v-model="exportSettings.format" value="csv" class="text-primary-500">
                 <span class="text-gray-900 dark:text-gray-100">CSV 格式</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="space-y-4">
+            <h4 class="text-base font-medium text-gray-900 dark:text-gray-100">日期范围</h4>
+            <div class="space-y-2">
+              <label class="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-apple cursor-pointer">
+                <input type="radio" v-model="exportSettings.dateRange" value="all" class="text-primary-500">
+                <span class="text-gray-900 dark:text-gray-100">全部数据</span>
+              </label>
+              <label class="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-apple cursor-pointer">
+                <input type="radio" v-model="exportSettings.dateRange" value="30days" class="text-primary-500">
+                <span class="text-gray-900 dark:text-gray-100">最近30天</span>
+              </label>
+              <label class="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-apple cursor-pointer">
+                <input type="radio" v-model="exportSettings.dateRange" value="90days" class="text-primary-500">
+                <span class="text-gray-900 dark:text-gray-100">最近90天</span>
+              </label>
+              <label class="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-apple cursor-pointer">
+                <input type="radio" v-model="exportSettings.dateRange" value="1year" class="text-primary-500">
+                <span class="text-gray-900 dark:text-gray-100">最近1年</span>
               </label>
             </div>
           </div>
@@ -684,8 +707,17 @@
         </div>
 
         <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
-          <button @click="exportData" class="btn-primary w-full">
-            导出数据
+          <button 
+            @click="exportData" 
+            :disabled="isExporting"
+            class="btn-primary w-full flex items-center justify-center space-x-2"
+            :class="{ 'opacity-50 cursor-not-allowed': isExporting }"
+          >
+            <svg v-if="isExporting" class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span>{{ isExporting ? '导出中...' : '导出数据' }}</span>
           </button>
         </div>
       </div>
@@ -799,10 +831,14 @@
 </template>
 
 <script setup>
-import { computed, ref, onMounted } from 'vue'
+import { computed, ref, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useHabitStore } from '@/stores/habit'
+import * as authAPI from '@/api/auth.js'
+import * as settingsAPI from '@/api/settings.js'
+import * as statsAPI from '@/api/stats.js'
+import { useToast } from '@/composables/useToast'
 import AppLayout from '@/components/AppLayout.vue'
 import BaseCard from '@/components/BaseCard.vue'
 import Logo from '@/components/Logo.vue'
@@ -811,6 +847,7 @@ import Logo from '@/components/Logo.vue'
 const authStore = useAuthStore()
 const habitStore = useHabitStore()
 const router = useRouter()
+const { success, error, warning } = useToast()
 
 // 弹窗状态
 const showEditModal = ref(false)
@@ -825,7 +862,7 @@ const showAboutModal = ref(false)
 
 // 表单数据
 const editForm = ref({
-  name: '',
+  username: '',
   avatar: ''
 })
 
@@ -849,6 +886,9 @@ const isSaving = ref(false)
 const isSendingCode = ref(false)
 const isVerifying = ref(false)
 const isChangingPassword = ref(false)
+const isSavingNotifications = ref(false)
+const isSavingPrivacy = ref(false)
+const isExporting = ref(false)
 
 // 设置表单数据
 const notificationSettings = ref({
@@ -864,9 +904,8 @@ const notificationSettings = ref({
 
 const privacySettings = ref({
   dataCollection: true,
-  analytics: false,
+  analytics: true,
   crashReports: true,
-  personalizedAds: false,
   shareProgress: false,
   publicProfile: false
 })
@@ -879,22 +918,71 @@ const exportSettings = ref({
   dateRange: 'all'
 })
 
+// 统计数据
+const statsData = ref({
+  totalHabits: 0,
+  totalStreak: 0,
+  learningCourses: 0,
+  usageDays: 0
+})
+
 // 计算属性
 const user = computed(() => authStore.user)
+
+// 获取用户特定的localStorage键名
+const getUserAvatarKey = () => {
+  return user.value ? `userAvatar_${user.value.id}` : 'userAvatar'
+}
+
+// 清理其他用户的头像数据（避免数据混乱）
+const cleanupOtherUserAvatars = () => {
+  if (user.value) {
+    const currentUserKey = getUserAvatarKey()
+    // 只清理旧的通用键名，保留其他用户的头像数据
+    if (localStorage.getItem('userAvatar') && !localStorage.getItem(currentUserKey)) {
+      localStorage.removeItem('userAvatar')
+      console.log('清理旧的通用头像数据')
+    }
+  }
+}
 
 // 初始化用户数据
 const initUserData = () => {
   if (user.value) {
-    editForm.value.name = user.value.name || ''
+    // 首先清理其他用户的头像数据
+    cleanupOtherUserAvatars()
+    
+    editForm.value.username = user.value.username || ''
     editForm.value.avatar = user.value.avatar || ''
-    avatarPreview.value = user.value.avatar || ''
+    
+    // 优先使用localStorage中的头像（使用用户特定的键名）
+    const userAvatarKey = getUserAvatarKey()
+    const localAvatar = localStorage.getItem(userAvatarKey)
+    
+    if (localAvatar && localAvatar !== '') {
+      // 使用localStorage中的头像（通常是base64，无CORS问题）
+      avatarPreview.value = localAvatar
+    } else if (user.value.avatar && user.value.avatar.startsWith('data:')) {
+      // 如果用户数据中的头像是base64格式，可以使用
+      avatarPreview.value = user.value.avatar
+      localStorage.setItem(userAvatarKey, user.value.avatar)
+    } else {
+      // 清除可能有CORS问题的URL格式头像
+      avatarPreview.value = ''
+    }
+    
+    // 强制触发头像显示更新
+    nextTick(() => {
+      // 触发响应式更新
+      avatarPreview.value = avatarPreview.value
+    })
   }
 }
 
 // 方法
-const handleLogout = () => {
+const handleLogout = async () => {
   if (confirm('确定要退出登录吗？')) {
-    authStore.logout()
+    await authStore.logout()
     router.push('/auth')
   }
 }
@@ -902,15 +990,22 @@ const handleLogout = () => {
 const handleAvatarChange = (event) => {
   const file = event.target.files[0]
   if (file) {
+    // 支持的图片格式
+    const supportedTypes = [
+      'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 
+      'image/webp', 'image/bmp', 'image/svg+xml', 'image/tiff',
+      'image/ico', 'image/x-icon'
+    ]
+    
     // 检查文件类型
-    if (!file.type.startsWith('image/')) {
-      alert('请选择图片文件')
+    if (!supportedTypes.includes(file.type.toLowerCase())) {
+      warning('请选择支持的图片格式：JPG、PNG、GIF、WebP、BMP、SVG、TIFF、ICO')
       return
     }
     
-    // 检查文件大小
-    if (file.size > 10 * 1024 * 1024) {
-      alert('图片大小不能超过10MB')
+    // 检查文件大小（增加到20MB）
+    if (file.size > 20 * 1024 * 1024) {
+      warning('图片大小不能超过20MB')
       return
     }
     
@@ -919,44 +1014,151 @@ const handleAvatarChange = (event) => {
     reader.onload = (e) => {
       avatarPreview.value = e.target.result
       editForm.value.avatar = e.target.result
+      // 立即保存到localStorage并显示（使用用户特定的键名）
+      const userAvatarKey = getUserAvatarKey()
+      localStorage.setItem(userAvatarKey, e.target.result)
     }
     reader.readAsDataURL(file)
   }
 }
 
+// 获取要显示的头像URL
+const getDisplayAvatar = () => {
+  // 优先级：localStorage > 用户数据（但避免CORS问题） > 空
+  const userAvatarKey = getUserAvatarKey()
+  const localAvatar = localStorage.getItem(userAvatarKey)
+  const userAvatar = user.value?.avatar
+  
+  // 优先使用localStorage中的头像（通常是base64，不会有CORS问题）
+  if (localAvatar && localAvatar !== '') {
+    return localAvatar
+  }
+  
+  // 如果用户数据中的头像是base64格式，可以使用
+  if (userAvatar && userAvatar !== '' && userAvatar !== null) {
+    // 检查是否是base64格式（以data:开头）
+    if (userAvatar.startsWith('data:')) {
+      return userAvatar
+    }
+    // 如果是URL格式，暂时不使用（避免CORS问题）
+    console.log('跳过可能有CORS问题的头像URL:', userAvatar)
+  }
+  
+  return null
+}
+
+const handleAvatarError = (event) => {
+  console.error('头像加载失败:', event.target.src)
+  
+  // 如果失败的是后端URL，尝试使用localStorage中的头像
+  const failedUrl = event.target.src
+  const userAvatarKey = getUserAvatarKey()
+  const localAvatar = localStorage.getItem(userAvatarKey)
+  
+  if (failedUrl.includes('localhost:3000') && localAvatar) {
+    console.log('后端头像加载失败，使用本地头像')
+    // 使用本地头像
+    avatarPreview.value = localAvatar
+    return
+  }
+  
+  // 如果本地头像也失败，清除并显示默认图标
+  localStorage.removeItem(userAvatarKey)
+  avatarPreview.value = ''
+}
+
 const saveProfile = async () => {
-  if (!editForm.value.name.trim()) {
-    alert('请输入用户名')
+  if (!editForm.value.username.trim()) {
+    warning('请输入用户名')
+    return
+  }
+  
+  // 检查是否已登录
+  const token = localStorage.getItem('token')
+  if (!token) {
+    error('请先登录', {
+      description: '请重新登录后重试'
+    })
+    router.push('/auth')
     return
   }
   
   isSaving.value = true
   
   try {
-    // 模拟API调用
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    const formData = new FormData()
+    formData.append('username', editForm.value.username.trim())
     
-    // 更新用户信息到store
-    const updatedUser = {
-      ...user.value,
-      name: editForm.value.name.trim(),
-      avatar: editForm.value.avatar
+    // 如果有选择头像文件，添加到FormData
+    if (avatarFile.value) {
+      formData.append('avatar', avatarFile.value)
     }
     
-    // 保存到localStorage
-    localStorage.setItem('user', JSON.stringify(updatedUser))
+    const response = await authAPI.updateProfile(formData)
     
-    // 更新authStore中的用户信息
-    authStore.updateUser(updatedUser)
-    
-    alert('资料保存成功')
-    showEditModal.value = false
-    
-    // 重置表单
-    avatarFile.value = null
+    if (response.success) {
+      // 更新用户数据
+      authStore.updateUser(response.data)
+      
+      // 优先保持前端预览的头像（base64格式，无CORS问题）
+      const userAvatarKey = getUserAvatarKey()
+      if (avatarPreview.value) {
+        localStorage.setItem(userAvatarKey, avatarPreview.value)
+      } else if (response.data.avatar) {
+        // 如果前端没有预览，但后端返回了头像URL
+        // 检查是否是base64格式
+        if (response.data.avatar.startsWith('data:')) {
+          avatarPreview.value = response.data.avatar
+          localStorage.setItem(userAvatarKey, response.data.avatar)
+        } else {
+          // 如果是URL格式，暂时不保存（避免CORS问题）
+          console.log('后端返回的头像URL可能有CORS问题，跳过保存:', response.data.avatar)
+        }
+      }
+      
+      success('资料保存成功')
+      showEditModal.value = false
+      avatarFile.value = null
+    } else {
+      // API失败时，如果有头像预览，仍然保存到本地
+      if (avatarPreview.value) {
+        const userAvatarKey = getUserAvatarKey()
+        localStorage.setItem(userAvatarKey, avatarPreview.value)
+        success('用户名保存失败，但头像已保存到本地')
+        showEditModal.value = false
+        avatarFile.value = null
+      } else {
+        error('保存失败', {
+          description: response.error || '请重试'
+        })
+      }
+    }
   } catch (error) {
     console.error('保存失败:', error)
-    alert('保存失败，请重试')
+    
+    // 检查是否是认证错误
+    if (error.code === 401 || error.response?.status === 401) {
+      error('登录已过期，请重新登录', {
+        description: '请重新登录后重试'
+      })
+      // 清除本地存储并跳转到登录页
+      localStorage.removeItem('token')
+      localStorage.removeItem('user')
+      router.push('/auth')
+    } else {
+      // 网络错误时，如果有头像预览，仍然保存到本地
+      if (avatarPreview.value) {
+        const userAvatarKey = getUserAvatarKey()
+        localStorage.setItem(userAvatarKey, avatarPreview.value)
+        success('网络错误，但头像已保存到本地')
+        showEditModal.value = false
+        avatarFile.value = null
+      } else {
+        error('保存失败', {
+          description: error.error || error.message || '网络错误，请重试'
+        })
+      }
+    }
   } finally {
     isSaving.value = false
   }
@@ -970,22 +1172,27 @@ const openPasswordChange = () => {
 
 const sendVerifyCode = async () => {
   if (!verifyForm.value.email) {
-    alert('邮箱地址不能为空')
+    warning('邮箱地址不能为空')
     return
   }
   
   isSendingCode.value = true
   
   try {
-    // 模拟API调用
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    const response = await authAPI.sendVerifyCode(verifyForm.value.email, 'password_change')
     
-    // 模拟发送验证码
-    console.log('发送验证码到:', verifyForm.value.email)
-    alert('验证码已发送到您的邮箱')
+    if (response.success) {
+      success('验证码已发送到您的邮箱')
+    } else {
+      error('发送验证码失败', {
+        description: response.error || '请重试'
+      })
+    }
   } catch (error) {
     console.error('发送验证码失败:', error)
-    alert('发送验证码失败，请重试')
+    error('发送验证码失败', {
+      description: error.error || '请重试'
+    })
   } finally {
     isSendingCode.value = false
   }
@@ -993,29 +1200,31 @@ const sendVerifyCode = async () => {
 
 const verifyCode = async () => {
   if (!verifyForm.value.code.trim()) {
-    alert('请输入验证码')
+    warning('请输入验证码')
     return
   }
   
   isVerifying.value = true
   
   try {
-    // 模拟API调用
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    const response = await authAPI.verifyCode(verifyForm.value.email, verifyForm.value.code)
     
-    // 模拟验证码验证（这里简化处理，实际应该调用API）
-    if (verifyForm.value.code === '123456') {
+    if (response.success) {
       showVerifyModal.value = false
       showChangePasswordModal.value = true
       
       // 重置验证码表单
       verifyForm.value.code = ''
     } else {
-      alert('验证码错误，请重试')
+      error('验证码错误', {
+        description: response.error || '请重试'
+      })
     }
   } catch (error) {
     console.error('验证失败:', error)
-    alert('验证失败，请重试')
+    error('验证失败', {
+      description: error.error || '请重试'
+    })
   } finally {
     isVerifying.value = false
   }
@@ -1023,64 +1232,336 @@ const verifyCode = async () => {
 
 const changePassword = async () => {
   if (!passwordForm.value.newPassword.trim()) {
-    alert('请输入新密码')
+    warning('请输入新密码')
     return
   }
   
   if (passwordForm.value.newPassword !== passwordForm.value.confirmPassword) {
-    alert('两次输入的密码不一致')
+    warning('两次输入的密码不一致')
     return
   }
   
   if (passwordForm.value.newPassword.length < 6) {
-    alert('密码长度不能少于6位')
+    warning('密码长度不能少于6位')
     return
   }
   
   isChangingPassword.value = true
   
   try {
-    // 模拟API调用
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    const response = await authAPI.changePassword(
+      passwordForm.value.currentPassword,
+      passwordForm.value.newPassword
+    )
     
-    // 模拟密码修改
-    console.log('修改密码:', passwordForm.value)
-    
-    // 更新用户密码（实际应该调用API）
-    const updatedUser = {
-      ...user.value,
-      password: passwordForm.value.newPassword
-    }
-    
-    // 保存到localStorage
-    localStorage.setItem('user', JSON.stringify(updatedUser))
-    
-    alert('密码修改成功')
-    showChangePasswordModal.value = false
-    
-    // 重置密码表单
-    passwordForm.value = {
-      currentPassword: '',
-      newPassword: '',
-      confirmPassword: ''
+    if (response.success) {
+      success('密码修改成功')
+      showChangePasswordModal.value = false
+      
+      // 重置密码表单
+      passwordForm.value = {
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      }
+    } else {
+      error('修改密码失败', {
+        description: response.error || '请重试'
+      })
     }
   } catch (error) {
     console.error('修改密码失败:', error)
-    alert('修改密码失败，请重试')
+    error('修改密码失败', {
+      description: error.error || '请重试'
+    })
   } finally {
     isChangingPassword.value = false
   }
 }
 
-const exportData = () => {
-  // 这里应该调用API导出数据
-  console.log('导出数据:', exportSettings.value)
-  alert('数据导出成功')
-  showDataExportModal.value = false
+const exportData = async () => {
+  isExporting.value = true
+  try {
+    // 收集要导出的数据
+    const exportData = {
+      exportInfo: {
+        exportDate: new Date().toISOString(),
+        format: exportSettings.value.format,
+        version: '1.0.0'
+      },
+      user: user.value
+    }
+
+    // 根据设置添加不同类型的数据
+    if (exportSettings.value.includeHabits) {
+      exportData.habits = filterHabitsByDateRange(habitStore.habits, exportSettings.value.dateRange)
+    }
+
+    if (exportSettings.value.includeLearning) {
+      // 这里可以添加学习数据，暂时使用模拟数据
+      exportData.learning = {
+        courses: [],
+        progress: [],
+        notes: []
+      }
+    }
+
+    if (exportSettings.value.includeStatistics) {
+      exportData.statistics = {
+        totalHabits: habitStore.habits.length,
+        totalStreak: habitStore.habits.reduce((sum, habit) => sum + (habit.streak || 0), 0),
+        totalCheckIns: habitStore.habits.reduce((sum, habit) => {
+          return sum + (habit.checkIns ? habit.checkIns.reduce((checkSum, checkIn) => checkSum + checkIn.count, 0) : 0)
+        }, 0),
+        exportDate: new Date().toISOString()
+      }
+    }
+
+    // 根据格式生成文件
+    let fileContent, fileName, mimeType
+
+    if (exportSettings.value.format === 'json') {
+      fileContent = JSON.stringify(exportData, null, 2)
+      fileName = `habit-learner-data-${new Date().toISOString().split('T')[0]}.json`
+      mimeType = 'application/json'
+    } else if (exportSettings.value.format === 'csv') {
+      // 生成CSV格式
+      const csvData = generateCSVData(exportData)
+      fileContent = csvData
+      fileName = `habit-learner-data-${new Date().toISOString().split('T')[0]}.csv`
+      mimeType = 'text/csv'
+    }
+
+    // 创建并下载文件
+    const blob = new Blob([fileContent], { type: mimeType })
+    const url = URL.createObjectURL(blob)
+    
+    const link = document.createElement('a')
+    link.href = url
+    link.download = fileName
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    
+    // 清理URL对象
+    URL.revokeObjectURL(url)
+    
+    success('数据导出成功', {
+      description: `已导出 ${fileName}`
+    })
+    showDataExportModal.value = false
+  } catch (error) {
+    console.error('导出数据失败:', error)
+    error('数据导出失败', {
+      description: error.message || '请重试'
+    })
+  } finally {
+    isExporting.value = false
+  }
+}
+
+// 根据日期范围过滤习惯数据
+const filterHabitsByDateRange = (habits, dateRange) => {
+  if (dateRange === 'all') {
+    return habits
+  }
+
+  const now = new Date()
+  let startDate
+
+  switch (dateRange) {
+    case '30days':
+      startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+      break
+    case '90days':
+      startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000)
+      break
+    case '1year':
+      startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000)
+      break
+    default:
+      return habits
+  }
+
+  return habits.map(habit => {
+    const filteredHabit = { ...habit }
+    
+    // 过滤打卡记录
+    if (habit.checkIns) {
+      filteredHabit.checkIns = habit.checkIns.filter(checkIn => {
+        const checkInDate = new Date(checkIn.date)
+        return checkInDate >= startDate
+      })
+    }
+    
+    // 过滤每日留言
+    if (habit.dailyComments) {
+      filteredHabit.dailyComments = habit.dailyComments.filter(comment => {
+        const commentDate = new Date(comment.date)
+        return commentDate >= startDate
+      })
+    }
+    
+    return filteredHabit
+  }).filter(habit => {
+    // 只保留在指定时间范围内有活动的习惯
+    return (habit.checkIns && habit.checkIns.length > 0) || 
+           (habit.dailyComments && habit.dailyComments.length > 0) ||
+           new Date(habit.createdAt) >= startDate
+  })
+}
+
+// 生成CSV格式数据
+const generateCSVData = (data) => {
+  let csvContent = ''
+  
+  // 添加基本信息
+  csvContent += '数据类型,字段,值\n'
+  csvContent += `导出信息,导出日期,${data.exportInfo.exportDate}\n`
+  csvContent += `导出信息,格式,${data.exportInfo.format}\n`
+  csvContent += `导出信息,版本,${data.exportInfo.version}\n`
+  
+  if (data.user) {
+    csvContent += `用户信息,用户名,${data.user.name || ''}\n`
+    csvContent += `用户信息,邮箱,${data.user.email || ''}\n`
+    csvContent += `用户信息,注册时间,${data.user.createdAt || ''}\n`
+  }
+  
+  // 添加习惯数据
+  if (data.habits && data.habits.length > 0) {
+    csvContent += '\n习惯数据\n'
+    csvContent += '习惯名称,分类,目标次数,当前连续天数,总打卡次数,创建时间,最后打卡时间\n'
+    
+    data.habits.forEach(habit => {
+      const lastCheckIn = habit.checkIns && habit.checkIns.length > 0 
+        ? habit.checkIns[habit.checkIns.length - 1].date 
+        : ''
+      const totalCheckIns = habit.checkIns 
+        ? habit.checkIns.reduce((sum, checkIn) => sum + checkIn.count, 0)
+        : 0
+      
+      csvContent += `"${habit.name || ''}","${habit.category || ''}",${habit.target || 1},${habit.streak || 0},${totalCheckIns},"${habit.createdAt || ''}","${lastCheckIn}"\n`
+    })
+  }
+  
+  // 添加统计数据
+  if (data.statistics) {
+    csvContent += '\n统计数据\n'
+    csvContent += '统计项目,数值\n'
+    csvContent += `总习惯数,${data.statistics.totalHabits}\n`
+    csvContent += `总连续天数,${data.statistics.totalStreak}\n`
+    csvContent += `总打卡次数,${data.statistics.totalCheckIns}\n`
+  }
+  
+  return csvContent
+}
+
+// 获取用户特定的通知设置localStorage键名
+const getUserNotificationSettingsKey = () => {
+  return user.value ? `notificationSettings_${user.value.id}` : 'notificationSettings'
+}
+
+// 保存通知设置
+const saveNotificationSettings = async () => {
+  isSavingNotifications.value = true
+  
+  try {
+    // 保存到localStorage（使用用户特定的键名）
+    const userNotificationSettingsKey = getUserNotificationSettingsKey()
+    localStorage.setItem(userNotificationSettingsKey, JSON.stringify(notificationSettings.value))
+    
+    // 这里可以调用API保存到服务器
+    // const response = await settingsAPI.updateNotificationSettings(notificationSettings.value)
+    
+    success('通知设置已保存')
+    showNotificationModal.value = false
+  } catch (error) {
+    console.error('保存通知设置失败:', error)
+    error('保存失败', {
+      description: '请重试'
+    })
+  } finally {
+    isSavingNotifications.value = false
+  }
+}
+
+// 获取用户特定的隐私设置localStorage键名
+const getUserPrivacySettingsKey = () => {
+  return user.value ? `privacySettings_${user.value.id}` : 'privacySettings'
+}
+
+// 保存隐私设置
+const savePrivacySettings = async () => {
+  isSavingPrivacy.value = true
+  
+  try {
+    // 保存到localStorage（使用用户特定的键名）
+    const userPrivacySettingsKey = getUserPrivacySettingsKey()
+    localStorage.setItem(userPrivacySettingsKey, JSON.stringify(privacySettings.value))
+    
+    // 这里可以调用API保存到服务器
+    // const response = await settingsAPI.updatePrivacySettings(privacySettings.value)
+    
+    success('隐私设置已保存')
+    showPrivacyModal.value = false
+  } catch (error) {
+    console.error('保存隐私设置失败:', error)
+    error('保存失败', {
+      description: '请重试'
+    })
+  } finally {
+    isSavingPrivacy.value = false
+  }
+}
+
+// 加载统计数据
+const loadStats = async () => {
+  try {
+    const response = await statsAPI.getStatsOverview()
+    if (response.success) {
+      statsData.value = {
+        totalHabits: response.data.totalHabits,
+        totalStreak: response.data.totalStreak,
+        learningCourses: response.data.learningProgress.totalCourses,
+        usageDays: Math.floor((Date.now() - new Date(user.value?.createdAt).getTime()) / (1000 * 60 * 60 * 24))
+      }
+    }
+  } catch (error) {
+    console.error('加载统计数据失败:', error)
+  }
 }
 
 // 组件挂载时初始化数据
+// 加载通知设置
+const loadNotificationSettings = () => {
+  const userNotificationSettingsKey = getUserNotificationSettingsKey()
+  const saved = localStorage.getItem(userNotificationSettingsKey)
+  if (saved) {
+    try {
+      notificationSettings.value = { ...notificationSettings.value, ...JSON.parse(saved) }
+    } catch (error) {
+      console.error('加载通知设置失败:', error)
+    }
+  }
+}
+
+// 加载隐私设置
+const loadPrivacySettings = () => {
+  const userPrivacySettingsKey = getUserPrivacySettingsKey()
+  const saved = localStorage.getItem(userPrivacySettingsKey)
+  if (saved) {
+    try {
+      privacySettings.value = { ...privacySettings.value, ...JSON.parse(saved) }
+    } catch (error) {
+      console.error('加载隐私设置失败:', error)
+    }
+  }
+}
+
 onMounted(() => {
   initUserData()
+  loadStats()
+  loadNotificationSettings()
+  loadPrivacySettings()
 })
 </script>
