@@ -1,125 +1,123 @@
 <template>
   <AppLayout title="HabitLearner">
     <div class="space-y-5">
-      <BaseCard class="overflow-visible border border-zinc-200/80 bg-white/90 dark:border-zinc-800 dark:bg-zinc-950/75" :hover="false">
-        <div class="mx-auto max-w-6xl px-4 py-5 sm:px-8">
-          <div class="grid gap-6 xl:grid-cols-[minmax(280px,0.78fr)_minmax(0,1.22fr)] xl:items-end">
-            <div class="space-y-5">
-              <div class="relative inline-flex">
+      <BaseCard class="relative overflow-visible border border-zinc-200/80 bg-white/90 dark:border-zinc-800 dark:bg-zinc-950/75" :hover="false">
+        <div class="absolute left-5 top-5 z-10">
+          <div class="relative">
+            <button
+              type="button"
+              class="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white/90 px-4 py-2 text-sm font-medium text-zinc-900 shadow-sm transition hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900/90 dark:text-white dark:hover:border-zinc-600"
+              @click="toggleRangePopover"
+            >
+              <span>{{ periodLabel }}</span>
+              <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            <div
+              v-if="showRangePopover"
+              class="absolute left-0 top-full z-20 mt-3 w-[320px] rounded-[24px] border border-zinc-200 bg-white/96 p-4 shadow-[0_18px_50px_rgba(0,0,0,0.08)] backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/96"
+            >
+              <p class="text-xs font-medium uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">选择统计周期</p>
+
+              <div class="mt-3 grid grid-cols-2 gap-2">
                 <button
+                  v-for="option in rangeOptions"
+                  :key="option.value"
                   type="button"
-                  class="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white/90 px-4 py-2 text-sm font-medium text-zinc-900 shadow-sm transition hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900/90 dark:text-white dark:hover:border-zinc-600"
-                  @click="toggleRangePopover"
+                  class="rounded-2xl border px-3 py-2 text-sm font-medium transition"
+                  :class="selectedRange === option.value
+                    ? 'border-zinc-950 bg-zinc-950 text-white dark:border-white dark:bg-white dark:text-zinc-950'
+                    : 'border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-600'"
+                  @click="handleRangeOption(option.value)"
                 >
-                  <span>{{ periodLabel }}</span>
-                  <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M19 9l-7 7-7-7" />
-                  </svg>
+                  {{ option.label }}
                 </button>
-
-                <div
-                  v-if="showRangePopover"
-                  class="absolute left-0 top-full z-20 mt-3 w-[320px] rounded-[24px] border border-zinc-200 bg-white/96 p-4 shadow-[0_18px_50px_rgba(0,0,0,0.08)] backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/96"
-                >
-                  <p class="text-xs font-medium uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">选择统计周期</p>
-
-                  <div class="mt-3 grid grid-cols-2 gap-2">
-                    <button
-                      v-for="option in rangeOptions"
-                      :key="option.value"
-                      type="button"
-                      class="rounded-2xl border px-3 py-2 text-sm font-medium transition"
-                      :class="selectedRange === option.value
-                        ? 'border-zinc-950 bg-zinc-950 text-white dark:border-white dark:bg-white dark:text-zinc-950'
-                        : 'border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-600'"
-                      @click="handleRangeOption(option.value)"
-                    >
-                      {{ option.label }}
-                    </button>
-                  </div>
-
-                  <div v-if="selectedRange === 'custom'" class="mt-4 space-y-3 rounded-[20px] border border-zinc-200/80 bg-zinc-50/80 p-3 dark:border-zinc-800 dark:bg-zinc-900/70">
-                    <div>
-                      <label class="text-xs font-medium text-zinc-500 dark:text-zinc-400">开始日期</label>
-                      <input
-                        v-model="customStartDate"
-                        type="date"
-                        class="mt-1 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-950 outline-none transition focus:border-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white dark:focus:border-white"
-                      />
-                    </div>
-                    <div>
-                      <label class="text-xs font-medium text-zinc-500 dark:text-zinc-400">结束日期</label>
-                      <input
-                        v-model="customEndDate"
-                        type="date"
-                        class="mt-1 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-950 outline-none transition focus:border-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white dark:focus:border-white"
-                      />
-                    </div>
-                    <div class="flex gap-2">
-                      <button
-                        type="button"
-                        class="flex-1 rounded-2xl border border-zinc-200 px-4 py-2.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-900"
-                        @click="closeRangePopover"
-                      >
-                        取消
-                      </button>
-                      <button
-                        type="button"
-                        class="flex-1 rounded-2xl bg-zinc-950 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-100"
-                        :disabled="isOverviewLoading"
-                        @click="applyCustomRange"
-                      >
-                        {{ isOverviewLoading ? '加载中...' : '应用' }}
-                      </button>
-                    </div>
-                  </div>
-                </div>
               </div>
 
-              <div class="rounded-[28px] border border-zinc-200/80 bg-zinc-50/80 p-5 dark:border-zinc-800 dark:bg-zinc-900/60">
-                <p class="text-[11px] font-medium uppercase tracking-[0.22em] text-zinc-500 dark:text-zinc-400">Overview</p>
-                <p class="mt-3 text-base leading-7 text-zinc-700 dark:text-zinc-300">
-                  {{ dashboardNarrative }}
-                </p>
-
-                <div class="mt-5 grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
-                  <div
-                    v-for="item in dashboardHighlights"
-                    :key="item.label"
-                    class="flex items-center justify-between gap-3 rounded-[22px] border border-zinc-200/80 bg-white/90 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-950/75"
+              <div v-if="selectedRange === 'custom'" class="mt-4 space-y-3 rounded-[20px] border border-zinc-200/80 bg-zinc-50/80 p-3 dark:border-zinc-800 dark:bg-zinc-900/70">
+                <div>
+                  <label class="text-xs font-medium text-zinc-500 dark:text-zinc-400">开始日期</label>
+                  <input
+                    v-model="customStartDate"
+                    type="date"
+                    class="mt-1 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-950 outline-none transition focus:border-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white dark:focus:border-white"
+                  />
+                </div>
+                <div>
+                  <label class="text-xs font-medium text-zinc-500 dark:text-zinc-400">结束日期</label>
+                  <input
+                    v-model="customEndDate"
+                    type="date"
+                    class="mt-1 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-950 outline-none transition focus:border-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white dark:focus:border-white"
+                  />
+                </div>
+                <div class="flex gap-2">
+                  <button
+                    type="button"
+                    class="flex-1 rounded-2xl border border-zinc-200 px-4 py-2.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-900"
+                    @click="closeRangePopover"
                   >
-                    <div>
-                      <p class="text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">{{ item.label }}</p>
-                      <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">{{ item.hint }}</p>
-                    </div>
-                    <p class="text-lg font-semibold tracking-tight text-zinc-950 dark:text-white">{{ item.value }}</p>
-                  </div>
+                    取消
+                  </button>
+                  <button
+                    type="button"
+                    class="flex-1 rounded-2xl bg-zinc-950 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-100"
+                    :disabled="isOverviewLoading"
+                    @click="applyCustomRange"
+                  >
+                    {{ isOverviewLoading ? '加载中...' : '应用' }}
+                  </button>
                 </div>
               </div>
             </div>
+          </div>
+        </div>
 
-            <div class="space-y-5">
-              <div class="text-center xl:text-right">
-                <h1 class="text-4xl font-semibold tracking-tight text-zinc-950 dark:text-white sm:text-[3rem]">
-                  {{ greeting }}，{{ user?.name || '你' }}
-                </h1>
-                <p class="mt-3 text-sm text-zinc-500 dark:text-zinc-400">{{ currentDate }}</p>
+        <div class="mx-auto max-w-6xl px-4 pb-4 pt-12 text-center sm:px-8">
+          <h1 class="text-4xl font-semibold tracking-tight text-zinc-950 dark:text-white sm:text-[3rem]">
+            {{ greeting }}，{{ user?.name || '你' }}
+          </h1>
+          <p class="mt-3 text-sm text-zinc-500 dark:text-zinc-400">{{ currentDate }}</p>
+          <p class="mx-auto mt-4 max-w-3xl text-sm leading-6 text-zinc-600 dark:text-zinc-300">
+            {{ dashboardNarrative }}
+          </p>
+
+          <div class="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <div
+              v-for="card in summaryCards"
+              :key="card.label"
+              class="rounded-[26px] border p-4 text-left transition dark:border-zinc-800/80"
+              :class="card.panelClass"
+            >
+              <div class="flex items-center justify-between gap-3">
+                <p class="text-[11px] font-medium uppercase tracking-[0.18em]" :class="card.labelClass">{{ card.label }}</p>
+                <span class="rounded-full px-2.5 py-1 text-[11px] font-medium" :class="card.badgeClass">{{ card.badge }}</span>
               </div>
+              <p class="mt-4 text-[2rem] font-semibold tracking-tight" :class="card.valueClass">{{ card.value }}</p>
+              <div class="mt-4 h-px bg-zinc-200/80 dark:bg-zinc-800/80" />
+              <p class="mt-3 text-xs leading-5" :class="card.hintClass">{{ card.hint }}</p>
+            </div>
+          </div>
 
-              <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div class="mt-3 rounded-[28px] border border-zinc-200/80 bg-zinc-50/80 p-5 text-left dark:border-zinc-800 dark:bg-zinc-900/60">
+            <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div>
+                <p class="text-[11px] font-medium uppercase tracking-[0.22em] text-zinc-500 dark:text-zinc-400">数据概览</p>
+                <p class="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-300">先看关键数字，再决定今天的节奏。</p>
+              </div>
+              <div class="grid gap-3 sm:grid-cols-3">
                 <div
-                  v-for="card in summaryCards"
-                  :key="card.label"
-                  class="rounded-[26px] border p-4 text-left transition dark:border-zinc-800/80"
-                  :class="card.panelClass"
+                  v-for="item in dashboardHighlights"
+                  :key="item.label"
+                  class="flex items-center justify-between gap-3 rounded-[22px] border border-zinc-200/80 bg-white/90 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-950/75"
                 >
-                  <div class="flex items-center justify-between gap-3">
-                    <p class="text-[11px] font-medium uppercase tracking-[0.18em]" :class="card.labelClass">{{ card.label }}</p>
-                    <span class="rounded-full px-2.5 py-1 text-[11px] font-medium" :class="card.badgeClass">{{ card.badge }}</span>
+                  <div>
+                    <p class="text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">{{ item.label }}</p>
+                    <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">{{ item.hint }}</p>
                   </div>
-                  <p class="mt-4 text-[2rem] font-semibold tracking-tight" :class="card.valueClass">{{ card.value }}</p>
-                  <div class="mt-4 h-px bg-zinc-200/80 dark:bg-zinc-800/80" />
-                  <p class="mt-3 text-xs leading-5" :class="card.hintClass">{{ card.hint }}</p>
+                  <p class="text-lg font-semibold tracking-tight text-zinc-950 dark:text-white">{{ item.value }}</p>
                 </div>
               </div>
             </div>
@@ -761,10 +759,10 @@ const applyCustomRange = async () => {
 
 const summaryCards = computed(() => [
   {
-    label: '????',
+    label: '习惯总数',
     value: overview.habit.totalHabits,
-    hint: '????????????',
-    badge: `${overview.habit.activeHabits} ??`,
+    hint: '当前周期内创建的习惯总量',
+    badge: `${overview.habit.activeHabits} 个活跃`,
     panelClass: 'border-zinc-200/80 bg-white/92 dark:border-zinc-800/80 dark:bg-zinc-950/78',
     labelClass: 'text-zinc-500 dark:text-zinc-400',
     valueClass: 'text-zinc-950 dark:text-white',
@@ -772,10 +770,10 @@ const summaryCards = computed(() => [
     badgeClass: 'bg-zinc-100 text-zinc-600 dark:bg-zinc-900 dark:text-zinc-300'
   },
   {
-    label: '????',
+    label: '周期打卡',
     value: overview.habit.totalCheckIns,
-    hint: '????????????',
-    badge: `${overview.habit.consistencyRate}% ??`,
+    hint: '本周期累计完成的打卡次数',
+    badge: `${overview.habit.consistencyRate}% 稳定`,
     panelClass: 'border-zinc-200/80 bg-zinc-50/80 dark:border-zinc-800/80 dark:bg-zinc-900/60',
     labelClass: 'text-zinc-500 dark:text-zinc-400',
     valueClass: 'text-zinc-950 dark:text-white',
@@ -783,10 +781,10 @@ const summaryCards = computed(() => [
     badgeClass: 'bg-white text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'
   },
   {
-    label: '????',
-    value: `${overview.pomodoro.totalFocusHours} ??`,
-    hint: '????????????',
-    badge: `${overview.pomodoro.sessionCount} ???`,
+    label: '专注时长',
+    value: `${overview.pomodoro.totalFocusHours} 小时`,
+    hint: '本周期累计专注投入',
+    badge: `${overview.pomodoro.sessionCount} 次会话`,
     panelClass: 'border-emerald-200/60 bg-emerald-50/80 dark:border-emerald-500/25 dark:bg-emerald-500/10',
     labelClass: 'text-emerald-700 dark:text-emerald-300',
     valueClass: 'text-zinc-950 dark:text-white',
@@ -794,10 +792,10 @@ const summaryCards = computed(() => [
     badgeClass: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-200'
   },
   {
-    label: '????',
+    label: '番茄数量',
     value: overview.pomodoro.totalPomodoros,
-    hint: '?????????',
-    badge: `${formatMinutes(overview.pomodoro.averageSessionFocusSeconds)} ??/?`,
+    hint: '已累计完成的番茄数量',
+    badge: `平均 ${formatMinutes(overview.pomodoro.averageSessionFocusSeconds)} 分钟`,
     panelClass: 'border-zinc-200/80 bg-white/92 dark:border-zinc-800/80 dark:bg-zinc-950/78',
     labelClass: 'text-zinc-500 dark:text-zinc-400',
     valueClass: 'text-zinc-950 dark:text-white',
@@ -808,19 +806,19 @@ const summaryCards = computed(() => [
 
 const dashboardHighlights = computed(() => [
   {
-    label: '?????',
+    label: '习惯稳定度',
     value: `${overview.habit.consistencyRate}%`,
-    hint: '??????'
+    hint: '稳定打卡率'
   },
   {
-    label: '????',
-    value: `${overview.habit.longestStreak} ?`,
-    hint: '????????'
+    label: '最长连击',
+    value: `${overview.habit.longestStreak} 天`,
+    hint: '连续打卡最高天数'
   },
   {
-    label: '????',
+    label: '今日总览',
     value: `${overview.habit.totalCheckIns} / ${overview.pomodoro.totalPomodoros}`,
-    hint: '?? / ??'
+    hint: '习惯 / 专注合计'
   }
 ])
 
@@ -828,22 +826,22 @@ const habitSummaryCards = computed(() => [
   {
     label: '活跃习惯',
     value: overview.habit.activeHabits,
-    hint: '当前周期内有打卡的习惯'
+    hint: '当前仍在执行'
   },
   {
     label: '提醒开启',
     value: overview.habit.reminderEnabledCount,
-    hint: '已开启提醒的习惯数量'
+    hint: '启用提醒的习惯'
   },
   {
     label: '留言开启',
     value: overview.habit.commentEnabledCount,
-    hint: '启用首次留言的习惯数量'
+    hint: '启用首次留言'
   },
   {
     label: '平均打卡',
     value: overview.habit.averageCheckInsPerDay,
-    hint: '平均每天完成次数'
+    hint: '每天平均次数'
   }
 ])
 
@@ -851,22 +849,22 @@ const pomodoroSummaryCards = computed(() => [
   {
     label: '会话数',
     value: overview.pomodoro.sessionCount,
-    hint: '当前统计周期内的专注会话'
+    hint: '已记录专注会话'
   },
   {
     label: '稳定度',
     value: `${overview.pomodoro.focusConsistencyRate}%`,
-    hint: '有专注记录的天数占比'
+    hint: '连续专注稳定'
   },
   {
     label: '单次最长',
     value: `${formatMinutes(overview.pomodoro.longestSessionFocusSeconds)} 分钟`,
-    hint: '历史单次最长专注时长'
+    hint: '最长单次专注'
   },
   {
     label: '平均时长',
     value: `${formatMinutes(overview.pomodoro.averageSessionFocusSeconds)} 分钟`,
-    hint: '每次会话平均专注时长'
+    hint: '每次平均专注'
   }
 ])
 
@@ -875,10 +873,10 @@ const dashboardNarrative = computed(() => {
   const { totalFocusHours, totalPomodoros } = overview.pomodoro
 
   if (totalHabits === 0 && totalPomodoros === 0) {
-    return '先创建一个习惯或启动一轮番茄钟，首页就会开始积累属于你的数据。'
+    return '先从今天开始建立记录，关键数字会慢慢完整起来。'
   }
 
-  return `当前周期内已累计 ${totalCheckIns} 次打卡、${totalFocusHours} 小时专注和 ${totalPomodoros} 个番茄，习惯稳定度约 ${consistencyRate}%。`
+  return `本周期共记录 ${totalCheckIns} 次打卡、${totalFocusHours} 小时专注、${totalPomodoros} 个番茄，整体稳定度 ${consistencyRate}%。`
 })
 
 const pomodoroChartItems = computed(() => {
