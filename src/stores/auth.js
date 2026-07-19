@@ -108,6 +108,29 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  const loginWithCode = async (payload) => {
+    isLoading.value = true
+    try {
+      const response = await authAPI.loginWithCode(payload)
+
+      if (response.success) {
+        setAuthState({
+          nextUser: response.data.user,
+          nextToken: response.data.token,
+          persistToken: true
+        })
+        bootstrapComplete.value = true
+        return { success: true, user: response.data.user }
+      }
+
+      return { success: false, error: response.error, code: response.code }
+    } catch (error) {
+      return { success: false, error: error.error || error.message }
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   const register = async (userData) => {
     isLoading.value = true
     try {
@@ -142,8 +165,6 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  const testLogin = () => bootstrapAuth()
-
   const updateProfile = async (profileData) => {
     isLoading.value = true
     try {
@@ -174,10 +195,10 @@ export const useAuthStore = defineStore('auth', () => {
     isAuthenticated,
     bootstrapAuth,
     login,
+    loginWithCode,
     register,
     logout,
     checkAuth,
-    testLogin,
     updateProfile,
     updateUser
   }

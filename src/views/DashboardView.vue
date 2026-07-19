@@ -75,16 +75,20 @@
           </div>
         </div>
 
-        <div class="mx-auto max-w-6xl px-4 pb-4 pt-12 text-center sm:px-8">
-          <h1 class="text-4xl font-semibold tracking-tight text-zinc-950 dark:text-white sm:text-[3rem]">
-            {{ greeting }}，{{ user?.name || '你' }}
+        <div class="mx-auto max-w-6xl px-4 pb-3 pt-10 text-center sm:px-8">
+          <h1 class="text-[2.65rem] font-semibold tracking-tight text-zinc-950 dark:text-white sm:text-[2.95rem]">
+            {{ greeting }}?{{ user?.name || '?' }}
           </h1>
-          <p class="mt-3 text-sm text-zinc-500 dark:text-zinc-400">{{ currentDate }}</p>
-          <p class="mx-auto mt-4 max-w-3xl text-sm leading-6 text-zinc-600 dark:text-zinc-300">
-            {{ dashboardNarrative }}
-          </p>
+          <div class="mx-auto mt-3 flex max-w-4xl flex-wrap items-center justify-center gap-2">
+            <span class="rounded-full border border-zinc-200 bg-white/90 px-4 py-2 text-xs font-medium text-zinc-500 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80 dark:text-zinc-400">
+              {{ currentDate }}
+            </span>
+            <span class="rounded-full border border-zinc-200 bg-white/90 px-4 py-2 text-xs font-medium leading-5 text-zinc-600 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80 dark:text-zinc-300">
+              {{ dashboardNarrative }}
+            </span>
+          </div>
 
-          <div class="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <div
               v-for="card in summaryCards"
               :key="card.label"
@@ -98,28 +102,6 @@
               <p class="mt-4 text-[2rem] font-semibold tracking-tight" :class="card.valueClass">{{ card.value }}</p>
               <div class="mt-4 h-px bg-zinc-200/80 dark:bg-zinc-800/80" />
               <p class="mt-3 text-xs leading-5" :class="card.hintClass">{{ card.hint }}</p>
-            </div>
-          </div>
-
-          <div class="mt-3 rounded-[28px] border border-zinc-200/80 bg-zinc-50/80 p-5 text-left dark:border-zinc-800 dark:bg-zinc-900/60">
-            <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div>
-                <p class="text-[11px] font-medium uppercase tracking-[0.22em] text-zinc-500 dark:text-zinc-400">数据概览</p>
-                <p class="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-300">先看关键数字，再决定今天的节奏。</p>
-              </div>
-              <div class="grid gap-3 sm:grid-cols-3">
-                <div
-                  v-for="item in dashboardHighlights"
-                  :key="item.label"
-                  class="flex items-center justify-between gap-3 rounded-[22px] border border-zinc-200/80 bg-white/90 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-950/75"
-                >
-                  <div>
-                    <p class="text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">{{ item.label }}</p>
-                    <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">{{ item.hint }}</p>
-                  </div>
-                  <p class="text-lg font-semibold tracking-tight text-zinc-950 dark:text-white">{{ item.value }}</p>
-                </div>
-              </div>
             </div>
           </div>
         </div>
@@ -166,15 +148,15 @@
             </div>
           </BaseCard>
 
-          <div class="xl:h-[33.5rem] xl:min-h-0 xl:flex-none">
+          <div class="xl:h-[32rem] xl:min-h-0 xl:flex-none">
             <PomodoroWorkspace />
           </div>
         </div>
 
         <div class="min-h-0 xl:flex" :style="habitColumnStyle">
-          <BaseCard padding="small" class="h-full w-full overflow-hidden border border-zinc-200/80 bg-white/90 dark:border-zinc-800 dark:bg-zinc-950/75" :hover="false">
-            <div class="flex h-full min-h-0 flex-col space-y-4 pt-2">
-              <div class="flex flex-col gap-2.5 pb-0.5 sm:flex-row sm:items-start sm:justify-between">
+          <BaseCard padding="small" class="h-full min-h-0 w-full overflow-hidden border border-zinc-200/80 bg-white/90 dark:border-zinc-800 dark:bg-zinc-950/75" :hover="false">
+            <div class="flex h-full min-h-0 flex-col gap-2.5 pt-2">
+              <div class="shrink-0 flex flex-col gap-2 pb-0.5 sm:flex-row sm:items-start sm:justify-between">
                 <div class="max-w-[28rem] space-y-1">
                   <h2 class="text-xl font-semibold tracking-tight text-zinc-950 dark:text-white">我的习惯</h2>
                   <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">右侧保持为主工作区，可直接查看进度、批量管理，或进入习惯详情继续完善。</p>
@@ -206,8 +188,8 @@
               </div>
 
               <div class="min-h-0 flex-1 overflow-hidden">
-                <div class="h-full overflow-y-auto pr-0.5 habit-panel-scroll">
-                  <div class="grid auto-rows-[9.25rem] grid-cols-1 gap-3 2xl:grid-cols-2">
+                <div class="habit-panel-scroll h-full min-h-0 overflow-y-auto pr-1" @wheel.stop>
+                  <div class="grid auto-rows-[9.25rem] content-start grid-cols-1 gap-2.5 pb-2 2xl:grid-cols-2">
                     <template v-if="habitStore.isLoading">
                       <div v-for="i in 4" :key="`habit-loading-${i}`" class="rounded-[28px] border border-zinc-200/80 bg-white/85 p-4 dark:border-zinc-800 dark:bg-zinc-950/75">
                         <div class="animate-pulse space-y-3">
@@ -1032,23 +1014,31 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .habit-panel-scroll {
+  min-height: 0;
+  max-height: 100%;
   scrollbar-width: thin;
-  scrollbar-color: rgba(113, 113, 122, 0.45) transparent;
+  scrollbar-color: rgba(82, 82, 91, 0.7) rgba(0, 0, 0, 0.03);
   scrollbar-gutter: stable both-edges;
+  overflow-y: auto;
   overscroll-behavior: contain;
-  padding-bottom: 0.25rem;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 0.5rem;
 }
 
 .habit-panel-scroll::-webkit-scrollbar {
-  width: 8px;
+  width: 10px;
 }
 
 .habit-panel-scroll::-webkit-scrollbar-track {
-  background: transparent;
+  background: rgba(113, 113, 122, 0.08);
+  border-radius: 9999px;
 }
 
 .habit-panel-scroll::-webkit-scrollbar-thumb {
   border-radius: 9999px;
-  background: rgba(113, 113, 122, 0.35);
+  border: 2px solid transparent;
+  background: rgba(82, 82, 91, 0.6);
+  background-clip: padding-box;
 }
 </style>
