@@ -1,0 +1,387 @@
+.title-hero {
+  @apply text-4xl md:text-5xl lg:text-6xl font-black tracking-tight leading-tight text-zinc-950 dark:text-white;
+}
+
+.title-primary {
+  @apply text-2xl md:text-3xl font-bold tracking-tight leading-tight text-zinc-950 dark:text-white;
+}
+
+.title-secondary {
+  @apply text-xl md:text-2xl font-semibold tracking-tight leading-snug text-zinc-900 dark:text-zinc-100;
+}
+
+.title-tertiary {
+  @apply text-lg md:text-xl font-medium tracking-tight leading-snug text-zinc-800 dark:text-zinc-200;
+}
+
+.text-body-large {
+  @apply text-lg font-normal leading-relaxed text-zinc-700 dark:text-zinc-300;
+}
+
+.text-body {
+  @apply text-base font-normal leading-relaxed text-zinc-600 dark:text-zinc-400;
+}
+
+.text-body-small {
+  @apply text-sm font-normal leading-relaxed text-zinc-500 dark:text-zinc-500;
+}
+
+.text-emphasis {
+  @apply font-semibold text-zinc-950 dark:text-white;
+}
+
+.text-accent {
+  @apply font-medium text-zinc-700 dark:text-zinc-300;
+}
+
+.btn-enhanced {
+  @apply relative overflow-hidden transform-gpu transition-all duration-200 ease-out;
+}
+
+.btn-enhanced::before {
+  content: '';
+  @apply absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full transition-transform duration-700 ease-out;
+  pointer-events: none;
+}
+
+.btn-enhanced:hover::before {
+  @apply translate-x-full;
+}
+
+.btn-enhanced:hover {
+  @apply shadow-2xl -translate-y-0.5;
+}
+
+.btn-enhanced:active {
+  @apply scale-95 transition-transform duration-100;
+}
+
+.card-enhanced {
+  @apply relative overflow-hidden transition-all duration-300 ease-out transform-gpu;
+}
+
+.card-enhanced::before {
+  content: '';
+  @apply absolute inset-0 rounded-[inherit] bg-gradient-to-r from-white/0 via-white/5 to-white/0 opacity-0 transition-opacity duration-300;
+  pointer-events: none;
+}
+
+.card-enhanced:hover::before {
+  @apply opacity-100;
+}
+
+.input-enhanced {
+  @apply transition-all duration-200 ease-out transform-gpu;
+}
+
+.input-enhanced:focus {
+  @apply ring-4 ring-white/10 scale-[1.01] shadow-lg;
+}
+
+.icon-enhanced {
+  @apply transition-transform duration-200 ease-out transform-gpu;
+}
+
+.icon-enhanced:hover {
+  @apply scale-110;
+}
+
+.list-item-enhanced {
+  @apply transition-all duration-200 ease-out transform-gpu;
+  @apply hover:bg-zinc-100 hover:translate-x-1 hover:shadow-md dark:hover:bg-zinc-900;
+}
+
+.animate-page-enter {
+  animation: pageEnter 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.animate-stagger-1 {
+  animation: staggerIn 0.45s cubic-bezier(0.4, 0, 0.2, 1) 0.08s both;
+}
+
+.animate-stagger-2 {
+  animation: staggerIn 0.45s cubic-bezier(0.4, 0, 0.2, 1) 0.16s both;
+}
+
+.animate-stagger-3 {
+  animation: staggerIn 0.45s cubic-bezier(0.4, 0, 0.2, 1) 0.24s both;
+}
+
+.animate-stagger-4 {
+  animation: staggerIn 0.45s cubic-bezier(0.4, 0, 0.2, 1) 0.32s both;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-float-delayed {
+  animation: float 3s ease-in-out infinite 1.5s;
+}
+
+.animate-pulse-soft {
+  animation: pulseSoft 2s ease-in-out infinite;
+}
+
+.animate-gradient {
+  background-size: 200% 200%;
+  animation: gradientShift 3s ease infinite;
+}
+
+.animate-typewriter {
+  animation: typewriter 2s steps(40) 1s both;
+}
+
+.animate-bounce-in {
+  animation: bounceIn 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.animate-slide-in-left {
+  animation: slideInLeft 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.animate-slide-in-up {
+  animation: slideInUp 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.animate-zoom-in {
+  animation: zoomIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.animate-rotate-in {
+  animation: rotateIn 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.animate-fade-in-down {
+  animation: fadeInDown 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.animate-elastic {
+  animation: elastic 0.65s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.brand-gradient {
+  @apply bg-gradient-to-br from-zinc-900 via-zinc-800 to-black;
+}
+
+.brand-gradient-text {
+  @apply bg-gradient-to-r from-zinc-900 to-zinc-500 dark:from-white dark:to-zinc-300 bg-clip-text text-transparent;
+}
+
+.brand-shadow {
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.12), 0 10px 10px -5px rgba(0, 0, 0, 0.05);
+}
+
+.brand-shadow-lg {
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.14), 0 10px 10px -5px rgba(0, 0, 0, 0.06);
+}
+
+.brand-border {
+  @apply border-2 border-zinc-300 dark:border-zinc-700;
+}
+
+.brand-bg {
+  @apply bg-gradient-to-br from-zinc-50 to-zinc-100 dark:from-zinc-950 dark:to-black;
+}
+
+.glass-enhanced {
+  @apply bg-white/80 dark:bg-zinc-950/80 backdrop-blur-xl border border-white/20 dark:border-zinc-800/60 shadow-2xl;
+}
+
+.neon-glow {
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.08), 0 0 40px rgba(255, 255, 255, 0.04);
+}
+
+.card-3d {
+  @apply transform-gpu;
+  transform-style: preserve-3d;
+  transition: transform 0.3s ease;
+}
+
+.card-3d:hover {
+  transform: rotateY(4deg) rotateX(4deg);
+}
+
+@keyframes pageEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.985);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes staggerIn {
+  0% {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes typewriter {
+  0% {
+    width: 0;
+  }
+  100% {
+    width: 100%;
+  }
+}
+
+@keyframes bounceIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+  70% {
+    transform: scale(0.94);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slideInLeft {
+  0% {
+    opacity: 0;
+    transform: translateX(-64px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInRight {
+  0% {
+    opacity: 0;
+    transform: translateX(64px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(32px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes zoomIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes rotateIn {
+  0% {
+    opacity: 0;
+    transform: rotate(-90deg) scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: rotate(0deg) scale(1);
+  }
+}
+
+@keyframes fadeInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInDown {
+  0% {
+    opacity: 0;
+    transform: translateY(-24px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes elastic {
+  0% {
+    transform: scale(0.9);
+  }
+  50% {
+    transform: scale(1.04);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .btn-enhanced:hover,
+  .card-enhanced:hover,
+  .icon-enhanced:hover,
+  .list-item-enhanced:hover {
+    transform: none;
+  }
+}

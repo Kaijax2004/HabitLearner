@@ -1,0 +1,6 @@
+Selected ambient audio assets are derived from the open-source Moodist project.
+
+Repository: https://github.com/remvze/moodist
+License: MIT for code; some sound assets in the upstream project are licensed under Pixabay Content License or CC0.
+
+Please keep attribution intact when redistributing these bundled audio files.
