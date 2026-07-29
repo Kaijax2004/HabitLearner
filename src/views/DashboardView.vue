@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <AppLayout title="HabitLearner">
     <div class="space-y-5">
       <BaseCard class="relative overflow-visible border border-zinc-200/80 bg-white/90 dark:border-zinc-800 dark:bg-zinc-950/75" :hover="false">
@@ -19,7 +19,7 @@
               v-if="showRangePopover"
               class="absolute left-0 top-full z-20 mt-3 w-[320px] rounded-[24px] border border-zinc-200 bg-white/96 p-4 shadow-[0_18px_50px_rgba(0,0,0,0.08)] backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/96"
             >
-              <p class="text-xs font-medium uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">选择统计周期</p>
+              <p class="text-xs font-medium uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">閫夋嫨缁熻鍛ㄦ湡</p>
 
               <div class="mt-3 grid grid-cols-2 gap-2">
                 <button
@@ -38,7 +38,7 @@
 
               <div v-if="selectedRange === 'custom'" class="mt-4 space-y-3 rounded-[20px] border border-zinc-200/80 bg-zinc-50/80 p-3 dark:border-zinc-800 dark:bg-zinc-900/70">
                 <div>
-                  <label class="text-xs font-medium text-zinc-500 dark:text-zinc-400">开始日期</label>
+                  <label class="text-xs font-medium text-zinc-500 dark:text-zinc-400">寮€濮嬫棩鏈</label>
                   <input
                     v-model="customStartDate"
                     type="date"
@@ -46,7 +46,7 @@
                   />
                 </div>
                 <div>
-                  <label class="text-xs font-medium text-zinc-500 dark:text-zinc-400">结束日期</label>
+                  <label class="text-xs font-medium text-zinc-500 dark:text-zinc-400">缁撴潫鏃ユ湡</label>
                   <input
                     v-model="customEndDate"
                     type="date"
@@ -59,7 +59,7 @@
                     class="flex-1 rounded-2xl border border-zinc-200 px-4 py-2.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-900"
                     @click="closeRangePopover"
                   >
-                    取消
+                    鍙栨秷
                   </button>
                   <button
                     type="button"
@@ -67,7 +67,7 @@
                     :disabled="isOverviewLoading"
                     @click="applyCustomRange"
                   >
-                    {{ isOverviewLoading ? '加载中...' : '应用' }}
+                    {{ isOverviewLoading ? '鍔犺浇涓?..' : '搴旂敤' }}
                   </button>
                 </div>
               </div>
@@ -77,7 +77,7 @@
 
         <div class="mx-auto max-w-6xl px-4 pb-3 pt-10 text-center sm:px-8">
           <h1 class="text-[2.65rem] font-semibold tracking-tight text-zinc-950 dark:text-white sm:text-[2.95rem]">
-            {{ greeting }}?{{ user?.name || '?' }}
+            {{ dashboardGreeting }}
           </h1>
           <div class="mx-auto mt-3 flex max-w-4xl flex-wrap items-center justify-center gap-2">
             <span class="rounded-full border border-zinc-200 bg-white/90 px-4 py-2 text-xs font-medium text-zinc-500 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80 dark:text-zinc-400">
@@ -113,15 +113,15 @@
             <div class="space-y-4">
               <div class="flex items-start justify-between gap-4">
                 <div>
-                  <p class="text-xs font-medium uppercase tracking-[0.24em] text-zinc-500 dark:text-zinc-400">今日微学习</p>
-                  <h2 class="mt-2 text-2xl font-semibold tracking-tight text-zinc-950 dark:text-white">保持输入，也保持输出</h2>
+                  <p class="text-xs font-medium uppercase tracking-[0.24em] text-zinc-500 dark:text-zinc-400">浠婃棩寰涔</p>
+                  <h2 class="mt-2 text-2xl font-semibold tracking-tight text-zinc-950 dark:text-white">淇濇寔杈撳叆锛屼篃淇濇寔杈撳嚭</h2>
                 </div>
                 <button
                   type="button"
                   class="rounded-2xl border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-900 transition hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white"
                   @click="goToLearning"
                 >
-                  查看课程
+                  鏌ョ湅璇剧▼
                 </button>
               </div>
 
@@ -133,14 +133,13 @@
                     </svg>
                   </div>
                   <div class="min-w-0 flex-1">
-                    <h3 class="text-lg font-semibold text-zinc-950 dark:text-white">习惯、专注与时间管理</h3>
+                    <h3 class="text-lg font-semibold text-zinc-950 dark:text-white">涔犳儻銆佷笓娉ㄤ笌鏃堕棿绠＄悊</h3>
                     <p class="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400">
-                      先用文本微课程配合番茄钟做沉淀式学习，后续再接视频课程、主题学习和 AI 学习卡片也能自然延展。
-                    </p>
+                      鍏堢敤鏂囨湰寰绋嬮厤鍚堢暘鑼勯挓鍋氭矇娣€寮忓涔狅紝鍚庣画鍐嶆帴瑙嗛璇剧▼銆佷富棰樺涔犲拰 AI 瀛︿範鍗＄墖涔熻兘鑷劧寤跺睍銆?                    </p>
                     <div class="mt-4 flex flex-wrap items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
-                      <span class="rounded-full bg-zinc-100 px-3 py-1 dark:bg-zinc-800">中文内容</span>
-                      <span class="rounded-full bg-zinc-100 px-3 py-1 dark:bg-zinc-800">通用用户</span>
-                      <span class="rounded-full bg-zinc-100 px-3 py-1 dark:bg-zinc-800">持续扩展中</span>
+                      <span class="rounded-full bg-zinc-100 px-3 py-1 dark:bg-zinc-800">涓枃鍐呭</span>
+                      <span class="rounded-full bg-zinc-100 px-3 py-1 dark:bg-zinc-800">閫氱敤鐢ㄦ埛</span>
+                      <span class="rounded-full bg-zinc-100 px-3 py-1 dark:bg-zinc-800">鎸佺画鎵╁睍涓</span>
                     </div>
                   </div>
                 </div>
@@ -158,8 +157,8 @@
             <div class="flex h-full min-h-0 flex-col gap-2.5 pt-2">
               <div class="shrink-0 flex flex-col gap-2 pb-0.5 sm:flex-row sm:items-start sm:justify-between">
                 <div class="max-w-[28rem] space-y-1">
-                  <h2 class="text-xl font-semibold tracking-tight text-zinc-950 dark:text-white">我的习惯</h2>
-                  <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">右侧保持为主工作区，可直接查看进度、批量管理，或进入习惯详情继续完善。</p>
+                  <h2 class="text-xl font-semibold tracking-tight text-zinc-950 dark:text-white">鎴戠殑涔犳儻</h2>
+                  <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">鍙充晶淇濇寔涓轰富宸ヤ綔鍖猴紝鍙洿鎺ユ煡鐪嬭繘搴︺€佹壒閲忕鐞嗭紝鎴栬繘鍏ヤ範鎯鎯呯户缁畬鍠勩€</p>
                 </div>
 
                 <div class="flex flex-wrap items-center gap-2 sm:justify-end">
@@ -169,20 +168,19 @@
                     class="rounded-2xl border border-red-200 bg-red-50 px-3.5 py-2 text-sm font-medium text-red-600 transition hover:bg-red-100 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300"
                     @click="showDeleteConfirm = true"
                   >
-                    删除 {{ selectedHabits.length }} 项
-                  </button>
+                    鍒犻櫎 {{ selectedHabits.length }} 椤?                  </button>
                   <button
                     type="button"
                     class="rounded-2xl border border-zinc-200 bg-white px-3.5 py-2 text-sm font-medium text-zinc-900 transition hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white"
                     @click="toggleEditMode"
                   >
-                    {{ isEditMode ? '完成选择' : '批量编辑' }}
+                    {{ isEditMode ? '瀹屾垚閫夋嫨' : '鎵归噺缂栬緫' }}
                   </button>
                   <router-link
                     to="/habit/create"
                     class="rounded-2xl bg-zinc-950 px-3.5 py-2 text-sm font-medium text-white transition hover:bg-zinc-800 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-100"
                   >
-                    新建习惯
+                    鏂板缓涔犳儻
                   </router-link>
                 </div>
               </div>
@@ -229,14 +227,13 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 6v12m6-6H6" />
                       </svg>
                     </div>
-                    <h3 class="mt-5 text-lg font-semibold text-zinc-950 dark:text-white">还没有习惯</h3>
-                    <p class="mt-2 text-sm text-zinc-500 dark:text-zinc-400">从一个最容易开始的习惯入手，先把第一条记录建立起来。</p>
+                    <h3 class="mt-5 text-lg font-semibold text-zinc-950 dark:text-white">杩樻病鏈変範鎯</h3>
+                    <p class="mt-2 text-sm text-zinc-500 dark:text-zinc-400">浠庝竴涓渶瀹规槗寮€濮嬬殑涔犳儻鍏ユ墜锛屽厛鎶婄涓€鏉¤褰曞缓绔嬭捣鏉ャ€</p>
                     <router-link
                       to="/habit/create"
                       class="mt-6 inline-flex rounded-2xl bg-zinc-950 px-4 py-3 text-sm font-medium text-white transition hover:bg-zinc-800 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-100"
                     >
-                      创建第一个习惯
-                    </router-link>
+                      鍒涘缓绗竴涓範鎯?                    </router-link>
                   </div>
                 </div>
               </div>
@@ -250,12 +247,11 @@
           <div class="space-y-5">
             <div class="flex items-start justify-between gap-4">
               <div>
-                <p class="text-xs font-medium uppercase tracking-[0.24em] text-zinc-500 dark:text-zinc-400">习惯统计</p>
-                <h2 class="mt-2 text-2xl font-semibold tracking-tight text-zinc-950 dark:text-white">更多维度的习惯数据</h2>
+                <p class="text-xs font-medium uppercase tracking-[0.24em] text-zinc-500 dark:text-zinc-400">涔犳儻缁熻</p>
+                <h2 class="mt-2 text-2xl font-semibold tracking-tight text-zinc-950 dark:text-white">鏇村缁村害鐨勪範鎯暟鎹</h2>
               </div>
               <div class="rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-600 dark:bg-zinc-900 dark:text-zinc-300">
-                最高连击 {{ overview.habit.longestStreak }} 天
-              </div>
+                鏈€楂樿繛鍑?{{ overview.habit.longestStreak }} 澶?              </div>
             </div>
 
             <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -272,54 +268,53 @@
 
             <div class="rounded-[28px] border border-zinc-200/80 bg-zinc-50/80 p-5 dark:border-zinc-800 dark:bg-zinc-900/60">
               <div class="flex items-center justify-between gap-3">
-                <p class="text-sm font-medium text-zinc-700 dark:text-zinc-200">习惯完成稳定度</p>
+                <p class="text-sm font-medium text-zinc-700 dark:text-zinc-200">涔犳儻瀹屾垚绋冲畾搴</p>
                 <p class="text-sm font-semibold text-zinc-950 dark:text-white">{{ overview.habit.consistencyRate }}%</p>
               </div>
               <div class="mt-3 h-2 rounded-full bg-zinc-200 dark:bg-zinc-800">
                 <div class="h-2 rounded-full bg-zinc-950 transition-all duration-300 dark:bg-white" :style="{ width: `${overview.habit.consistencyRate}%` }" />
               </div>
               <p class="mt-3 text-sm text-zinc-500 dark:text-zinc-400">
-                平均每天 {{ overview.habit.averageCheckInsPerDay }} 次打卡，提醒开启 {{ overview.habit.reminderEnabledCount }} 个，首次留言开启 {{ overview.habit.commentEnabledCount }} 个。
-              </p>
+                骞冲潎姣忓ぉ {{ overview.habit.averageCheckInsPerDay }} 娆℃墦鍗★紝鎻愰啋寮€鍚?{{ overview.habit.reminderEnabledCount }} 涓紝棣栨鐣欒█寮€鍚?{{ overview.habit.commentEnabledCount }} 涓€?              </p>
             </div>
 
             <div class="grid gap-4 lg:grid-cols-2">
               <div class="rounded-[28px] border border-zinc-200/80 bg-zinc-50/80 p-5 dark:border-zinc-800 dark:bg-zinc-900/60">
-                <p class="text-xs font-medium uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">类型分布</p>
+                <p class="text-xs font-medium uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">绫诲瀷鍒嗗竷</p>
                 <div class="mt-4 space-y-3">
                   <div v-for="item in overview.habit.categoryBreakdown" :key="item.name" class="space-y-1.5">
                     <div class="flex items-center justify-between gap-3 text-sm">
                       <span class="truncate text-zinc-700 dark:text-zinc-200">{{ item.name }}</span>
-                      <span class="text-zinc-500 dark:text-zinc-400">{{ item.totalCount }} 次</span>
+                      <span class="text-zinc-500 dark:text-zinc-400">{{ item.totalCount }} 娆</span>
                     </div>
                     <div class="h-2 rounded-full bg-zinc-200 dark:bg-zinc-800">
                       <div class="h-2 rounded-full bg-zinc-950 transition-all duration-300 dark:bg-white" :style="{ width: `${item.percent}%` }" />
                     </div>
                   </div>
-                  <div v-if="!overview.habit.categoryBreakdown.length" class="text-sm text-zinc-500 dark:text-zinc-400">当前周期还没有分类数据。</div>
+                  <div v-if="!overview.habit.categoryBreakdown.length" class="text-sm text-zinc-500 dark:text-zinc-400">褰撳墠鍛ㄦ湡杩樻病鏈夊垎绫绘暟鎹€</div>
                 </div>
               </div>
 
               <div class="rounded-[28px] border border-zinc-200/80 bg-zinc-50/80 p-5 dark:border-zinc-800 dark:bg-zinc-900/60">
-                <p class="text-xs font-medium uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">表现排行</p>
+                <p class="text-xs font-medium uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">琛ㄧ幇鎺掕</p>
                 <div class="mt-4 space-y-3">
                   <div v-for="item in overview.habit.rankedHabits" :key="item.id" class="rounded-[20px] border border-zinc-200/70 bg-white/90 p-4 dark:border-zinc-800 dark:bg-zinc-950/70">
                     <div class="flex items-start justify-between gap-3">
                       <div>
                         <p class="text-sm font-medium text-zinc-950 dark:text-white">{{ item.name }}</p>
-                        <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{{ item.category }} · {{ item.frequency }}</p>
+                        <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{{ item.category }} 路 {{ item.frequency }}</p>
                       </div>
                       <div class="text-right">
-                        <p class="text-sm font-semibold text-zinc-950 dark:text-white">{{ item.totalCount }} 次</p>
+                        <p class="text-sm font-semibold text-zinc-950 dark:text-white">{{ item.totalCount }} 娆</p>
                         <p class="text-xs text-zinc-500 dark:text-zinc-400">{{ item.completionRate }}%</p>
                       </div>
                     </div>
                     <div class="mt-3 h-2 rounded-full bg-zinc-200 dark:bg-zinc-800">
                       <div class="h-2 rounded-full bg-emerald-500 transition-all duration-300" :style="{ width: `${Math.min(item.completionRate, 100)}%` }" />
                     </div>
-                    <p class="mt-2 text-xs text-zinc-500 dark:text-zinc-400">日均 {{ item.averagePerDay }} 次 · 连击 {{ item.streak }} 天</p>
+                    <p class="mt-2 text-xs text-zinc-500 dark:text-zinc-400">鏃ュ潎 {{ item.averagePerDay }} 娆?路 杩炲嚮 {{ item.streak }} 澶</p>
                   </div>
-                  <div v-if="!overview.habit.rankedHabits.length" class="text-sm text-zinc-500 dark:text-zinc-400">当前周期还没有习惯打卡记录。</div>
+                  <div v-if="!overview.habit.rankedHabits.length" class="text-sm text-zinc-500 dark:text-zinc-400">褰撳墠鍛ㄦ湡杩樻病鏈変範鎯墦鍗¤褰曘€</div>
                 </div>
               </div>
             </div>
@@ -330,11 +325,11 @@
           <div class="space-y-5">
             <div class="flex items-start justify-between gap-4">
               <div>
-                <p class="text-xs font-medium uppercase tracking-[0.24em] text-zinc-500 dark:text-zinc-400">番茄钟统计</p>
-                <h2 class="mt-2 text-2xl font-semibold tracking-tight text-zinc-950 dark:text-white">专注时间都去了哪里</h2>
+                <p class="text-xs font-medium uppercase tracking-[0.24em] text-zinc-500 dark:text-zinc-400">鐣寗閽熺粺璁</p>
+                <h2 class="mt-2 text-2xl font-semibold tracking-tight text-zinc-950 dark:text-white">涓撴敞鏃堕棿閮藉幓浜嗗摢閲</h2>
               </div>
               <div class="rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-600 dark:bg-zinc-900 dark:text-zinc-300">
-                稳定度 {{ overview.pomodoro.focusConsistencyRate }}%
+                绋冲畾搴?{{ overview.pomodoro.focusConsistencyRate }}%
               </div>
             </div>
 
@@ -350,12 +345,12 @@
               </div>
             </div>
 
-            <div class="grid gap-4 lg:grid-cols-[minmax(0,0.96fr)_minmax(0,1.04fr)]">
+            <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.02fr)] 2xl:grid-cols-[minmax(0,0.96fr)_minmax(0,1.04fr)]">
               <div class="rounded-[32px] border border-zinc-200/80 bg-zinc-50/80 p-5 dark:border-zinc-800 dark:bg-zinc-900/60">
                 <div class="flex items-center justify-between gap-3">
                   <div>
                     <p class="text-xs font-medium uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">任务占比</p>
-                    <p class="mt-2 text-sm text-zinc-500 dark:text-zinc-400">按任务标题汇总当前周期的专注分布，悬停后可查看更细的明细。</p>
+                    <p class="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400">按任务标题汇总当前周期的专注分布，悬停后可查看更细的明细。</p>
                   </div>
                   <div class="rounded-full border border-zinc-200/80 bg-white/90 px-3 py-1.5 text-right dark:border-zinc-800 dark:bg-zinc-950/70">
                     <p class="text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">任务数</p>
@@ -363,11 +358,11 @@
                   </div>
                 </div>
 
-                <div class="mt-6 grid gap-4 xl:grid-cols-[minmax(0,0.9fr)_minmax(220px,0.82fr)] xl:items-center">
-                  <div class="flex items-center justify-center">
-                    <div class="relative flex w-full max-w-[19rem] flex-col items-center">
+                <div class="mt-6 grid gap-5 2xl:grid-cols-[minmax(0,1fr)_minmax(260px,0.82fr)] 2xl:items-center">
+                  <div class="flex items-center justify-center 2xl:justify-start">
+                    <div class="relative flex w-full max-w-[20rem] flex-col items-center">
                       <div
-                        class="mb-4 min-h-[3.75rem] w-full max-w-[13rem] rounded-[999px] border border-white/70 bg-white/88 px-4 py-2 text-center shadow-[0_18px_40px_rgba(15,23,42,0.08)] backdrop-blur dark:border-white/10 dark:bg-zinc-950/82"
+                        class="mb-4 min-h-[3.75rem] w-full max-w-[14rem] rounded-[999px] border border-white/70 bg-white/88 px-4 py-2 text-center shadow-[0_18px_40px_rgba(15,23,42,0.08)] backdrop-blur dark:border-white/10 dark:bg-zinc-950/82"
                       >
                         <p class="truncate text-[11px] font-medium tracking-[0.05em] text-zinc-500 dark:text-zinc-400">
                           {{ activePomodoroTask?.title || '悬停环图查看任务' }}
@@ -377,23 +372,23 @@
                         </p>
                       </div>
 
-                      <div class="relative h-60 w-60">
-                      <svg viewBox="0 0 240 240" class="h-full w-full overflow-visible">
-                        <circle cx="120" cy="120" r="92" class="fill-none stroke-zinc-200/90 dark:stroke-zinc-800" stroke-width="28" />
-                        <path
-                          v-for="(item, index) in pomodoroChartItems"
-                          :key="`${item.title}-${index}`"
-                          :d="item.path"
-                          :fill="item.color"
-                          class="cursor-pointer transition-all duration-200"
-                          :class="hoveredPomodoroSlice === index ? 'opacity-100 drop-shadow-[0_8px_18px_rgba(15,23,42,0.18)]' : 'opacity-92 hover:opacity-100'"
-                          tabindex="0"
-                          @mouseenter="setPomodoroHover(index)"
-                          @mouseleave="setPomodoroHover(null)"
-                          @focus="setPomodoroHover(index)"
-                          @blur="setPomodoroHover(null)"
-                        />
-                      </svg>
+                      <div class="relative aspect-square w-full max-w-[15rem] sm:max-w-[16rem] xl:max-w-[17rem]">
+                        <svg viewBox="0 0 240 240" class="h-full w-full overflow-visible">
+                          <circle cx="120" cy="120" r="92" class="fill-none stroke-zinc-200/90 dark:stroke-zinc-800" stroke-width="28" />
+                          <path
+                            v-for="(item, index) in pomodoroChartItems"
+                            :key="`${item.title}-${index}`"
+                            :d="item.path"
+                            :fill="item.color"
+                            class="cursor-pointer transition-all duration-200"
+                            :class="hoveredPomodoroSlice === index ? 'opacity-100 drop-shadow-[0_8px_18px_rgba(15,23,42,0.18)]' : 'opacity-92 hover:opacity-100'"
+                            tabindex="0"
+                            @mouseenter="setPomodoroHover(index)"
+                            @mouseleave="setPomodoroHover(null)"
+                            @focus="setPomodoroHover(index)"
+                            @blur="setPomodoroHover(null)"
+                          />
+                        </svg>
 
                         <div class="absolute inset-[25%] rounded-full border border-zinc-200 bg-white/96 shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] dark:border-zinc-800 dark:bg-zinc-950/96" />
                         <div class="absolute inset-[25%] flex flex-col items-center justify-center text-center">
@@ -405,13 +400,13 @@
                     </div>
                   </div>
 
-                  <div class="space-y-3">
+                  <div class="mx-auto w-full max-w-[24rem] space-y-3 2xl:mx-0 2xl:max-w-none">
                     <div class="rounded-[24px] border border-zinc-200/70 bg-white/92 p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950/72">
                       <div class="flex items-center gap-3">
                         <span class="h-3 w-3 rounded-full" :style="{ backgroundColor: activePomodoroTask?.color || '#18181b' }" />
                         <div class="min-w-0">
                           <p class="truncate text-sm font-semibold text-zinc-950 dark:text-white">{{ activePomodoroTask?.title || '等待专注数据' }}</p>
-                          <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{{ activePomodoroTask ? '当前悬停任务的详细数据' : '开始一轮专注后，这里会显示任务详情' }}</p>
+                          <p class="mt-1 text-xs leading-5 text-zinc-500 dark:text-zinc-400">{{ activePomodoroTask ? '当前悬停任务的详细数据会在这里同步展示。' : '开始一轮专注后，这里会显示任务详情。' }}</p>
                         </div>
                       </div>
 
@@ -431,7 +426,7 @@
                       </div>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-3 text-sm text-zinc-600 dark:text-zinc-300">
+                    <div class="grid gap-3 text-sm text-zinc-600 sm:grid-cols-2 dark:text-zinc-300">
                       <div class="rounded-[20px] border border-zinc-200/70 bg-white/90 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-950/70">上午 {{ formatHours(overview.pomodoro.focusTimeBuckets.morning) }} 小时</div>
                       <div class="rounded-[20px] border border-zinc-200/70 bg-white/90 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-950/70">下午 {{ formatHours(overview.pomodoro.focusTimeBuckets.afternoon) }} 小时</div>
                       <div class="rounded-[20px] border border-zinc-200/70 bg-white/90 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-950/70">晚上 {{ formatHours(overview.pomodoro.focusTimeBuckets.evening) }} 小时</div>
@@ -458,18 +453,18 @@
                           <span class="h-2.5 w-2.5 rounded-full" :style="{ backgroundColor: item.color }" />
                           <p class="truncate text-sm font-medium text-zinc-950 dark:text-white">{{ item.title }}</p>
                         </div>
-                        <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{{ item.pomodoros }} 个番茄 · {{ item.sessionCount }} 次会话</p>
+                        <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{{ item.pomodoros }} 涓暘鑼?路 {{ item.sessionCount }} 娆′細璇</p>
                       </div>
                       <div class="text-right">
                         <p class="text-sm font-semibold text-zinc-950 dark:text-white">{{ item.percent }}%</p>
-                        <p class="text-xs text-zinc-500 dark:text-zinc-400">{{ item.focusHours }} 小时</p>
+                        <p class="text-xs text-zinc-500 dark:text-zinc-400">{{ item.focusHours }} 灏忔椂</p>
                       </div>
                     </div>
                     <div class="mt-3 h-2 rounded-full bg-zinc-200/90 dark:bg-zinc-800">
                       <div class="h-2 rounded-full transition-all duration-300" :style="{ width: `${Math.min(item.percent, 100)}%`, backgroundColor: item.color }" />
                     </div>
                   </div>
-                  <div v-if="!pomodoroChartItems.length" class="text-sm text-zinc-500 dark:text-zinc-400">开始使用番茄钟后，这里会自动按任务汇总。</div>
+                  <div v-if="!pomodoroChartItems.length" class="text-sm text-zinc-500 dark:text-zinc-400">寮€濮嬩娇鐢ㄧ暘鑼勯挓鍚庯紝杩欓噷浼氳嚜鍔ㄦ寜浠诲姟姹囨€汇€</div>
                 </div>
               </div>
             </div>
@@ -481,8 +476,8 @@
     <Teleport to="body">
       <div v-if="showDeleteConfirm" class="fixed inset-0 z-[85] flex items-center justify-center bg-black/50 px-4 backdrop-blur-sm">
         <div class="w-full max-w-md rounded-[28px] border border-zinc-200 bg-white p-6 shadow-2xl dark:border-zinc-800 dark:bg-zinc-950">
-          <h3 class="text-lg font-semibold text-zinc-950 dark:text-white">确认删除</h3>
-          <p class="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400">你选择了 {{ selectedHabits.length }} 个习惯。删除后无法恢复，建议再确认一次。</p>
+          <h3 class="text-lg font-semibold text-zinc-950 dark:text-white">纭鍒犻櫎</h3>
+          <p class="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400">浣犻€夋嫨浜?{{ selectedHabits.length }} 涓範鎯€傚垹闄ゅ悗鏃犳硶鎭㈠锛屽缓璁啀纭涓€娆°€</p>
 
           <div class="mt-6 flex gap-3">
             <button
@@ -490,14 +485,14 @@
               class="flex-1 rounded-2xl border border-zinc-200 px-4 py-3 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-900"
               @click="showDeleteConfirm = false"
             >
-              取消
+              鍙栨秷
             </button>
             <button
               type="button"
               class="flex-1 rounded-2xl bg-red-600 px-4 py-3 text-sm font-medium text-white transition hover:bg-red-500"
               @click="confirmDelete"
             >
-              确认删除
+              纭鍒犻櫎
             </button>
           </div>
         </div>
@@ -522,7 +517,7 @@ import { formatLocalDateKey } from '@/utils/date.js'
 const createEmptyOverview = () => ({
   period: {
     range: 'today',
-    label: '今日',
+    label: '浠婃棩',
     startDate: formatLocalDateKey(),
     endDate: formatLocalDateKey(),
     dayCount: 1
@@ -632,7 +627,7 @@ const periodLabel = computed(() => {
     return `${customStartDate.value} 至 ${customEndDate.value}`
   }
 
-  return rangeOptions.find((option) => option.value === selectedRange.value)?.label || '今日'
+  return rangeOptions.find((option) => option.value === selectedRange.value)?.label || '今天'
 })
 
 const currentDate = computed(() => new Intl.DateTimeFormat('zh-CN', {
@@ -649,8 +644,13 @@ const greeting = computed(() => {
   return '晚上好'
 })
 
+const dashboardGreeting = computed(() => {
+  const name = user.value?.name?.trim()
+  return name ? `${greeting.value} ${name}` : greeting.value
+})
+
 const rangeOptions = [
-  { value: 'today', label: '今日' },
+  { value: 'today', label: '今天' },
   { value: '7d', label: '最近 7 天' },
   { value: '30d', label: '最近 30 天' },
   { value: 'custom', label: '自定义' }
@@ -776,7 +776,7 @@ const summaryCards = computed(() => [
   {
     label: '番茄数量',
     value: overview.pomodoro.totalPomodoros,
-    hint: '已累计完成的番茄数量',
+    hint: '已累计完成的番茄总量',
     badge: `平均 ${formatMinutes(overview.pomodoro.averageSessionFocusSeconds)} 分钟`,
     panelClass: 'border-zinc-200/80 bg-white/92 dark:border-zinc-800/80 dark:bg-zinc-950/78',
     labelClass: 'text-zinc-500 dark:text-zinc-400',
@@ -790,12 +790,12 @@ const dashboardHighlights = computed(() => [
   {
     label: '习惯稳定度',
     value: `${overview.habit.consistencyRate}%`,
-    hint: '稳定打卡率'
+    hint: '连续打卡的稳定程度'
   },
   {
     label: '最长连击',
     value: `${overview.habit.longestStreak} 天`,
-    hint: '连续打卡最高天数'
+    hint: '单个习惯的最长连续天数'
   },
   {
     label: '今日总览',
@@ -813,12 +813,12 @@ const habitSummaryCards = computed(() => [
   {
     label: '提醒开启',
     value: overview.habit.reminderEnabledCount,
-    hint: '启用提醒的习惯'
+    hint: '已启用提醒的习惯'
   },
   {
     label: '留言开启',
     value: overview.habit.commentEnabledCount,
-    hint: '启用首次留言'
+    hint: '已启用首次留言'
   },
   {
     label: '平均打卡',
@@ -836,7 +836,7 @@ const pomodoroSummaryCards = computed(() => [
   {
     label: '稳定度',
     value: `${overview.pomodoro.focusConsistencyRate}%`,
-    hint: '连续专注稳定'
+    hint: '连续专注稳定程度'
   },
   {
     label: '单次最长',
@@ -860,7 +860,6 @@ const dashboardNarrative = computed(() => {
 
   return `本周期共记录 ${totalCheckIns} 次打卡、${totalFocusHours} 小时专注、${totalPomodoros} 个番茄，整体稳定度 ${consistencyRate}%。`
 })
-
 const pomodoroChartItems = computed(() => {
   const items = (overview.pomodoro.taskBreakdown || []).filter((item) => Number(item.percent || 0) > 0)
 
@@ -1042,3 +1041,4 @@ onBeforeUnmount(() => {
   background-clip: padding-box;
 }
 </style>
+
