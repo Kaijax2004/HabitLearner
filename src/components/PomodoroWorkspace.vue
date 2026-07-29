@@ -3,19 +3,16 @@
     <BaseCard padding="small" class="relative h-full overflow-hidden border border-zinc-200/80 bg-white/92 dark:border-zinc-800 dark:bg-zinc-950/78" :hover="false">
       <div class="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-zinc-100/70 to-transparent dark:from-white/[0.04]" />
 
-      <div class="relative flex h-full min-h-0 flex-col gap-[0.3125rem]">
-        <div class="flex flex-col gap-1.5 xl:flex-row xl:items-start xl:justify-between">
+      <div class="relative flex h-full min-h-0 flex-col gap-3">
+        <div class="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
           <div class="min-w-0 space-y-1">
             <div class="flex flex-wrap items-center gap-2 text-[12px] font-medium uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">
               <span>专注工作区</span>
-              <span class="rounded-full border border-zinc-200 bg-white/80 px-2.5 py-1 text-[11px] tracking-[0.14em] text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900/70 dark:text-zinc-300">
-                HOME PREVIEW
-              </span>
             </div>
 
             <div>
-              <h3 class="text-[1.4rem] font-semibold tracking-tight text-zinc-950 dark:text-white">番茄钟概览</h3>
-              <p class="mt-1 text-xs leading-5 text-zinc-500 dark:text-zinc-400">首页只保留快速开始、当前状态和趋势预览。</p>
+              <h3 class="text-[1.35rem] font-semibold tracking-tight text-zinc-950 dark:text-white">番茄钟概览</h3>
+              <p class="mt-1 text-xs leading-5 text-zinc-500 dark:text-zinc-400">快速开始一轮专注，完整参数与历史记录在工作区内管理。</p>
             </div>
           </div>
 
@@ -61,98 +58,74 @@
           </div>
         </div>
 
-        <div class="grid gap-1.25 sm:grid-cols-2 xl:grid-cols-4">
+        <div class="grid grid-cols-2 gap-2 xl:grid-cols-4">
           <div
             v-for="card in summaryCards"
             :key="card.label"
-            class="rounded-[22px] border border-zinc-200/80 bg-zinc-50/80 p-1.5 dark:border-zinc-800 dark:bg-zinc-900/60"
+            class="rounded-[20px] border border-zinc-200/80 bg-zinc-50/80 p-3 dark:border-zinc-800 dark:bg-zinc-900/60"
           >
-            <p class="text-[12px] font-medium uppercase tracking-[0.14em] text-zinc-500 dark:text-zinc-400">{{ card.label }}</p>
-            <p class="mt-0.5 text-[1.12rem] font-semibold tracking-tight text-zinc-950 dark:text-white">{{ card.value }}</p>
-            <p class="mt-0.5 text-[11px] leading-[1.12rem] text-zinc-500 dark:text-zinc-400">{{ card.hint }}</p>
+            <p class="text-[11px] font-medium uppercase tracking-[0.14em] text-zinc-500 dark:text-zinc-400">{{ card.label }}</p>
+            <p class="mt-1 text-[1.18rem] font-semibold tracking-tight text-zinc-950 dark:text-white">{{ card.value }}</p>
+            <p class="mt-1 truncate text-[11px] leading-[1.12rem] text-zinc-500 dark:text-zinc-400">{{ card.hint }}</p>
           </div>
         </div>
 
-        <div class="grid min-h-0 flex-1 gap-1.25 xl:grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)]">
-          <div class="flex min-h-0 flex-col gap-1.25 overflow-hidden rounded-[28px] border border-zinc-200/80 bg-zinc-50/80 p-2 dark:border-zinc-800 dark:bg-zinc-900/60">
+        <div class="grid min-h-0 flex-1 gap-3 xl:grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)]">
+          <div class="flex min-h-0 flex-col gap-3 overflow-hidden rounded-[24px] border border-zinc-200/80 bg-zinc-50/80 p-3 dark:border-zinc-800 dark:bg-zinc-900/60">
             <div class="flex items-start justify-between gap-3">
               <div>
                 <p class="text-[12px] font-medium uppercase tracking-[0.14em] text-zinc-500 dark:text-zinc-400">快速配置</p>
-                <p class="mt-0.5 text-[11px] leading-[1.15rem] text-zinc-500 dark:text-zinc-400">先定标题和参数，再决定是否进入完整工作区。</p>
+                <p class="mt-0.5 text-[11px] leading-[1.15rem] text-zinc-500 dark:text-zinc-400">标题和核心时长可直接调整，更多设置在完整工作区内完成。</p>
               </div>
-
-              <button
-                type="button"
-                class="shrink-0 rounded-2xl border border-zinc-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-zinc-900 transition hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white"
-                :disabled="isSavingPreferences"
-                @click="savePreferences"
-              >
-                {{ isSavingPreferences ? '保存中...' : '保存参数' }}
-              </button>
             </div>
 
             <input
               v-model="sessionTitleDraft"
               type="text"
               maxlength="255"
-              class="w-full rounded-2xl border border-zinc-200 bg-white px-3 py-1.5 text-[13px] text-zinc-950 outline-none transition focus:border-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white dark:focus:border-white"
+              class="w-full rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-[13px] text-zinc-950 outline-none transition focus:border-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white dark:focus:border-white"
               :placeholder="activeSession ? '当前任务标题' : '给这次专注起个标题'"
             />
 
-            <div class="grid gap-1 md:grid-cols-3">
-              <label class="space-y-0.5 text-[12px] text-zinc-600 dark:text-zinc-300">
+            <div class="grid gap-2 md:grid-cols-3">
+              <label class="space-y-1 text-[12px] text-zinc-600 dark:text-zinc-300">
                 <span>专注时长</span>
                 <input v-model.number="preferences.focusDurationMinutes" type="number" min="5" max="180" class="input-token input-token--preview" />
               </label>
-              <label class="space-y-0.5 text-[12px] text-zinc-600 dark:text-zinc-300">
+              <label class="space-y-1 text-[12px] text-zinc-600 dark:text-zinc-300">
                 <span>休息时间</span>
                 <input v-model.number="preferences.shortBreakDurationMinutes" type="number" min="1" max="60" class="input-token input-token--preview" />
               </label>
-              <label class="space-y-0.5 text-[12px] text-zinc-600 dark:text-zinc-300">
+              <label class="space-y-1 text-[12px] text-zinc-600 dark:text-zinc-300">
                 <span>循环次数</span>
                 <input v-model.number="preferences.totalCycles" type="number" min="1" max="12" class="input-token input-token--preview" />
               </label>
             </div>
 
-            <div class="flex flex-wrap gap-1">
-              <label class="toggle-chip toggle-chip--preview">
-                <input v-model="preferences.autoStartBreaks" type="checkbox" class="sr-only" />
-                <span>休息自动开始</span>
-              </label>
-              <label class="toggle-chip toggle-chip--preview">
-                <input v-model="preferences.autoStartFocus" type="checkbox" class="sr-only" />
-                <span>专注自动开始</span>
-              </label>
-              <label class="toggle-chip toggle-chip--preview">
-                <input v-model="preferences.soundEnabled" type="checkbox" class="sr-only" />
-                <span>声音提醒</span>
-              </label>
-            </div>
-
-            <div class="grid gap-1 lg:grid-cols-[minmax(0,1fr)_9rem]">
-              <div class="rounded-[24px] border border-zinc-200/80 bg-white p-2 dark:border-zinc-800 dark:bg-zinc-950/80">
+            <div class="grid gap-2 lg:grid-cols-[minmax(0,1fr)_8.5rem]">
+              <div class="rounded-[20px] border border-zinc-200/80 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-950/80">
                 <p class="text-[12px] font-medium uppercase tracking-[0.14em] text-zinc-500 dark:text-zinc-400">当前状态</p>
 
                 <template v-if="liveSession">
                   <p class="mt-1 truncate text-[13px] font-semibold text-zinc-950 dark:text-white">{{ liveSession.title }}</p>
-                  <div class="mt-1 flex flex-wrap items-center gap-1 text-[11px] text-zinc-500 dark:text-zinc-400">
+                  <div class="mt-2 flex flex-wrap items-center gap-1 text-[11px] text-zinc-500 dark:text-zinc-400">
                     <span class="rounded-full bg-zinc-100 px-2.5 py-0.5 dark:bg-zinc-800">{{ liveSession.currentPhaseLabel || '专注中' }}</span>
                     <span class="rounded-full bg-zinc-100 px-2.5 py-0.5 dark:bg-zinc-800">{{ liveSession.completedPomodoros }} / {{ liveSession.totalCycles || preferences.totalCycles }} 轮</span>
                     <span class="rounded-full bg-zinc-100 px-2.5 py-0.5 dark:bg-zinc-800">{{ liveSession.focusDurationMinutes }} 分钟</span>
                   </div>
-                  <div class="mt-2 h-2 rounded-full bg-zinc-200 dark:bg-zinc-800">
+                  <div class="mt-3 h-2 rounded-full bg-zinc-200 dark:bg-zinc-800">
                     <div class="h-2 rounded-full bg-emerald-500 transition-all duration-300" :style="{ width: `${liveSession.progressPercent}%` }" />
                   </div>
                   <p class="mt-1 text-[11px] leading-[1.15rem] text-zinc-500 dark:text-zinc-400">{{ liveSessionDescription }}</p>
                 </template>
 
                 <template v-else>
-                  <p class="mt-1 text-[13px] font-semibold text-zinc-950 dark:text-white">准备开始新一轮专注</p>
-                  <p class="mt-1 text-[11px] leading-[1.15rem] text-zinc-500 dark:text-zinc-400">首页只做快速启动，详细配置和历史都放在完整工作区。</p>
+                  <p class="mt-2 text-[13px] font-semibold text-zinc-950 dark:text-white">准备开始新一轮专注</p>
+                  <p class="mt-1 text-[11px] leading-[1.15rem] text-zinc-500 dark:text-zinc-400">点击开始后会直接进入完整工作区，专注记录会自动沉淀。</p>
                 </template>
               </div>
 
-              <div class="rounded-[24px] border border-zinc-200/80 bg-white p-2 text-center dark:border-zinc-800 dark:bg-zinc-950/80">
+              <div class="rounded-[20px] border border-zinc-200/80 bg-white p-3 text-center dark:border-zinc-800 dark:bg-zinc-950/80">
                 <p class="text-[12px] font-medium uppercase tracking-[0.14em] text-zinc-500 dark:text-zinc-400">剩余时间</p>
                 <p class="mt-2 text-[1.5rem] font-semibold tracking-tight text-zinc-950 dark:text-white">
                   {{ liveSession ? formatDuration(liveSession.remainingSeconds) : formatDuration(preferences.focusDurationMinutes * 60) }}
@@ -164,7 +137,7 @@
             </div>
           </div>
 
-          <div class="flex min-h-0 flex-col gap-1.25 overflow-hidden rounded-[28px] border border-zinc-200/80 bg-zinc-50/80 p-2 dark:border-zinc-800 dark:bg-zinc-900/60">
+          <div class="flex min-h-0 flex-col gap-3 overflow-hidden rounded-[24px] border border-zinc-200/80 bg-zinc-50/80 p-3 dark:border-zinc-800 dark:bg-zinc-900/60">
             <div class="flex items-start justify-between gap-3">
               <div>
                 <p class="text-[12px] font-medium uppercase tracking-[0.14em] text-zinc-500 dark:text-zinc-400">7 天趋势</p>

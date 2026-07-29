@@ -126,7 +126,7 @@ const imageClass = computed(() => {
     '4xl': 'w-28 h-28',
     '5xl': 'w-36 h-36'
   }
-  return `${sizeClasses[props.size] || sizeClasses.default} object-cover`
+  return `${sizeClasses[props.size] || sizeClasses.default} shrink-0 object-contain`
 })
 
 // 计算属性 - 文字大小类

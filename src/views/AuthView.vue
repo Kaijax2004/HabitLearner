@@ -1,145 +1,147 @@
 <template>
-  <div class="relative min-h-screen overflow-hidden bg-white text-black dark:bg-black dark:text-white">
-    <div class="pointer-events-none absolute inset-0">
-      <div class="absolute inset-0 opacity-[0.035] dark:opacity-[0.06]">
-        <div class="grid-pattern h-full w-full" />
-      </div>
-      <div class="absolute left-1/2 top-0 h-80 w-80 -translate-x-1/2 rounded-full bg-black/5 blur-3xl dark:bg-white/6" />
-      <div class="absolute bottom-0 right-0 h-64 w-64 rounded-full bg-zinc-300/20 blur-3xl dark:bg-white/5" />
-    </div>
+  <div class="auth-page relative min-h-screen overflow-hidden text-zinc-950 dark:text-white">
+    <div class="auth-grid pointer-events-none absolute inset-0 opacity-40 dark:opacity-25" />
 
-    <nav class="fixed left-0 right-0 top-0 z-50 border-b border-zinc-200/70 bg-white/80 backdrop-blur-xl dark:border-zinc-800/70 dark:bg-black/80">
-      <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-6">
-        <div class="flex items-center gap-3">
-          <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-black text-white dark:bg-white dark:text-black">
-            <Logo size="default" class="custom-logo-navbar-fill" />
+    <nav class="auth-nav relative z-10 border-b border-zinc-200/80 bg-white/75 backdrop-blur-xl dark:border-zinc-800/80 dark:bg-zinc-950/72">
+      <div class="auth-nav-inner flex items-center justify-between px-5 sm:px-8">
+        <div class="auth-nav-brand flex items-center gap-3">
+          <div class="auth-nav-mark flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-950 text-white dark:bg-white dark:text-zinc-950">
+            <Logo size="default" class="brand-logo brand-logo--nav" />
           </div>
           <div>
-            <h1 class="text-base font-semibold tracking-tight">习知</h1>
-            <p class="text-xs text-zinc-500 dark:text-zinc-400">HabitLearner</p>
+            <p class="text-sm font-semibold tracking-[0.08em]">习知</p>
+            <p class="mt-0.5 text-[10px] font-medium uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">HabitLearner</p>
           </div>
         </div>
 
         <button
           type="button"
-          class="rounded-2xl border border-zinc-200 bg-white/90 p-2.5 transition hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900/90 dark:hover:border-zinc-600 dark:hover:bg-zinc-900"
+          class="auth-theme-button flex h-9 w-9 items-center justify-center rounded-xl border border-zinc-200 bg-white/90 text-zinc-600 transition hover:border-zinc-300 hover:text-zinc-950 dark:border-zinc-800 dark:bg-zinc-900/80 dark:text-zinc-300 dark:hover:border-zinc-700 dark:hover:text-white"
           :title="themeStore.isDarkMode ? '切换到浅色模式' : '切换到深色模式'"
           @click="themeStore.toggleTheme()"
         >
-          <svg v-if="themeStore.isDarkMode" class="h-5 w-5 text-zinc-600 dark:text-zinc-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg v-if="themeStore.isDarkMode" class="h-4.5 w-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 3v1m0 16v1m8-8h1M3 12h1m12.364 6.364.707.707M6.343 6.343l-.707-.707m12.728 0-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
           </svg>
-          <svg v-else class="h-5 w-5 text-zinc-600 dark:text-zinc-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg v-else class="h-4.5 w-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M20.354 15.354A9 9 0 018.646 3.646 9.001 9.001 0 0012 21a9.001 9.001 0 008.354-5.646z" />
           </svg>
         </button>
       </div>
     </nav>
 
-    <main class="relative mx-auto flex min-h-screen max-w-6xl flex-col px-5 pb-10 pt-28 lg:flex-row lg:items-center lg:gap-16 lg:px-8">
-      <section class="hidden flex-1 lg:block">
-        <div class="max-w-xl">
-          <div class="mb-10 flex items-center gap-4">
-            <div class="flex h-24 w-24 items-center justify-center rounded-[2rem] border border-zinc-200/80 bg-white shadow-[0_24px_60px_rgba(15,23,42,0.08)] dark:border-zinc-800 dark:bg-zinc-950">
-              <Logo size="4xl" class="custom-logo-desktop" />
+    <main class="auth-layout relative z-10">
+      <section class="auth-intro hidden lg:flex">
+        <div class="auth-intro-content">
+          <div class="auth-brand-header">
+            <div class="auth-brand-mark">
+              <Logo size="4xl" class="brand-logo brand-logo--hero" />
             </div>
-            <div>
-              <h2 class="text-4xl font-semibold tracking-tight">习知</h2>
-              <p class="mt-2 text-base text-zinc-500 dark:text-zinc-400">HabitLearner</p>
-              <p class="mt-3 text-lg leading-8 text-zinc-600 dark:text-zinc-300">知易行难，习以为常。</p>
-            </div>
-          </div>
 
-          <div class="grid gap-4">
+            <div class="min-w-0">
+              <h1 class="text-[2.45rem] font-semibold tracking-[-0.05em] text-zinc-950 dark:text-white">习知</h1>
+              <p class="mt-1 text-[0.98rem] font-medium tracking-[0.01em] text-zinc-500 dark:text-zinc-400">HabitLearner</p>
+              <p class="mt-3.5 text-[0.98rem] leading-7 text-zinc-600 dark:text-zinc-300">知易行难，习以为常。</p>
+</div>
+</div>
+
+          <div class="auth-feature-stack">
             <div
               v-for="feature in features"
-              :key="feature.title"
-              class="rounded-[28px] border border-zinc-200/80 bg-white/88 p-5 shadow-[0_24px_50px_rgba(15,23,42,0.05)] backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/72"
+              :key="feature.index"
+              class="auth-feature-card"
             >
-              <div class="flex items-start gap-4">
-                <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-black text-white dark:bg-white dark:text-black">
-                  <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path v-if="feature.icon === 'chart'" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M7 20V10m5 10V4m5 16v-7" />
-                    <path v-else-if="feature.icon === 'spark'" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M12 3l1.9 5.6L19.5 10l-5.6 1.4L12 17l-1.9-5.6L4.5 10l5.6-1.4L12 3z" />
-                    <path v-else stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332-.477-4.5-1.253" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 class="text-lg font-semibold">{{ feature.title }}</h3>
-                  <p class="mt-2 text-sm leading-7 text-zinc-600 dark:text-zinc-300">{{ feature.description }}</p>
-                </div>
+              <div class="auth-feature-icon">
+                <svg v-if="feature.icon === 'habit'" class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M8 6v12M12 3v18M16 8v8" />
+                </svg>
+                <svg v-else-if="feature.icon === 'learning'" class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M4 6.5C5.4 5.5 7.3 5 9 5c1.8 0 3.7.5 5 1.5M4 6.5v11c1.4-1 3.3-1.5 5-1.5 1.8 0 3.7.5 5 1.5m0-11C15.3 5.5 17.2 5 19 5c1.7 0 3.6.5 5 1.5v11c-1.4-1-3.3-1.5-5-1.5-1.8 0-3.7.5-5 1.5" />
+                </svg>
+                <svg v-else class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M12 4v4m0 8v4M4 12h4m8 0h4M7.8 7.8l2.8 2.8m2.8 2.8 2.8 2.8m0-8.4-2.8 2.8m-2.8 2.8-2.8 2.8" />
+                </svg>
+              </div>
+
+              <div class="min-w-0">
+                <h2 class="text-[1.15rem] font-semibold tracking-[-0.02em] text-zinc-950 dark:text-white">{{ feature.title }}</h2>
+                <p class="mt-1.5 text-[0.95rem] leading-7 text-zinc-600 dark:text-zinc-300">{{ feature.description }}</p>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      <section class="flex w-full justify-center lg:w-[28rem] xl:w-[31rem]">
-        <div class="w-full rounded-[32px] border border-zinc-200/80 bg-white/92 p-5 shadow-[0_30px_80px_rgba(15,23,42,0.08)] backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/78 sm:p-7">
-          <div class="mb-6 lg:hidden">
-            <div class="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-[1.75rem] border border-zinc-200/80 bg-white shadow-[0_18px_40px_rgba(15,23,42,0.08)] dark:border-zinc-800 dark:bg-zinc-950">
-              <Logo size="3xl" class="custom-logo-mobile" />
-            </div>
-            <div class="text-center">
-              <h2 class="text-2xl font-semibold tracking-tight">习知</h2>
-              <p class="mt-2 text-sm text-zinc-500 dark:text-zinc-400">知易行难，习以为常。</p>
-            </div>
-          </div>
-
-          <div class="rounded-[24px] bg-zinc-100/80 p-1 dark:bg-zinc-900/80">
-            <div class="grid grid-cols-2 gap-1">
-              <button
-                type="button"
-                class="rounded-[18px] px-4 py-3 text-sm font-medium transition"
-                :class="authMode === 'login'
-                  ? 'bg-white text-zinc-950 shadow-sm dark:bg-zinc-950 dark:text-white'
-                  : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white'"
-                @click="switchAuthMode('login')"
-              >
-                登录
-              </button>
-              <button
-                type="button"
-                class="rounded-[18px] px-4 py-3 text-sm font-medium transition"
-                :class="authMode === 'register'
-                  ? 'bg-white text-zinc-950 shadow-sm dark:bg-zinc-950 dark:text-white'
-                  : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white'"
-                @click="switchAuthMode('register')"
-              >
-                注册
-              </button>
-            </div>
-          </div>
-
-          <div v-if="authMode === 'login'" class="mt-6">
-            <div class="rounded-[24px] border border-zinc-200/70 bg-zinc-50/70 p-1 dark:border-zinc-800 dark:bg-zinc-900/60">
-              <div class="grid grid-cols-2 gap-1">
-                <button
-                  type="button"
-                  class="rounded-[18px] px-4 py-3 text-sm font-medium transition"
-                  :class="loginMethod === 'password'
-                    ? 'bg-white text-zinc-950 shadow-sm dark:bg-zinc-950 dark:text-white'
-                    : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white'"
-                  @click="loginMethod = 'password'"
-                >
-                  密码登录
-                </button>
-                <button
-                  type="button"
-                  class="rounded-[18px] px-4 py-3 text-sm font-medium transition"
-                  :class="loginMethod === 'code'
-                    ? 'bg-white text-zinc-950 shadow-sm dark:bg-zinc-950 dark:text-white'
-                    : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white'"
-                  @click="loginMethod = 'code'"
-                >
-                  验证码登录
-                </button>
+      <section class="auth-entry flex px-5 py-10 sm:px-10">
+        <div class="auth-form-shell w-full">
+          <div class="mb-9 lg:hidden">
+            <div class="flex items-center gap-3">
+              <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-zinc-950 text-white dark:bg-white dark:text-zinc-950">
+                <Logo size="xl" class="brand-logo brand-logo--mobile" />
+              </div>
+              <div>
+                <p class="text-lg font-semibold">习知</p>
+                <p class="text-xs text-zinc-500 dark:text-zinc-400">HabitLearner</p>
               </div>
             </div>
+          </div>
 
-            <form v-if="loginMethod === 'password'" class="mt-6 space-y-5" @submit.prevent="handlePasswordLogin">
+          <div class="auth-entry-header mb-8">
+            <p class="text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-zinc-500 dark:text-zinc-400">{{ authMeta.eyebrow }}</p>
+            <h2 class="mt-3 text-[2rem] font-semibold tracking-[-0.04em] sm:text-[2.08rem]">{{ authMeta.title }}</h2>
+            <p class="mt-3 text-[0.95rem] leading-6 text-zinc-600 dark:text-zinc-300">{{ authMeta.description }}</p>
+          </div>
+
+          <div v-if="authMode !== 'reset'" class="auth-mode-switch grid grid-cols-2 rounded-2xl border border-zinc-200 bg-zinc-100/80 p-1 dark:border-zinc-800 dark:bg-zinc-900/70">
+            <button
+              type="button"
+              class="rounded-xl px-4 py-2.5 text-sm font-semibold transition"
+              :class="authMode === 'login'
+                ? 'bg-white text-zinc-950 shadow-sm dark:bg-zinc-950 dark:text-white'
+                : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white'"
+              @click="switchAuthMode('login')"
+            >
+              登录
+            </button>
+            <button
+              type="button"
+              class="rounded-xl px-4 py-2.5 text-sm font-semibold transition"
+              :class="authMode === 'register'
+                ? 'bg-white text-zinc-950 shadow-sm dark:bg-zinc-950 dark:text-white'
+                : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white'"
+              @click="switchAuthMode('register')"
+            >
+              注册
+            </button>
+          </div>
+
+          <div v-if="authMode === 'login'" class="auth-login-panel mt-7">
+            <div class="auth-method-tabs grid grid-cols-2 border-b border-zinc-200 dark:border-zinc-800">
+              <button
+                type="button"
+                class="auth-method-tab border-b-2 px-2 pb-3 text-sm font-medium transition"
+                :class="loginMethod === 'password'
+                  ? 'border-zinc-950 text-zinc-950 dark:border-white dark:text-white'
+                  : 'border-transparent text-zinc-500 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white'"
+                @click="loginMethod = 'password'"
+              >
+                密码登录
+              </button>
+              <button
+                type="button"
+                class="auth-method-tab border-b-2 px-2 pb-3 text-sm font-medium transition"
+                :class="loginMethod === 'code'
+                  ? 'border-zinc-950 text-zinc-950 dark:border-white dark:text-white'
+                  : 'border-transparent text-zinc-500 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white'"
+                @click="loginMethod = 'code'"
+              >
+                验证码登录
+              </button>
+            </div>
+
+            <form v-if="loginMethod === 'password'" class="auth-auth-form mt-7 space-y-5" @submit.prevent="handlePasswordLogin">
               <div>
-                <label class="mb-2 block text-sm font-semibold">邮箱地址</label>
+                <label class="field-label">邮箱地址</label>
                 <input
                   v-model.trim="loginForm.email"
                   type="email"
@@ -152,7 +154,7 @@
 
               <div>
                 <div class="mb-2 flex items-center justify-between gap-3">
-                  <label class="block text-sm font-semibold">密码</label>
+                  <label class="field-label mb-0">密码</label>
                   <button
                     type="button"
                     class="text-sm font-medium text-zinc-500 transition hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white"
@@ -167,35 +169,28 @@
                     :type="showLoginPassword ? 'text' : 'password'"
                     required
                     autocomplete="current-password"
-                    class="auth-input pr-12"
+                    class="auth-input pr-16"
                     placeholder="请输入密码"
                   >
                   <button
                     type="button"
-                    class="absolute inset-y-0 right-0 flex items-center pr-4 text-zinc-400 transition hover:text-zinc-600 dark:hover:text-zinc-300"
+                    class="absolute inset-y-0 right-0 px-4 text-xs font-medium text-zinc-400 transition hover:text-zinc-700 dark:hover:text-zinc-200"
                     :aria-label="showLoginPassword ? '隐藏密码' : '显示密码'"
                     @click="showLoginPassword = !showLoginPassword"
                   >
-                    <svg v-if="showLoginPassword" class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 3l18 18M10.584 10.587A2 2 0 0013.413 13.4M9.88 5.09A9.77 9.77 0 0112 4.8c4.48 0 8.27 2.94 9.54 7a9.84 9.84 0 01-4.24 5.22M6.23 6.23A9.82 9.82 0 002.46 11.8c1.27 4.06 5.06 7 9.54 7 1.66 0 3.23-.4 4.61-1.1" />
-                    </svg>
-                    <svg v-else class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
+                    {{ showLoginPassword ? '隐藏' : '显示' }}
                   </button>
                 </div>
               </div>
 
               <button type="submit" class="primary-button w-full" :disabled="authStore.isLoading">
-                <span v-if="authStore.isLoading">登录中...</span>
-                <span v-else>登录</span>
+                {{ authStore.isLoading ? '登录中...' : '登录并进入工作区' }}
               </button>
             </form>
 
-            <form v-else class="mt-6 space-y-5" @submit.prevent="handleCodeLogin">
+            <form v-else class="auth-auth-form mt-7 space-y-5" @submit.prevent="handleCodeLogin">
               <div>
-                <label class="mb-2 block text-sm font-semibold">已注册邮箱</label>
+                <label class="field-label">已注册邮箱</label>
                 <input
                   v-model.trim="codeLoginForm.email"
                   type="email"
@@ -208,7 +203,7 @@
 
               <div>
                 <div class="mb-2 flex items-center justify-between gap-3">
-                  <label class="block text-sm font-semibold">邮箱验证码</label>
+                  <label class="field-label mb-0">邮箱验证码</label>
                   <button
                     type="button"
                     class="text-sm font-medium text-zinc-500 transition hover:text-zinc-950 disabled:cursor-not-allowed disabled:opacity-50 dark:text-zinc-400 dark:hover:text-white"
@@ -229,20 +224,19 @@
                 >
               </div>
 
-              <div class="rounded-[20px] border border-zinc-200/70 bg-zinc-50/80 px-4 py-3 text-sm text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900/65 dark:text-zinc-300">
-                验证码登录仅支持已注册邮箱。收不到邮件时可检查垃圾箱，或稍后再次发送。
-              </div>
+              <p class="border-l-2 border-zinc-300 pl-3 text-xs leading-5 text-zinc-500 dark:border-zinc-700 dark:text-zinc-400">
+                验证码仅支持已注册邮箱登录，未收到时请检查垃圾邮件箱。
+              </p>
 
               <button type="submit" class="primary-button w-full" :disabled="authStore.isLoading">
-                <span v-if="authStore.isLoading">登录中...</span>
-                <span v-else>验证码登录</span>
+                {{ authStore.isLoading ? '登录中...' : '验证码登录' }}
               </button>
             </form>
           </div>
 
-          <form v-else-if="authMode === 'register'" class="mt-6 space-y-5" @submit.prevent="handleRegister">
+          <form v-else-if="authMode === 'register'" class="auth-auth-form mt-7 space-y-5" @submit.prevent="handleRegister">
             <div>
-              <label class="mb-2 block text-sm font-semibold">用户名</label>
+              <label class="field-label">用户名</label>
               <input
                 v-model.trim="registerForm.name"
                 type="text"
@@ -255,7 +249,7 @@
             </div>
 
             <div>
-              <label class="mb-2 block text-sm font-semibold">邮箱地址</label>
+              <label class="field-label">邮箱地址</label>
               <input
                 v-model.trim="registerForm.email"
                 type="email"
@@ -268,7 +262,7 @@
 
             <div>
               <div class="mb-2 flex items-center justify-between gap-3">
-                <label class="block text-sm font-semibold">邮箱验证码</label>
+                <label class="field-label mb-0">邮箱验证码</label>
                 <button
                   type="button"
                   class="text-sm font-medium text-zinc-500 transition hover:text-zinc-950 disabled:cursor-not-allowed disabled:opacity-50 dark:text-zinc-400 dark:hover:text-white"
@@ -290,7 +284,7 @@
             </div>
 
             <div>
-              <label class="mb-2 block text-sm font-semibold">密码</label>
+              <label class="field-label">密码</label>
               <div class="relative">
                 <input
                   v-model="registerForm.password"
@@ -298,77 +292,64 @@
                   required
                   minlength="6"
                   autocomplete="new-password"
-                  class="auth-input pr-12"
+                  class="auth-input pr-16"
                   :class="{ 'border-red-400 focus:ring-red-400 dark:border-red-500': registerForm.password && !isRegisterPasswordValid }"
                   placeholder="至少 6 位密码"
                 >
                 <button
                   type="button"
-                  class="absolute inset-y-0 right-0 flex items-center pr-4 text-zinc-400 transition hover:text-zinc-600 dark:hover:text-zinc-300"
+                  class="absolute inset-y-0 right-0 px-4 text-xs font-medium text-zinc-400 transition hover:text-zinc-700 dark:hover:text-zinc-200"
                   :aria-label="showRegisterPassword ? '隐藏密码' : '显示密码'"
                   @click="showRegisterPassword = !showRegisterPassword"
                 >
-                  <svg v-if="showRegisterPassword" class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 3l18 18M10.584 10.587A2 2 0 0013.413 13.4M9.88 5.09A9.77 9.77 0 0112 4.8c4.48 0 8.27 2.94 9.54 7a9.84 9.84 0 01-4.24 5.22M6.23 6.23A9.82 9.82 0 002.46 11.8c1.27 4.06 5.06 7 9.54 7 1.66 0 3.23-.4 4.61-1.1" />
-                  </svg>
-                  <svg v-else class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
+                  {{ showRegisterPassword ? '隐藏' : '显示' }}
                 </button>
               </div>
-              <p v-if="registerForm.password && !isRegisterPasswordValid" class="mt-2 text-sm text-red-500">密码至少需要 6 位。</p>
+              <p v-if="registerForm.password && !isRegisterPasswordValid" class="mt-2 text-xs text-red-500">密码至少需要 6 位。</p>
             </div>
 
             <div>
-              <label class="mb-2 block text-sm font-semibold">确认密码</label>
+              <label class="field-label">确认密码</label>
               <div class="relative">
                 <input
                   v-model="registerForm.confirmPassword"
                   :type="showRegisterConfirmPassword ? 'text' : 'password'"
                   required
                   autocomplete="new-password"
-                  class="auth-input pr-12"
+                  class="auth-input pr-16"
                   :class="{ 'border-red-400 focus:ring-red-400 dark:border-red-500': registerForm.confirmPassword && !isRegisterPasswordMatch }"
                   placeholder="请再次输入密码"
                 >
                 <button
                   type="button"
-                  class="absolute inset-y-0 right-0 flex items-center pr-4 text-zinc-400 transition hover:text-zinc-600 dark:hover:text-zinc-300"
+                  class="absolute inset-y-0 right-0 px-4 text-xs font-medium text-zinc-400 transition hover:text-zinc-700 dark:hover:text-zinc-200"
                   :aria-label="showRegisterConfirmPassword ? '隐藏密码' : '显示密码'"
                   @click="showRegisterConfirmPassword = !showRegisterConfirmPassword"
                 >
-                  <svg v-if="showRegisterConfirmPassword" class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 3l18 18M10.584 10.587A2 2 0 0013.413 13.4M9.88 5.09A9.77 9.77 0 0112 4.8c4.48 0 8.27 2.94 9.54 7a9.84 9.84 0 01-4.24 5.22M6.23 6.23A9.82 9.82 0 002.46 11.8c1.27 4.06 5.06 7 9.54 7 1.66 0 3.23-.4 4.61-1.1" />
-                  </svg>
-                  <svg v-else class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
+                  {{ showRegisterConfirmPassword ? '隐藏' : '显示' }}
                 </button>
               </div>
-              <p v-if="registerForm.confirmPassword && !isRegisterPasswordMatch" class="mt-2 text-sm text-red-500">两次输入的密码不一致。</p>
+              <p v-if="registerForm.confirmPassword && !isRegisterPasswordMatch" class="mt-2 text-xs text-red-500">两次输入的密码不一致。</p>
             </div>
 
-            <label class="flex items-start gap-3 rounded-[20px] border border-zinc-200/70 bg-zinc-50/75 px-4 py-3 text-sm text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900/60 dark:text-zinc-300">
+            <label class="flex cursor-pointer items-start gap-3 border-t border-zinc-200 pt-4 text-sm leading-6 text-zinc-600 dark:border-zinc-800 dark:text-zinc-300">
               <input
                 v-model="registerForm.agreeTerms"
                 type="checkbox"
                 required
-                class="mt-1 h-4 w-4 rounded border-zinc-300 text-black focus:ring-black dark:border-zinc-600 dark:bg-zinc-950 dark:text-white dark:focus:ring-white"
+                class="mt-1 h-4 w-4 rounded border-zinc-300 text-zinc-950 focus:ring-zinc-950 dark:border-zinc-600 dark:bg-zinc-950 dark:text-white dark:focus:ring-white"
               >
               <span>我已阅读并同意用户协议与隐私政策。</span>
             </label>
 
             <button type="submit" class="primary-button w-full" :disabled="authStore.isLoading || !canSubmitRegister">
-              <span v-if="authStore.isLoading">注册中...</span>
-              <span v-else>注册并进入</span>
+              {{ authStore.isLoading ? '注册中...' : '创建账户并进入工作区' }}
             </button>
           </form>
 
-          <form v-else class="mt-6 space-y-5" @submit.prevent="handleResetPassword">
+          <form v-else class="auth-auth-form mt-7 space-y-5" @submit.prevent="handleResetPassword">
             <div>
-              <label class="mb-2 block text-sm font-semibold">注册邮箱</label>
+              <label class="field-label">注册邮箱</label>
               <input
                 v-model.trim="resetForm.email"
                 type="email"
@@ -381,7 +362,7 @@
 
             <div>
               <div class="mb-2 flex items-center justify-between gap-3">
-                <label class="block text-sm font-semibold">邮箱验证码</label>
+                <label class="field-label mb-0">邮箱验证码</label>
                 <button
                   type="button"
                   class="text-sm font-medium text-zinc-500 transition hover:text-zinc-950 disabled:cursor-not-allowed disabled:opacity-50 dark:text-zinc-400 dark:hover:text-white"
@@ -403,7 +384,7 @@
             </div>
 
             <div>
-              <label class="mb-2 block text-sm font-semibold">新密码</label>
+              <label class="field-label">新密码</label>
               <div class="relative">
                 <input
                   v-model="resetForm.newPassword"
@@ -411,77 +392,64 @@
                   required
                   minlength="6"
                   autocomplete="new-password"
-                  class="auth-input pr-12"
+                  class="auth-input pr-16"
                   :class="{ 'border-red-400 focus:ring-red-400 dark:border-red-500': resetForm.newPassword && !isResetPasswordValid }"
                   placeholder="至少 6 位密码"
                 >
                 <button
                   type="button"
-                  class="absolute inset-y-0 right-0 flex items-center pr-4 text-zinc-400 transition hover:text-zinc-600 dark:hover:text-zinc-300"
+                  class="absolute inset-y-0 right-0 px-4 text-xs font-medium text-zinc-400 transition hover:text-zinc-700 dark:hover:text-zinc-200"
                   :aria-label="showResetPassword ? '隐藏密码' : '显示密码'"
                   @click="showResetPassword = !showResetPassword"
                 >
-                  <svg v-if="showResetPassword" class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 3l18 18M10.584 10.587A2 2 0 0013.413 13.4M9.88 5.09A9.77 9.77 0 0112 4.8c4.48 0 8.27 2.94 9.54 7a9.84 9.84 0 01-4.24 5.22M6.23 6.23A9.82 9.82 0 002.46 11.8c1.27 4.06 5.06 7 9.54 7 1.66 0 3.23-.4 4.61-1.1" />
-                  </svg>
-                  <svg v-else class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
+                  {{ showResetPassword ? '隐藏' : '显示' }}
                 </button>
               </div>
             </div>
 
             <div>
-              <label class="mb-2 block text-sm font-semibold">确认新密码</label>
+              <label class="field-label">确认新密码</label>
               <div class="relative">
                 <input
                   v-model="resetForm.confirmPassword"
                   :type="showResetConfirmPassword ? 'text' : 'password'"
                   required
                   autocomplete="new-password"
-                  class="auth-input pr-12"
+                  class="auth-input pr-16"
                   :class="{ 'border-red-400 focus:ring-red-400 dark:border-red-500': resetForm.confirmPassword && !isResetPasswordMatch }"
                   placeholder="请再次输入新密码"
                 >
                 <button
                   type="button"
-                  class="absolute inset-y-0 right-0 flex items-center pr-4 text-zinc-400 transition hover:text-zinc-600 dark:hover:text-zinc-300"
+                  class="absolute inset-y-0 right-0 px-4 text-xs font-medium text-zinc-400 transition hover:text-zinc-700 dark:hover:text-zinc-200"
                   :aria-label="showResetConfirmPassword ? '隐藏密码' : '显示密码'"
                   @click="showResetConfirmPassword = !showResetConfirmPassword"
                 >
-                  <svg v-if="showResetConfirmPassword" class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 3l18 18M10.584 10.587A2 2 0 0013.413 13.4M9.88 5.09A9.77 9.77 0 0112 4.8c4.48 0 8.27 2.94 9.54 7a9.84 9.84 0 01-4.24 5.22M6.23 6.23A9.82 9.82 0 002.46 11.8c1.27 4.06 5.06 7 9.54 7 1.66 0 3.23-.4 4.61-1.1" />
-                  </svg>
-                  <svg v-else class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
+                  {{ showResetConfirmPassword ? '隐藏' : '显示' }}
                 </button>
               </div>
-              <p v-if="resetForm.confirmPassword && !isResetPasswordMatch" class="mt-2 text-sm text-red-500">两次输入的新密码不一致。</p>
+              <p v-if="resetForm.confirmPassword && !isResetPasswordMatch" class="mt-2 text-xs text-red-500">两次输入的新密码不一致。</p>
             </div>
 
             <button type="submit" class="primary-button w-full" :disabled="isResettingPassword || !canSubmitReset">
-              <span v-if="isResettingPassword">重置中...</span>
-              <span v-else>设置新密码</span>
+              {{ isResettingPassword ? '设置中...' : '设置新密码' }}
             </button>
 
             <button
               type="button"
-              class="w-full rounded-2xl border border-zinc-200 px-4 py-3 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-900"
+              class="secondary-button w-full"
               @click="switchAuthMode('login')"
             >
               返回登录
             </button>
           </form>
 
-          <div v-if="authMode !== 'reset'" class="mt-6 text-center text-sm text-zinc-500 dark:text-zinc-400">
+          <div v-if="authMode !== 'reset'" class="auth-footer-switch mt-7 border-t border-zinc-200 pt-5 text-center text-sm text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
             <span v-if="authMode === 'login'">还没有账户？</span>
             <span v-else>已有账户？</span>
             <button
               type="button"
-              class="ml-1 font-medium text-zinc-950 transition hover:opacity-70 dark:text-white"
+              class="ml-1 font-semibold text-zinc-950 transition hover:opacity-70 dark:text-white"
               @click="switchAuthMode(authMode === 'login' ? 'register' : 'login')"
             >
               {{ authMode === 'login' ? '立即注册' : '去登录' }}
@@ -508,9 +476,24 @@ const { success, error } = useToast()
 const router = useRouter()
 
 const features = [
-  { icon: 'chart', title: '习惯追踪', description: '把打卡、连续天数和阶段变化整理成一套清晰可见的日常反馈。' },
-  { icon: 'book', title: '微学习内容', description: '用轻量课程和学习记录承接每天的输入，降低开始学习的门槛。' },
-  { icon: 'spark', title: '计划与专注', description: '把计划编辑、番茄专注和复盘沉淀到同一个工作流里。' }
+  {
+    index: '01',
+    icon: 'habit',
+    title: '习惯追踪',
+    description: '把打卡、连续天数和阶段变化整理成一套清晰可见的日常反馈。'
+  },
+  {
+    index: '02',
+    icon: 'learning',
+    title: '微学习内容',
+    description: '用轻量课程和学习记录承接每天的输入，降低开始学习的门槛。'
+  },
+  {
+    index: '03',
+    icon: 'focus',
+    title: '计划与专注',
+    description: '把计划编辑、番茄专注和复盘沉淀到同一个工作流里。'
+  }
 ]
 
 const authMode = ref('login')
@@ -559,6 +542,38 @@ const resetForm = ref({
   code: '',
   newPassword: '',
   confirmPassword: ''
+})
+
+const authMeta = computed(() => {
+  if (authMode.value === 'register') {
+    return {
+      eyebrow: '创建账户',
+      title: '从第一条记录开始',
+      description: '完成邮箱验证后即可创建你的习知账户，开始建立属于自己的节奏。'
+    }
+  }
+
+  if (authMode.value === 'reset') {
+    return {
+      eyebrow: '找回账户',
+      title: '设置新的登录密码',
+      description: '验证注册邮箱后即可更新密码，不需要填写旧密码。'
+    }
+  }
+
+  if (loginMethod.value === 'code') {
+    return {
+      eyebrow: '欢迎回来',
+      title: '用验证码快速登录',
+      description: '输入已注册邮箱，我们会向你的收件箱发送一次性登录验证码。'
+    }
+  }
+
+  return {
+    eyebrow: '欢迎回来',
+    title: '继续你的日常节奏',
+    description: '登录后回到习惯、计划和专注工作区，延续已经开始的记录。'
+  }
 })
 
 const isRegisterPasswordValid = computed(() => registerForm.value.password.length >= 6)
@@ -616,36 +631,6 @@ const startCountdown = (key) => {
   if (key === 'reset') resetCodeTimer = timer
 }
 
-const resetLoginForm = () => {
-  loginForm.value = { email: '', password: '' }
-  codeLoginForm.value = { email: '', code: '' }
-  showLoginPassword.value = false
-}
-
-const resetRegisterForm = () => {
-  registerForm.value = {
-    name: '',
-    email: '',
-    verificationCode: '',
-    password: '',
-    confirmPassword: '',
-    agreeTerms: false
-  }
-  showRegisterPassword.value = false
-  showRegisterConfirmPassword.value = false
-}
-
-const resetResetForm = () => {
-  resetForm.value = {
-    email: '',
-    code: '',
-    newPassword: '',
-    confirmPassword: ''
-  }
-  showResetPassword.value = false
-  showResetConfirmPassword.value = false
-}
-
 const switchAuthMode = (mode) => {
   authMode.value = mode
   if (mode === 'login') {
@@ -655,28 +640,29 @@ const switchAuthMode = (mode) => {
 
 const getErrorMessage = (message = '', code) => {
   const text = String(message || '')
+  const normalized = text.toLowerCase()
 
-  if (code === 404 || text.includes('未启动') || text.includes('服务暂时不可用')) {
+  if (code === 404 || normalized.includes('unavailable') || normalized.includes('service')) {
     return '后端服务暂时不可用，请稍后重试。'
   }
 
-  if (code === 409 || text.includes('已注册') || text.includes('已被使用')) {
+  if (code === 409 || text.includes('已注册') || normalized.includes('already')) {
     return text || '该邮箱已注册，请直接登录。'
   }
 
-  if (code === 429 || text.includes('频繁')) {
+  if (code === 429 || text.includes('频繁') || normalized.includes('too many')) {
     return text || '操作过于频繁，请稍后再试。'
   }
 
-  if (code === 400 && (text.includes('验证码') || text.includes('验证'))) {
+  if (code === 400 && (text.includes('验证码') || normalized.includes('verification'))) {
     return text || '验证码无效或已过期，请重新发送。'
   }
 
-  if (code === 401 || text.includes('密码错误') || text.includes('登录')) {
+  if (code === 401 || text.includes('密码错误') || normalized.includes('password') || normalized.includes('login')) {
     return text || '邮箱或密码错误。'
   }
 
-  if (code === 422 || text.includes('格式') || text.includes('参数校验')) {
+  if (code === 422 || text.includes('格式') || normalized.includes('validation')) {
     return text || '输入信息格式不正确，请检查后重试。'
   }
 
@@ -769,7 +755,6 @@ const handleRegister = async () => {
   }
 
   const result = await authStore.register({
-    username: registerForm.value.name,
     name: registerForm.value.name,
     email: registerForm.value.email.trim(),
     verificationCode: registerForm.value.verificationCode.trim(),
@@ -788,7 +773,7 @@ const handleRegister = async () => {
 
 const handleResetPassword = async () => {
   if (!canSubmitReset.value) {
-    error('重置失败', { description: '请完整填写邮箱、验证码和新密码。' })
+    error('设置失败', { description: '请完整填写邮箱、验证码和新密码。' })
     return
   }
 
@@ -806,13 +791,18 @@ const handleResetPassword = async () => {
     }
 
     loginForm.value.email = resetForm.value.email.trim()
+    resetForm.value = {
+      email: '',
+      code: '',
+      newPassword: '',
+      confirmPassword: ''
+    }
     switchAuthMode('login')
-    resetResetForm()
     success('密码已重置', {
-      description: '你现在可以使用新密码登录。'
+      description: '现在可以使用新密码登录。'
     })
   } catch (err) {
-    error('重置失败', {
+    error('设置失败', {
       description: getErrorMessage(err.error || err.message, err.code)
     })
   } finally {
@@ -828,60 +818,738 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.grid-pattern {
-  background-image:
-    linear-gradient(rgba(0, 0, 0, 0.1) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 0, 0, 0.1) 1px, transparent 1px);
-  background-size: 20px 20px;
+.auth-page {
+  isolation: isolate;
+  background:
+    radial-gradient(circle at top left, rgba(217, 205, 189, 0.3), transparent 26%),
+    radial-gradient(circle at 50% -8%, rgba(255, 255, 255, 0.68), transparent 32%),
+    radial-gradient(circle at bottom right, rgba(226, 216, 202, 0.22), transparent 28%),
+    linear-gradient(135deg, #f7f2ea 0%, #f4efe6 46%, #faf7f1 100%);
+  font-family: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  color: #18181b;
 }
 
-.dark .grid-pattern {
+.dark .auth-page {
+  background:
+    radial-gradient(circle at top left, rgba(66, 66, 74, 0.18), transparent 24%),
+    radial-gradient(circle at 50% -10%, rgba(255, 255, 255, 0.08), transparent 34%),
+    radial-gradient(circle at bottom right, rgba(39, 39, 42, 0.16), transparent 28%),
+    linear-gradient(160deg, #080808 0%, #111113 46%, #0a0a0b 100%);
+  color: #fafafa;
+}
+
+.auth-page::before,
+.auth-page::after {
+  content: '';
+  position: absolute;
+  inset: -18% auto auto -12%;
+  width: 52rem;
+  height: 52rem;
+  border-radius: 999px;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.55;
+  filter: blur(42px);
+}
+
+.auth-page::before {
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.42) 0%, rgba(255, 250, 241, 0.2) 34%, rgba(255, 255, 255, 0) 72%);
+  animation: authGlowFloat 18s ease-in-out infinite;
+}
+
+.auth-page::after {
+  inset: auto -10% -22% auto;
+  width: 34rem;
+  height: 34rem;
+  background: radial-gradient(circle, rgba(213, 195, 166, 0.22) 0%, rgba(213, 195, 166, 0.08) 34%, rgba(255, 255, 255, 0) 72%);
+  opacity: 0.42;
+  animation: authGlowFloatAlt 22s ease-in-out infinite;
+}
+
+.dark .auth-page::before {
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.08) 0%, rgba(115, 115, 122, 0.08) 34%, rgba(255, 255, 255, 0) 72%);
+  opacity: 0.72;
+}
+
+.dark .auth-page::after {
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.06) 0%, rgba(63, 63, 70, 0.08) 34%, rgba(255, 255, 255, 0) 72%);
+  opacity: 0.52;
+}
+
+.auth-nav {
+  position: sticky;
+  top: 0;
+  border-color: rgba(24, 24, 27, 0.08);
+  background:
+    linear-gradient(180deg, rgba(255, 252, 248, 0.82), rgba(250, 246, 240, 0.64)),
+    rgba(252, 249, 244, 0.68);
+  box-shadow:
+    0 12px 28px rgba(24, 24, 27, 0.045),
+    inset 0 1px 0 rgba(255, 255, 255, 0.62);
+  backdrop-filter: blur(24px);
+  animation: authNavBreath 16s ease-in-out infinite;
+}
+
+.dark .auth-nav {
+  border-color: rgba(255, 255, 255, 0.08);
+  background:
+    linear-gradient(180deg, rgba(22, 22, 24, 0.84), rgba(10, 10, 11, 0.68)),
+    rgba(10, 10, 11, 0.7);
+  box-shadow:
+    0 16px 34px rgba(0, 0, 0, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  animation-name: authNavBreathDark;
+}
+
+.auth-nav-inner {
+  width: 100%;
+  height: 5rem;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.auth-nav-brand {
+  gap: 0.9rem !important;
+  padding: 0.48rem 0.78rem 0.48rem 0.5rem;
+  border: 1px solid rgba(24, 24, 27, 0.06);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.32);
+  box-shadow:
+    0 10px 24px rgba(24, 24, 27, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(10px);
+  animation: authBadgeBreath 14s ease-in-out infinite;
+}
+
+.dark .auth-nav-brand {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.035);
+  box-shadow:
+    0 10px 24px rgba(0, 0, 0, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  animation-name: authBadgeBreathDark;
+}
+
+.auth-nav-mark {
+  position: relative;
+  width: 2.7rem;
+  height: 2.7rem;
+  flex-shrink: 0;
+  padding: 0.18rem;
+  overflow: hidden;
+  border-radius: 1rem !important;
+  border: 1px solid rgba(24, 24, 27, 0.08);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.04)),
+    linear-gradient(180deg, #1a1a1b 0%, #09090b 100%);
+  box-shadow:
+    0 12px 24px rgba(24, 24, 27, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.auth-nav-mark::after {
+  content: '';
+  position: absolute;
+  inset: 0.18rem;
+  border-radius: 0.82rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  pointer-events: none;
+}
+
+.dark .auth-nav-mark {
+  border-color: rgba(255, 255, 255, 0.08);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.58), rgba(255, 255, 255, 0.18)),
+    linear-gradient(180deg, #f7f7f8 0%, #d4d4d8 100%);
+  box-shadow:
+    0 12px 24px rgba(0, 0, 0, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.58);
+}
+
+.dark .auth-nav-mark::after {
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.auth-nav-copy {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  padding-right: 0.08rem;
+}
+
+.auth-nav-copy p:first-child {
+  font-size: 0.9rem !important;
+  line-height: 1;
+  letter-spacing: 0.14em !important;
+  color: rgba(24, 24, 27, 0.96);
+}
+
+.auth-nav-copy p:last-child {
+  margin-top: 0.32rem !important;
+  font-size: 0.64rem !important;
+  line-height: 1;
+  letter-spacing: 0.28em !important;
+  color: rgba(82, 82, 91, 0.78) !important;
+}
+
+.dark .auth-nav-copy p:first-child {
+  color: rgba(250, 250, 250, 0.96);
+}
+
+.dark .auth-nav-copy p:last-child {
+  color: rgba(212, 212, 216, 0.76) !important;
+}
+
+.auth-theme-button {
+  border-color: rgba(24, 24, 27, 0.09) !important;
+  background: rgba(255, 255, 255, 0.72) !important;
+  box-shadow:
+    0 10px 20px rgba(24, 24, 27, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(14px);
+}
+
+.auth-theme-button:hover {
+  transform: translateY(-1px);
+}
+
+.dark .auth-theme-button {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  background: rgba(24, 24, 27, 0.7) !important;
+  box-shadow:
+    0 10px 20px rgba(0, 0, 0, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.auth-layout {
+  display: grid;
+  width: 100%;
+  max-width: 1600px;
+  min-height: calc(100vh - 5rem);
+  margin: 0 auto;
+  grid-template-columns: minmax(0, 1.08fr) minmax(460px, 0.92fr);
+  column-gap: clamp(2.25rem, 4vw, 4.5rem);
+}
+
+.auth-intro {
+  min-height: calc(100vh - 5rem);
+  justify-content: center;
+  align-items: center;
+  padding: 4.85rem clamp(3rem, 6.5vw, 6rem);
+}
+
+.auth-intro-content {
+  width: min(100%, 34rem);
+  margin: 0 auto;
+}
+
+.auth-brand-header {
+  display: flex;
+  align-items: center;
+  gap: 1.35rem;
+  margin-bottom: 2.7rem;
+}
+
+.auth-brand-header h1,
+.auth-form-shell h2,
+.auth-feature-card h2 {
+  font-family: "Iowan Old Style", "Palatino Linotype", "Noto Serif SC", "Songti SC", serif;
+  font-weight: 600;
+}
+
+.auth-brand-header h1 {
+  font-size: 2.85rem !important;
+  line-height: 0.96;
+  letter-spacing: -0.055em !important;
+}
+
+.auth-brand-header p:first-of-type {
+  font-size: 0.93rem !important;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.auth-brand-header p:last-of-type {
+  max-width: 20rem;
+  font-size: 0.95rem !important;
+  line-height: 1.9;
+  color: rgba(63, 63, 70, 0.84);
+}
+
+.dark .auth-brand-header p:last-of-type {
+  color: rgba(228, 228, 231, 0.76);
+}
+
+.auth-brand-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 5.15rem;
+  height: 5.15rem;
+  padding: 0.45rem;
+  overflow: hidden;
+  border-radius: 1.65rem;
+  border: 1px solid rgba(24, 24, 27, 0.08);
+  background: rgba(255, 255, 255, 0.76);
+  box-shadow:
+    0 20px 45px rgba(24, 24, 27, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(18px);
+}
+
+.dark .auth-brand-mark {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(20, 20, 22, 0.86);
+  box-shadow:
+    0 20px 45px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.auth-feature-stack {
+  display: grid;
+  gap: 1.05rem;
+}
+
+.auth-feature-card {
+  display: grid;
+  grid-template-columns: 3.55rem minmax(0, 1fr);
+  align-items: center;
+  gap: 1.05rem;
+  min-height: 8.1rem;
+  border: 1px solid rgba(24, 24, 27, 0.08);
+  border-radius: 1.85rem;
+  background: rgba(255, 255, 255, 0.56);
+  padding: 1.45rem 1.5rem;
+  box-shadow:
+    0 20px 36px rgba(24, 24, 27, 0.045),
+    inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(18px);
+}
+
+.dark .auth-feature-card {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(18, 18, 20, 0.76);
+  box-shadow:
+    0 22px 40px rgba(0, 0, 0, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.auth-feature-card h2 {
+  font-size: 1.18rem !important;
+  letter-spacing: -0.03em !important;
+}
+
+.auth-feature-card p {
+  font-size: 0.93rem !important;
+  line-height: 1.85;
+  color: rgba(63, 63, 70, 0.82);
+}
+
+.dark .auth-feature-card p {
+  color: rgba(228, 228, 231, 0.76);
+}
+
+.auth-feature-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 0.95rem;
+  background: linear-gradient(180deg, #171717 0%, #09090b 100%);
+  color: white;
+  box-shadow:
+    0 12px 24px rgba(24, 24, 27, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.dark .auth-feature-icon {
+  background: linear-gradient(180deg, #f5f5f5 0%, #d4d4d8 100%);
+  color: rgb(9 9 11);
+}
+
+.auth-entry {
+  min-height: calc(100vh - 5rem);
+  align-items: center;
+  padding-block: 4.25rem;
+  padding-inline: clamp(2rem, 4.75vw, 4.75rem);
+}
+
+.auth-form-shell {
+  max-width: 31rem;
+  margin: 0 auto;
+  border: 1px solid rgba(24, 24, 27, 0.08);
+  border-radius: 2rem;
+  background: rgba(255, 255, 255, 0.66);
+  padding: 2.5rem 2.3rem 2.2rem;
+  box-shadow:
+    0 34px 64px rgba(24, 24, 27, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(24px);
+}
+
+.dark .auth-form-shell {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(16, 16, 18, 0.78);
+  box-shadow:
+    0 32px 60px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.auth-form-shell h2 {
+  letter-spacing: -0.05em !important;
+}
+
+.auth-entry-header {
+  margin-bottom: 2.15rem !important;
+}
+
+.auth-form-shell > .mb-8 p:first-child {
+  letter-spacing: 0.22em !important;
+}
+
+.auth-form-shell > .mb-8 h2 {
+  margin-top: 0.9rem !important;
+  line-height: 1.02;
+}
+
+.auth-form-shell > .mb-8 p:last-child {
+  margin-top: 1rem !important;
+  max-width: 24rem;
+  line-height: 1.8;
+}
+
+.auth-mode-switch {
+  padding: 0.32rem;
+  border-color: rgba(24, 24, 27, 0.08) !important;
+  border-radius: 999px !important;
+  background: rgba(255, 255, 255, 0.54) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    0 10px 24px rgba(24, 24, 27, 0.045);
+}
+
+.auth-mode-switch button {
+  min-height: 3rem;
+  border-radius: 999px !important;
+  font-size: 0.9rem !important;
+  letter-spacing: 0.03em;
+}
+
+.dark .auth-mode-switch {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  background: rgba(24, 24, 27, 0.62) !important;
+}
+
+.auth-login-panel {
+  margin-top: 1.95rem !important;
+}
+
+.auth-method-tabs {
+  padding: 0.28rem;
+  border: 1px solid rgba(24, 24, 27, 0.08);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.48);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.68),
+    0 10px 20px rgba(24, 24, 27, 0.035);
+}
+
+.dark .auth-method-tabs {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(24, 24, 27, 0.58);
+}
+
+.auth-method-tab {
+  min-height: 2.8rem;
+  border: 1px solid transparent !important;
+  border-radius: 999px;
+  padding: 0.72rem 0.9rem !important;
+  font-size: 0.88rem !important;
+  letter-spacing: 0.02em;
+}
+
+.auth-method-tab.border-zinc-950,
+.auth-method-tab.dark\:border-white {
+  border-width: 1px !important;
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow:
+    0 8px 18px rgba(24, 24, 27, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.dark .auth-method-tab.border-zinc-950,
+.dark .auth-method-tab.dark\:border-white {
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 8px 18px rgba(0, 0, 0, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.auth-form-shell form {
+  margin-top: 2rem !important;
+}
+
+.auth-form-shell form.space-y-5 > * + * {
+  margin-top: 1.5rem !important;
+}
+
+.auth-auth-form > .primary-button:last-child,
+.auth-auth-form > .secondary-button:last-child,
+.auth-auth-form > p + .primary-button {
+  margin-top: 0.4rem;
+}
+
+.auth-form-shell .relative button.text-xs {
+  font-size: 0.75rem !important;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.auth-footer-switch {
+  margin-top: 2.3rem !important;
+  padding-top: 1.5rem !important;
+  border-top-color: rgba(24, 24, 27, 0.08) !important;
+}
+
+.auth-footer-switch button {
+  letter-spacing: 0.01em;
+}
+
+.auth-grid {
   background-image:
-    linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+    linear-gradient(rgba(24, 24, 27, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(24, 24, 27, 0.03) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: radial-gradient(circle at top center, rgba(0, 0, 0, 0.98), transparent 88%);
+  animation: authGridDrift 26s linear infinite;
+}
+
+.dark .auth-grid {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+}
+
+@keyframes authGlowFloat {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0.55;
+  }
+  50% {
+    transform: translate3d(1.2rem, -0.9rem, 0) scale(1.04);
+    opacity: 0.72;
+  }
+}
+
+@keyframes authGlowFloatAlt {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0.42;
+  }
+  50% {
+    transform: translate3d(-1rem, 0.8rem, 0) scale(1.06);
+    opacity: 0.56;
+  }
+}
+
+@keyframes authNavBreath {
+  0%, 100% {
+    box-shadow:
+      0 12px 28px rgba(24, 24, 27, 0.045),
+      inset 0 1px 0 rgba(255, 255, 255, 0.62);
+  }
+  50% {
+    box-shadow:
+      0 16px 34px rgba(24, 24, 27, 0.065),
+      inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  }
+}
+
+@keyframes authBadgeBreath {
+  0%, 100% {
+    transform: translate3d(0, 0, 0);
+    box-shadow:
+      0 10px 24px rgba(24, 24, 27, 0.035),
+      inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  }
+  50% {
+    transform: translate3d(0, -1px, 0);
+    box-shadow:
+      0 14px 30px rgba(24, 24, 27, 0.05),
+      inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  }
+}
+
+@keyframes authNavBreathDark {
+  0%, 100% {
+    box-shadow:
+      0 16px 34px rgba(0, 0, 0, 0.22),
+      inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  }
+  50% {
+    box-shadow:
+      0 20px 42px rgba(0, 0, 0, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  }
+}
+
+@keyframes authBadgeBreathDark {
+  0%, 100% {
+    transform: translate3d(0, 0, 0);
+    box-shadow:
+      0 10px 24px rgba(0, 0, 0, 0.16),
+      inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  }
+  50% {
+    transform: translate3d(0, -1px, 0);
+    box-shadow:
+      0 14px 30px rgba(0, 0, 0, 0.24),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  }
+}
+
+@keyframes authGridDrift {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0.5rem, -0.35rem, 0);
+  }
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-page::before,
+  .auth-page::after,
+  .auth-nav,
+  .auth-nav-brand,
+  .auth-grid {
+    animation: none !important;
+  }
+}
+
+@media (max-width: 1023px) {
+  .auth-layout {
+    display: block;
+    min-height: calc(100vh - 5rem);
+  }
+
+  .auth-entry {
+    min-height: calc(100vh - 5rem);
+    padding-block: 3rem;
+  }
+
+  .auth-intro {
+    min-height: auto;
+    padding-top: 3rem;
+    padding-bottom: 1rem;
+  }
+
+  .auth-nav {
+    position: relative;
+  }
+
+  .auth-form-shell {
+    max-width: 34rem;
+    padding: 2.1rem 1.55rem 1.9rem;
+  }
+}
+
+@media (max-width: 639px) {
+  .auth-entry {
+    padding-inline: 1.25rem;
+    padding-block: 2.2rem;
+  }
+
+  .auth-entry-header {
+    margin-bottom: 1.7rem !important;
+  }
+
+  .auth-form-shell > .mb-8 h2 {
+    font-size: 1.82rem !important;
+  }
+
+  .auth-form-shell form.space-y-5 > * + * {
+    margin-top: 1.25rem !important;
+  }
+}
+
+.field-label {
+  display: block;
+  margin-bottom: 0.62rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgb(87 83 78);
+}
+
+.dark .field-label {
+  color: rgba(228, 228, 231, 0.78);
 }
 
 .auth-input {
   width: 100%;
+  border: 1px solid rgba(24, 24, 27, 0.12);
   border-radius: 1rem;
-  border: 1px solid rgb(228 228 231 / 0.9);
-  background: rgba(255, 255, 255, 0.95);
-  padding: 0.95rem 1rem;
+  background: rgba(255, 255, 255, 0.88);
+  padding: 1rem 1.05rem;
   font-size: 0.95rem;
-  color: rgb(9 9 11);
+  color: rgb(24 24 27);
   outline: none;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease, transform 0.2s ease;
+}
+
+.auth-input::placeholder {
+  color: rgb(161 161 170);
 }
 
 .auth-input:focus {
-  border-color: rgb(24 24 27);
-  box-shadow: 0 0 0 3px rgba(24, 24, 27, 0.08);
+  border-color: rgba(24, 24, 27, 0.4);
+  box-shadow:
+    0 0 0 3px rgba(24, 24, 27, 0.06),
+    0 10px 22px rgba(24, 24, 27, 0.05);
+  transform: translateY(-1px);
 }
 
 .dark .auth-input {
-  border-color: rgb(63 63 70 / 0.95);
-  background: rgba(24, 24, 27, 0.94);
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(20, 20, 22, 0.82);
   color: white;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .dark .auth-input:focus {
-  border-color: rgb(255 255 255 / 0.95);
-  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.46);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.06);
+}
+
+.primary-button,
+.secondary-button {
+  min-height: 3.35rem;
+  border-radius: 999px;
+  padding: 0.88rem 1.28rem;
+  font-size: 0.94rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  transition: transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
 }
 
 .primary-button {
-  border-radius: 1rem;
-  background: rgb(9 9 11);
-  padding: 0.95rem 1rem;
-  font-size: 1rem;
-  font-weight: 600;
+  background: linear-gradient(180deg, #191919 0%, #09090b 100%);
   color: white;
-  transition: transform 0.2s ease, opacity 0.2s ease, background-color 0.2s ease;
+  box-shadow: 0 14px 24px rgba(24, 24, 27, 0.18);
 }
 
 .primary-button:hover:not(:disabled) {
   transform: translateY(-1px);
-  background: rgb(24 24 27);
+  background: linear-gradient(180deg, #27272a 0%, #111113 100%);
+  box-shadow: 0 18px 28px rgba(24, 24, 27, 0.2);
 }
 
 .primary-button:disabled {
@@ -890,35 +1558,72 @@ onBeforeUnmount(() => {
 }
 
 .dark .primary-button {
-  background: white;
-  color: black;
+  background: linear-gradient(180deg, #ffffff 0%, #e4e4e7 100%);
+  color: rgb(24 24 27);
 }
 
 .dark .primary-button:hover:not(:disabled) {
-  background: rgb(228 228 231);
+  background: linear-gradient(180deg, #fafafa 0%, #d4d4d8 100%);
 }
 
-.custom-logo-desktop :deep(img),
-.custom-logo-desktop :deep(svg) {
-  width: 78px !important;
-  height: 78px !important;
-  max-width: 78px !important;
-  max-height: 78px !important;
+.secondary-button {
+  border: 1px solid rgba(24, 24, 27, 0.12);
+  background: rgba(255, 255, 255, 0.46);
+  color: rgb(63 63 70);
 }
 
-.custom-logo-mobile :deep(img),
-.custom-logo-mobile :deep(svg) {
-  width: 66px !important;
-  height: 66px !important;
-  max-width: 66px !important;
-  max-height: 66px !important;
+.secondary-button:hover {
+  border-color: rgba(24, 24, 27, 0.2);
+  background: rgba(255, 255, 255, 0.68);
+  box-shadow: 0 12px 24px rgba(24, 24, 27, 0.08);
 }
 
-.custom-logo-navbar-fill :deep(img),
-.custom-logo-navbar-fill :deep(svg) {
+.dark .secondary-button {
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(24, 24, 27, 0.58);
+  color: rgb(212 212 216);
+}
+
+.dark .secondary-button:hover {
+  border-color: rgb(113 113 122);
+  background: rgba(39, 39, 42, 0.7);
+}
+
+@media (max-width: 1023px) {
+  .auth-form-shell {
+    max-width: 34rem;
+    padding: 2.1rem 1.55rem 1.85rem;
+  }
+}
+
+.brand-logo--nav :deep(img),
+.brand-logo--nav :deep(svg) {
   width: 100% !important;
   height: 100% !important;
   max-width: 100% !important;
   max-height: 100% !important;
+  border-radius: 0.82rem;
+  object-fit: contain !important;
+}
+
+.brand-logo--mobile :deep(img),
+.brand-logo--mobile :deep(svg) {
+  width: 34px !important;
+  height: 34px !important;
+  max-width: 34px !important;
+  max-height: 34px !important;
+}
+
+.brand-logo--hero :deep(img),
+.brand-logo--hero :deep(svg) {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  border-radius: 1.18rem;
+  object-fit: contain !important;
+  box-shadow:
+    0 8px 18px rgba(24, 24, 27, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 </style>
