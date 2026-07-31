@@ -1,5 +1,9 @@
 <template>
-  <div class="min-h-screen surface-page relative overflow-hidden">
+  <div
+    class="app-shell min-h-screen surface-page relative overflow-hidden"
+    :class="{ 'is-sidebar-collapsed': isSidebarCollapsed }"
+    :style="layoutVars"
+  >
     <div class="absolute inset-0 pointer-events-none">
       <div class="absolute inset-0 opacity-[0.02] dark:opacity-[0.05]">
         <div class="grid-pattern"></div>
@@ -8,24 +12,36 @@
       <div class="absolute bottom-0 right-0 w-64 h-64 bg-gradient-radial from-zinc-300/15 to-transparent dark:from-white/4 dark:to-transparent blur-2xl"></div>
     </div>
 
-    <aside class="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
+    <aside class="app-sidebar hidden lg:fixed lg:inset-y-0 lg:flex lg:flex-col">
       <div class="flex h-full flex-col border-r border-zinc-200 bg-white/90 backdrop-blur-apple dark:border-zinc-800 dark:bg-zinc-950/90">
-        <div class="flex items-center gap-4 border-b border-zinc-200 px-6 py-6 dark:border-zinc-800">
-          <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-zinc-950 text-white dark:bg-white dark:text-zinc-950">
-            <Logo size="xl" />
+        <div class="sidebar-brand-row flex items-center gap-4 border-b border-zinc-200 px-6 py-6 dark:border-zinc-800">
+          <div class="sidebar-logo flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-zinc-950 text-white dark:bg-white dark:text-zinc-950">
+            <Logo :size="isSidebarCollapsed ? 'default' : 'xl'" />
           </div>
-          <div>
-            <h1 class="title-primary">习知</h1>
+          <div class="sidebar-brand-copy min-w-0">
+            <h1 class="title-primary">{{ BRAND_NAME }}</h1>
             <p class="text-body-small">HabitLearner</p>
           </div>
+          <button
+            type="button"
+            class="sidebar-collapse-button"
+            :aria-label="sidebarToggleLabel"
+            :title="sidebarToggleLabel"
+            @click="toggleSidebar"
+          >
+            <svg class="h-4 w-4" :class="{ 'rotate-180': isSidebarCollapsed }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
         </div>
 
-        <nav class="flex-1 px-4 py-6 space-y-2">
+        <nav class="sidebar-nav flex-1 px-4 py-6 space-y-2">
           <router-link
             v-for="item in navigationItems"
             :key="item.name"
             :to="item.to"
-            class="flex items-center rounded-apple px-4 py-3 text-sm font-medium transition-all duration-200"
+            class="sidebar-nav-link flex items-center rounded-apple px-4 py-3 text-sm font-medium transition-all duration-200"
+            :title="isSidebarCollapsed ? item.label : ''"
             :class="isActive(item.to)
               ? 'bg-zinc-100 text-zinc-950 dark:bg-white/10 dark:text-white'
               : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-950 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-white'"
@@ -35,7 +51,7 @@
               class="mr-3 h-5 w-5"
               :class="isActive(item.to) ? 'text-zinc-950 dark:text-white' : 'text-current'"
             />
-            {{ item.label }}
+            <span class="sidebar-nav-label">{{ item.label }}</span>
           </router-link>
         </nav>
       </div>
@@ -55,7 +71,7 @@
               </svg>
             </button>
             <div v-if="title === 'HabitLearner'" class="ml-2">
-              <Logo show-text show-subtitle size="default" brand-name="习知" subtitle="HabitLearner" :on-dark-background="true" />
+              <Logo show-text show-subtitle size="default" :brand-name="BRAND_NAME" subtitle="HabitLearner" :on-dark-background="true" />
             </div>
             <h1 v-else class="ml-2 text-lg font-medium text-white">{{ title }}</h1>
           </div>
@@ -79,7 +95,7 @@
       </div>
     </nav>
 
-    <header class="hidden lg:block lg:pl-64">
+    <header class="app-content-offset hidden lg:block">
       <div class="sticky top-0 z-40 border-b border-zinc-200 bg-white/90 backdrop-blur-apple dark:border-zinc-800 dark:bg-zinc-950/90">
         <div class="px-6 py-4">
           <div class="flex items-center justify-between gap-4">
@@ -116,7 +132,7 @@
       </div>
     </header>
 
-    <main class="lg:pl-64">
+    <main class="app-content-offset">
       <div class="mx-auto max-w-6xl px-4 py-6 lg:mx-0 lg:max-w-none lg:px-10 lg:py-8">
         <div class="pb-24 lg:pb-0">
           <slot></slot>
@@ -144,9 +160,10 @@
 </template>
 
 <script setup>
-import { onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useThemeStore } from '@/stores/theme'
+import { useSidebarState } from '@/composables/useSidebarState'
 import Logo from './Logo.vue'
 
 const props = defineProps({
@@ -167,12 +184,25 @@ const props = defineProps({
 const route = useRoute()
 const router = useRouter()
 const themeStore = useThemeStore()
+const { isSidebarCollapsed, toggleSidebar } = useSidebarState()
+
+const BRAND_NAME = '\u4e60\u77e5'
+const DEFAULT_SIDEBAR_WIDTH = 256
+const COLLAPSED_SIDEBAR_WIDTH = 84
+
+const layoutVars = computed(() => ({
+  '--app-sidebar-width': `${isSidebarCollapsed.value ? COLLAPSED_SIDEBAR_WIDTH : DEFAULT_SIDEBAR_WIDTH}px`
+}))
+
+const sidebarToggleLabel = computed(() => (
+  isSidebarCollapsed.value ? '\u5c55\u5f00\u4fa7\u8fb9\u680f' : '\u6536\u8d77\u4fa7\u8fb9\u680f'
+))
 
 const navigationItems = [
-  { name: 'dashboard', label: '首页', to: '/dashboard', icon: 'HomeIcon' },
-  { name: 'plan', label: '计划', to: '/plan', icon: 'CalendarIcon' },
-  { name: 'learning', label: '学习', to: '/learning', icon: 'BookOpenIcon' },
-  { name: 'profile', label: '我的', to: '/profile', icon: 'UserIcon' }
+  { name: 'dashboard', label: '\u9996\u9875', to: '/dashboard', icon: 'HomeIcon' },
+  { name: 'plan', label: '\u8ba1\u5212', to: '/plan', icon: 'CalendarIcon' },
+  { name: 'learning', label: '\u5b66\u4e60', to: '/learning', icon: 'BookOpenIcon' },
+  { name: 'profile', label: '\u6211\u7684', to: '/profile', icon: 'UserIcon' }
 ]
 
 const isActive = (path) => {
@@ -268,5 +298,126 @@ export default {
 
 .bg-gradient-radial {
   background: radial-gradient(circle, var(--tw-gradient-stops));
+}
+
+.app-sidebar {
+  width: var(--app-sidebar-width);
+  transition: width 0.22s ease;
+}
+
+.app-content-offset {
+  transition: padding-left 0.18s ease;
+}
+
+.sidebar-brand-row {
+  min-height: 105px;
+  transition: padding 0.22s ease, justify-content 0.22s ease;
+}
+
+.sidebar-brand-copy,
+.sidebar-nav-label {
+  overflow: hidden;
+  white-space: nowrap;
+  transition: max-width 0.18s ease, opacity 0.16s ease, transform 0.18s ease;
+}
+
+.sidebar-brand-copy {
+  max-width: 140px;
+}
+
+.sidebar-nav-label {
+  max-width: 120px;
+}
+
+.sidebar-logo,
+.sidebar-nav-link,
+.sidebar-collapse-button svg {
+  transition: all 0.2s ease;
+}
+
+.sidebar-collapse-button {
+  margin-left: auto;
+  display: inline-flex;
+  height: 32px;
+  width: 32px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  color: rgb(82 82 91);
+  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.sidebar-collapse-button:hover,
+.sidebar-collapse-button:focus-visible {
+  background: rgba(39, 39, 42, 0.08);
+  color: rgb(24 24 27);
+  outline: none;
+}
+
+.is-sidebar-collapsed .sidebar-brand-row {
+  justify-content: center;
+  gap: 0;
+  padding-left: 14px;
+  padding-right: 14px;
+}
+
+.is-sidebar-collapsed .sidebar-logo {
+  height: 48px;
+  width: 48px;
+  border-radius: 16px;
+}
+
+.is-sidebar-collapsed .sidebar-brand-copy,
+.is-sidebar-collapsed .sidebar-nav-label {
+  max-width: 0;
+  opacity: 0;
+  transform: translateX(-6px);
+}
+
+.is-sidebar-collapsed .sidebar-collapse-button {
+  position: absolute;
+  right: -16px;
+  top: 70px;
+  border: 1px solid rgba(228, 228, 231, 0.9);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 12px 24px rgba(24, 24, 27, 0.1);
+}
+
+.is-sidebar-collapsed .sidebar-nav {
+  padding-left: 14px;
+  padding-right: 14px;
+}
+
+.is-sidebar-collapsed .sidebar-nav-link {
+  justify-content: center;
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+}
+
+.is-sidebar-collapsed .sidebar-nav-link svg {
+  margin-right: 0;
+}
+
+.dark .sidebar-collapse-button {
+  color: rgb(212 212 216);
+}
+
+.dark .sidebar-collapse-button:hover,
+.dark .sidebar-collapse-button:focus-visible {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.dark .is-sidebar-collapsed .sidebar-collapse-button {
+  border-color: rgba(63, 63, 70, 0.9);
+  background: rgba(9, 9, 11, 0.92);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.35);
+}
+
+@media (min-width: 1024px) {
+  .app-content-offset {
+    padding-left: var(--app-sidebar-width);
+  }
 }
 </style>
