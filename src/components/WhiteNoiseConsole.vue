@@ -1,8 +1,8 @@
-﻿<template>
+<template>
   <section :class="rootClass">
-    <div class="mx-auto flex w-full max-w-[1320px] flex-col items-center gap-5">
-      <div class="flex w-full max-w-[1180px] flex-wrap items-center justify-center gap-3 text-center xl:justify-between xl:text-left">
-        <div class="max-w-[720px]">
+    <div class="flex w-full flex-col items-stretch gap-5">
+      <div class="flex w-full flex-wrap items-center justify-between gap-3 text-left">
+        <div class="min-w-0 flex-1">
           <p class="text-xs font-medium uppercase tracking-[0.24em]" :class="mode === 'focus' ? 'text-white/45' : 'text-zinc-500 dark:text-zinc-400'">
             {{ mode === 'focus' ? '白噪音预设' : '白噪音控制台' }}
           </p>
@@ -33,7 +33,7 @@
         </div>
       </div>
 
-      <div v-if="mode === 'workspace'" class="w-full max-w-[1180px] space-y-4">
+      <div v-if="mode === 'workspace'" class="w-full space-y-4">
         <div class="rounded-[28px] border border-zinc-200/80 bg-white/85 p-4 dark:border-zinc-800 dark:bg-zinc-950/70">
           <div class="flex items-start justify-between gap-3">
             <div class="min-w-0">
@@ -155,7 +155,7 @@
           </div>
         </div>
 
-        <div class="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
+        <div class="grid gap-4 xl:grid-cols-2">
           <div class="space-y-4">
             <div class="rounded-[24px] border border-zinc-200/80 bg-white/85 p-4 dark:border-zinc-800 dark:bg-zinc-950/70">
               <div class="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">

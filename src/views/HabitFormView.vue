@@ -1,7 +1,7 @@
 <template>
   <AppLayout :title="isEditMode ? '编辑习惯' : '创建习惯'" :show-back-button="true">
     <div class="p-4 lg:p-0">
-      <form class="mx-auto max-w-3xl space-y-8" @submit.prevent="handleSubmit">
+      <form class="w-full space-y-8" @submit.prevent="handleSubmit">
         <BaseCard title="基本信息">
           <div class="space-y-4">
             <div>

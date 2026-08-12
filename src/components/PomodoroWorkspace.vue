@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <section class="h-full min-h-0">
     <BaseCard padding="small" class="relative h-full overflow-hidden border border-zinc-200/80 bg-white/92 dark:border-zinc-800 dark:bg-zinc-950/78" :hover="false">
       <div class="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-zinc-100/70 to-transparent dark:from-white/[0.04]" />
@@ -70,7 +70,7 @@
           </div>
         </div>
 
-        <div class="grid min-h-0 flex-1 gap-3 xl:grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)]">
+        <div class="grid min-h-0 flex-1 gap-3 xl:grid-cols-2">
           <div class="flex min-h-0 flex-col gap-3 overflow-hidden rounded-[24px] border border-zinc-200/80 bg-zinc-50/80 p-3 dark:border-zinc-800 dark:bg-zinc-900/60">
             <div class="flex items-start justify-between gap-3">
               <div>
@@ -102,7 +102,7 @@
               </label>
             </div>
 
-            <div class="grid gap-2 lg:grid-cols-[minmax(0,1fr)_8.5rem]">
+            <div class="grid gap-2 lg:grid-cols-2">
               <div class="rounded-[20px] border border-zinc-200/80 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-950/80">
                 <p class="text-[12px] font-medium uppercase tracking-[0.14em] text-zinc-500 dark:text-zinc-400">当前状态</p>
 
@@ -177,7 +177,7 @@
     <Teleport to="body">
       <Transition name="workspace-fade">
         <div v-if="showWorkspace" class="fixed inset-0 z-[90] bg-black/60 px-4 py-4 backdrop-blur-xl lg:px-6 lg:py-6">
-          <div class="mx-auto flex h-full max-w-[1520px] flex-col overflow-hidden rounded-[32px] border border-white/10 bg-white/94 shadow-[0_32px_120px_rgba(0,0,0,0.28)] dark:bg-zinc-950/94">
+          <div class="flex h-full w-full flex-col overflow-hidden rounded-[32px] border border-white/10 bg-white/94 shadow-[0_32px_120px_rgba(0,0,0,0.28)] dark:bg-zinc-950/94">
             <div class="border-b border-zinc-200/80 px-5 py-4 dark:border-zinc-800/80">
               <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div class="space-y-2">
@@ -515,7 +515,7 @@
           <div class="absolute inset-0 opacity-35 [background-image:linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] [background-size:34px_34px]" />
 
           <div class="relative flex h-full flex-col px-4 py-4 sm:px-6 sm:py-6">
-            <div class="mx-auto flex h-full w-full max-w-[1680px] flex-col gap-4">
+            <div class="flex h-full w-full flex-col gap-4">
               <div class="flex items-center justify-between gap-3">
                 <div class="min-w-0">
                   <p class="text-xs font-medium uppercase tracking-[0.24em] text-white/45">全屏专注区</p>
@@ -536,7 +536,7 @@
               </div>
 
               <div class="min-h-0 flex-1">
-                <div class="grid h-full gap-5 xl:grid-cols-[minmax(0,1.2fr)_minmax(360px,0.8fr)]">
+                <div class="grid h-full gap-5 xl:grid-cols-2">
                   <div class="focus-stage-panel flex min-h-0 flex-col justify-between overflow-hidden rounded-[34px] p-6 sm:p-8">
                   <div class="flex flex-wrap items-center gap-2 text-sm text-white/78">
                     <span class="rounded-full bg-white/10 px-3 py-1">{{ liveSession?.currentPhaseLabel || '准备开始' }}</span>

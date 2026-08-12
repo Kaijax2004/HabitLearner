@@ -42,6 +42,67 @@
     @apply bg-white/[0.72] dark:bg-zinc-950/[0.76] backdrop-blur-apple-lg border border-white/[0.65] dark:border-white/10 shadow-apple;
   }
 
+  .workspace-page {
+    @apply w-full min-w-0 space-y-6;
+  }
+
+  .learning-workbench,
+  .captures-page {
+    @apply w-full min-w-0;
+  }
+
+  .workspace-header {
+    @apply flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between;
+  }
+
+  .workspace-header-copy {
+    @apply min-w-0 space-y-1.5;
+  }
+
+  .workspace-toolbar {
+    @apply flex flex-wrap items-center gap-2.5;
+  }
+
+  .workspace-section-grid {
+    @apply grid gap-5;
+  }
+
+  .workspace-section-grid-2 {
+    @apply grid gap-5 xl:grid-cols-2;
+  }
+
+  .workspace-section-grid-2-balanced {
+    @apply grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)];
+  }
+
+  .workspace-section-grid-2-wide {
+    @apply grid gap-5 xl:grid-cols-[minmax(0,1.12fr)_minmax(0,0.88fr)];
+  }
+
+  .workspace-section-grid-3 {
+    @apply grid gap-5 lg:grid-cols-2 xl:grid-cols-3;
+  }
+
+  .workspace-section-grid-4 {
+    @apply grid gap-4 sm:grid-cols-2 xl:grid-cols-4;
+  }
+
+  .workspace-page-title {
+    @apply text-2xl font-semibold tracking-tight text-zinc-950 dark:text-white;
+  }
+
+  .workspace-page-subtitle {
+    @apply text-sm leading-6 text-zinc-500 dark:text-zinc-400;
+  }
+
+  .workspace-panel {
+    @apply card-apple bg-white/90 dark:bg-zinc-950/76 border border-zinc-200/80 dark:border-zinc-800;
+  }
+
+  .workspace-panel-soft {
+    @apply card-apple bg-zinc-50/80 dark:bg-zinc-900/55 border border-zinc-200/70 dark:border-zinc-800/80;
+  }
+
   .surface-panel-strong {
     @apply bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 shadow-apple-lg;
   }
@@ -175,6 +236,19 @@
   .card-apple {
     @apply bg-white dark:bg-zinc-950 rounded-apple-lg shadow-apple border border-zinc-200 dark:border-zinc-800;
     @apply transition-all duration-200 ease-out;
+  }
+
+  .app-card {
+    @apply min-h-0 rounded-[1.35rem] border-zinc-200/80 bg-white/[0.88] dark:border-zinc-800 dark:bg-zinc-950/[0.78];
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.66),
+      0 16px 42px rgba(24, 24, 27, 0.055);
+  }
+
+  .dark .app-card {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.045),
+      0 18px 46px rgba(0, 0, 0, 0.28);
   }
 
   .card-apple-elevated {

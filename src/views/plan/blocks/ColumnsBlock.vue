@@ -1,21 +1,29 @@
 <template>
   <BaseCard>
-    <div class="flex items-center gap-2 mb-2 text-xs text-gray-500">
-      多列布局
-      <select v-model="model.cols" class="bg-transparent border rounded px-2 py-1 text-xs w-24">
+    <div class="mb-2 flex items-center gap-2 text-xs text-gray-500">
+      <span>多列布局</span>
+      <select :value="model.cols" class="w-24 rounded border bg-transparent px-2 py-1 text-xs" @change="setCols(Number($event.target.value) || 2)">
         <option :value="2">2 列</option>
         <option :value="3">3 列</option>
       </select>
     </div>
+
     <div :class="gridClass" class="gap-3">
-      <div v-for="(col, idx) in columns" :key="idx" class="rounded border border-gray-200 dark:border-gray-700 p-2 space-y-2">
+      <div v-for="(column, idx) in model.columns" :key="idx" class="space-y-2 rounded border border-gray-200 p-2 dark:border-gray-700">
         <div class="flex items-center justify-between text-xs text-gray-500">
-          <span>第 {{ idx+1 }} 列</span>
-          <button class="px-2 py-0.5 rounded hover:bg-gray-100 dark:hover:bg-gray-800" @click="addItem(idx)">+ 添加文本项</button>
+          <span>第 {{ idx + 1 }} 列</span>
+          <button class="rounded px-2 py-0.5 hover:bg-gray-100 dark:hover:bg-gray-800" type="button" @click="addItem(idx)">+ 添加文本项</button>
         </div>
-        <div v-for="(item, j) in columns[idx]" :key="j" class="flex items-start gap-2">
-          <textarea v-model="columns[idx][j]" class="w-full bg-transparent outline-none resize-none dark:text-white text-sm" rows="2" placeholder="文本项..." />
-          <button class="px-2 py-0.5 rounded hover:bg-gray-100 dark:hover:bg-gray-800" @click="removeItem(idx, j)">删除</button>
+
+        <div v-for="(item, itemIndex) in column" :key="itemIndex" class="flex items-start gap-2">
+          <textarea
+            :value="item"
+            class="w-full resize-none bg-transparent text-sm outline-none dark:text-white"
+            rows="2"
+            placeholder="文本项..."
+            @input="updateItem(idx, itemIndex, $event.target.value)"
+          />
+          <button class="rounded px-2 py-0.5 hover:bg-gray-100 dark:hover:bg-gray-800" type="button" @click="removeItem(idx, itemIndex)">删除</button>
         </div>
       </div>
     </div>
@@ -26,41 +34,76 @@
 import { computed } from 'vue'
 import BaseCard from '@/components/BaseCard.vue'
 
-const props = defineProps({ modelValue: { type: Object, default: () => ({ cols: 2, columns: ['', ''] }) } })
+const props = defineProps({
+  modelValue: {
+    type: Object,
+    default: () => ({ cols: 2, columns: [[], []] })
+  }
+})
+
 const emit = defineEmits(['update:modelValue'])
-const model = computed({
-  get: () => props.modelValue,
-  set: (v) => emit('update:modelValue', v)
-})
 
-const columns = computed({
-  get: () => {
-    const cols = model.value.cols || 2
-    let arr = model.value.columns || Array.from({ length: cols }, () => [])
-    // 规整列数
-    if (arr.length !== cols) {
-      arr = Array.from({ length: cols }, (v,i) => arr[i] || [])
-    }
-    return arr
-  },
-  set: (v) => model.value.columns = v
-})
-
-const addItem = (idx) => {
-  const arr = [...columns.value]
-  arr[idx] = [...arr[idx], '']
-  columns.value = arr
-}
-const removeItem = (ci, ii) => {
-  const arr = [...columns.value]
-  arr[ci] = arr[ci].filter((_,j)=>j!==ii)
-  columns.value = arr
+const normalizeColumn = (column = []) => {
+  if (Array.isArray(column)) return column.map((item) => String(item ?? ''))
+  if (typeof column === 'string' && column.trim()) return [column]
+  return []
 }
 
-const gridClass = computed(() => (model.value.cols||2)===3 ? 'grid grid-cols-1 md:grid-cols-3' : 'grid grid-cols-1 md:grid-cols-2')
+const normalizeModel = (value = {}) => {
+  const cols = Number(value.cols || 2)
+  const columns = Array.isArray(value.columns)
+    ? value.columns.slice(0, cols).map((column) => normalizeColumn(column))
+    : []
+
+  while (columns.length < cols) columns.push([])
+
+  return {
+    ...value,
+    cols,
+    columns
+  }
+}
+
+const model = computed(() => normalizeModel(props.modelValue))
+
+const commit = (next) => {
+  emit('update:modelValue', normalizeModel(next))
+}
+
+const setCols = (cols) => {
+  const nextCols = Math.min(Math.max(Number(cols) || 2, 2), 3)
+  const nextColumns = model.value.columns.slice(0, nextCols)
+  while (nextColumns.length < nextCols) nextColumns.push([])
+  commit({ ...model.value, cols: nextCols, columns: nextColumns })
+}
+
+const updateItem = (columnIndex, itemIndex, value) => {
+  const nextColumns = model.value.columns.map((column, idx) => {
+    if (idx !== columnIndex) return [...column]
+    const nextColumn = [...column]
+    nextColumn[itemIndex] = String(value ?? '')
+    return nextColumn
+  })
+  commit({ ...model.value, columns: nextColumns })
+}
+
+const addItem = (columnIndex) => {
+  const nextColumns = model.value.columns.map((column, idx) => (
+    idx === columnIndex ? [...column, ''] : [...column]
+  ))
+  commit({ ...model.value, columns: nextColumns })
+}
+
+const removeItem = (columnIndex, itemIndex) => {
+  const nextColumns = model.value.columns.map((column, idx) => {
+    if (idx !== columnIndex) return [...column]
+    return column.filter((_, index) => index !== itemIndex)
+  })
+  commit({ ...model.value, columns: nextColumns })
+}
+
+const gridClass = computed(() => (model.value.cols === 3 ? 'grid grid-cols-1 md:grid-cols-3' : 'grid grid-cols-1 md:grid-cols-2'))
 </script>
 
 <style scoped>
 </style>
-
-

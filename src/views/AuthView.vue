@@ -1028,7 +1028,7 @@ onBeforeUnmount(() => {
   max-width: 1600px;
   min-height: calc(100vh - 5rem);
   margin: 0 auto;
-  grid-template-columns: minmax(0, 1.08fr) minmax(460px, 0.92fr);
+  grid-template-columns: minmax(0, 1fr) minmax(460px, 1fr);
   column-gap: clamp(2.25rem, 4vw, 4.5rem);
 }
 

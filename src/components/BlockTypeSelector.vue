@@ -1,69 +1,46 @@
 <template>
   <transition name="block-selector">
-    <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm" @click="close">
-      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-4 max-w-2xl w-full mx-4 max-h-[70vh] overflow-y-auto transform transition-all border border-gray-100 dark:border-gray-700" @click.stop>
-        <!-- 头部 -->
-        <div class="flex items-center justify-between mb-4">
-          <h3 class="text-base font-medium text-gray-900 dark:text-gray-100">选择内容类型</h3>
-          <button @click="close" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-        
-        <!-- 搜索框 -->
-        <div class="mb-4">
-          <div class="relative">
-            <input 
-              v-model="searchQuery"
-              type="text" 
-              placeholder="搜索..."
-              class="w-full px-3 py-2 pl-9 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-400/40 dark:focus:ring-zinc-600/40 focus:border-zinc-400 text-sm transition-shadow"
-              autofocus
-            />
-            <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
+    <div v-if="show" class="block-selector-backdrop" @click="close">
+      <section class="block-selector-panel" @click.stop>
+        <header class="block-selector-header">
+          <div>
+            <p class="block-selector-kicker">Block Structure</p>
+            <h3>切换块类型</h3>
           </div>
-        </div>
-        
-        <!-- 内容类型列表 -->
-        <div class="space-y-1">
-          <button 
-            v-for="blockType in filteredBlockTypes" 
+          <button type="button" class="block-selector-close" @click="close">关闭</button>
+        </header>
+
+        <label class="block-selector-search">
+          <span>搜索类型</span>
+          <input ref="searchInputRef" v-model.trim="searchQuery" type="text" placeholder="正文、标题、待办、多列、表格..." />
+        </label>
+
+        <div v-if="filteredBlockTypes.length" class="block-selector-grid">
+          <button
+            v-for="blockType in filteredBlockTypes"
             :key="blockType.type"
+            type="button"
+            class="block-selector-item"
             @click="selectBlock(blockType.type)"
-            class="w-full p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors flex items-center gap-3 group text-left"
           >
-            <div 
-              class="w-10 h-10 rounded-lg flex items-center justify-center border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 shadow-sm group-hover:shadow transition-all"
-            >
-              <component :is="blockType.icon" class="w-5 h-5 text-gray-600 dark:text-gray-300" />
-            </div>
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center justify-between">
-                <span class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ blockType.name }}</span>
-                <span v-if="blockType.shortcut" class="text-[10px] text-gray-400 dark:text-gray-500 font-mono bg-gray-50 dark:bg-gray-800 px-1.5 py-0.5 rounded border border-gray-100 dark:border-gray-700">{{ blockType.shortcut }}</span>
-              </div>
-              <div class="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
-                {{ blockType.description }}
-              </div>
-            </div>
+            <span class="block-selector-icon">{{ blockType.icon }}</span>
+            <span class="min-w-0 flex-1 text-left">
+              <span class="block-selector-name">{{ blockType.name }}</span>
+              <span class="block-selector-desc">{{ blockType.description }}</span>
+            </span>
           </button>
         </div>
-        
-        <!-- 底部提示 -->
-        <div v-if="filteredBlockTypes.length === 0" class="py-8 text-center text-gray-500 dark:text-gray-400 text-sm">
-          未找到相关内容类型
+
+        <div v-else class="block-selector-empty">
+          没有匹配的块类型
         </div>
-      </div>
+      </section>
     </div>
   </transition>
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
 const props = defineProps({
   show: {
@@ -75,252 +52,262 @@ const props = defineProps({
 const emit = defineEmits(['close', 'select'])
 
 const searchQuery = ref('')
+const searchInputRef = ref(null)
 
-// 块类型定义
 const blockTypes = [
-  {
-    type: 'text',
-    name: '文本',
-    description: '添加普通文本内容',
-    shortcut: 'Ctrl+Enter',
-    colorClass: 'bg-green-100 dark:bg-green-900/30 group-hover:bg-green-200 dark:group-hover:bg-green-800/50',
-    iconClass: 'text-green-600 dark:text-green-400',
-    icon: 'TextIcon'
-  },
-  {
-    type: 'heading',
-    name: '标题',
-    description: '添加各级标题',
-    shortcut: 'Ctrl+Shift+H',
-    colorClass: 'bg-zinc-100 dark:bg-zinc-800 group-hover:bg-zinc-200 dark:group-hover:bg-zinc-700',
-    iconClass: 'text-zinc-700 dark:text-zinc-300',
-    icon: 'HeadingIcon'
-  },
-  {
-    type: 'todo',
-    name: '待办',
-    description: '添加任务清单',
-    shortcut: 'Ctrl+T',
-    colorClass: 'bg-purple-100 dark:bg-purple-900/30 group-hover:bg-purple-200 dark:group-hover:bg-purple-800/50',
-    iconClass: 'text-purple-600 dark:text-purple-400',
-    icon: 'TodoIcon'
-  },
-  {
-    type: 'image',
-    name: '图片',
-    description: '添加图片内容',
-    shortcut: 'Ctrl+I',
-    colorClass: 'bg-orange-100 dark:bg-orange-900/30 group-hover:bg-orange-200 dark:group-hover:bg-orange-800/50',
-    iconClass: 'text-orange-600 dark:text-orange-400',
-    icon: 'ImageIcon'
-  },
-  {
-    type: 'code',
-    name: '代码',
-    description: '添加代码块',
-    shortcut: 'Ctrl+Shift+C',
-    colorClass: 'bg-indigo-100 dark:bg-indigo-900/30 group-hover:bg-indigo-200 dark:group-hover:bg-indigo-800/50',
-    iconClass: 'text-indigo-600 dark:text-indigo-400',
-    icon: 'CodeIcon'
-  },
-  {
-    type: 'quote',
-    name: '引用',
-    description: '添加引用内容',
-    shortcut: 'Ctrl+Shift+Q',
-    colorClass: 'bg-pink-100 dark:bg-pink-900/30 group-hover:bg-pink-200 dark:group-hover:bg-pink-800/50',
-    iconClass: 'text-pink-600 dark:text-pink-400',
-    icon: 'QuoteIcon'
-  },
-  {
-    type: 'video',
-    name: '视频',
-    description: '添加视频内容',
-    shortcut: 'Ctrl+Shift+V',
-    colorClass: 'bg-red-100 dark:bg-red-900/30 group-hover:bg-red-200 dark:group-hover:bg-red-800/50',
-    iconClass: 'text-red-600 dark:text-red-400',
-    icon: 'VideoIcon'
-  },
-  {
-    type: 'audio',
-    name: '音频',
-    description: '添加音频内容',
-    shortcut: 'Ctrl+Shift+A',
-    colorClass: 'bg-yellow-100 dark:bg-yellow-900/30 group-hover:bg-yellow-200 dark:group-hover:bg-yellow-800/50',
-    iconClass: 'text-yellow-600 dark:text-yellow-400',
-    icon: 'AudioIcon'
-  },
-  {
-    type: 'callout',
-    name: '标注',
-    description: '添加重要标注',
-    shortcut: 'Ctrl+Shift+!',
-    colorClass: 'bg-cyan-100 dark:bg-cyan-900/30 group-hover:bg-cyan-200 dark:group-hover:bg-cyan-800/50',
-    iconClass: 'text-cyan-600 dark:text-cyan-400',
-    icon: 'CalloutIcon'
-  },
-  {
-    type: 'formula',
-    name: '公式',
-    description: '添加数学公式',
-    shortcut: 'Ctrl+Shift+F',
-    colorClass: 'bg-teal-100 dark:bg-teal-900/30 group-hover:bg-teal-200 dark:group-hover:bg-teal-800/50',
-    iconClass: 'text-teal-600 dark:text-teal-400',
-    icon: 'FormulaIcon'
-  },
-  {
-    type: 'collapse',
-    name: '折叠',
-    description: '添加可折叠内容',
-    shortcut: 'Ctrl+Shift+>',
-    colorClass: 'bg-gray-100 dark:bg-gray-800 group-hover:bg-gray-200 dark:group-hover:bg-gray-700',
-    iconClass: 'text-gray-600 dark:text-gray-400',
-    icon: 'CollapseIcon'
-  },
-  {
-    type: 'columns',
-    name: '多列',
-    description: '添加多列布局',
-    shortcut: 'Ctrl+Shift+Col',
-    colorClass: 'bg-violet-100 dark:bg-violet-900/30 group-hover:bg-violet-200 dark:group-hover:bg-violet-800/50',
-    iconClass: 'text-violet-600 dark:text-violet-400',
-    icon: 'ColumnsIcon'
-  },
-  {
-    type: 'table',
-    name: '表格',
-    description: '添加数据表格',
-    shortcut: 'Ctrl+Shift+T',
-    colorClass: 'bg-emerald-100 dark:bg-emerald-900/30 group-hover:bg-emerald-200 dark:group-hover:bg-emerald-800/50',
-    iconClass: 'text-emerald-600 dark:text-emerald-400',
-    icon: 'TableIcon'
-  },
-  {
-    type: 'list',
-    name: '列表',
-    description: '添加有序或无序列表',
-    shortcut: 'Ctrl+Shift+L',
-    colorClass: 'bg-amber-100 dark:bg-amber-900/30 group-hover:bg-amber-200 dark:group-hover:bg-amber-800/50',
-    iconClass: 'text-amber-600 dark:text-amber-400',
-    icon: 'ListIcon'
-  }
+  { type: 'text', icon: 'TXT', name: '正文', description: '普通文本段落，适合记录想法和说明。', keywords: ['text', 'paragraph'] },
+  { type: 'heading', icon: 'H1', name: '标题', description: '章节标题，适合组织计划结构。', keywords: ['heading', 'title'] },
+  { type: 'todo', icon: 'TODO', name: '待办', description: '可勾选任务，适合拆解行动。', keywords: ['task', 'checkbox'] },
+  { type: 'list', icon: 'LIST', name: '列表', description: '有序或无序列表，适合连续要点。', keywords: ['list', 'bullet'] },
+  { type: 'columns', icon: 'COL', name: '多列', description: '左右并排的信息结构，适合对比和拆分。', keywords: ['columns', 'layout'] },
+  { type: 'table', icon: 'TBL', name: '表格', description: '结构化数据记录，适合清单和对照。', keywords: ['table', 'grid'] },
+  { type: 'toggle', icon: 'TOG', name: '折叠', description: '可展开内容块，适合隐藏细节。', keywords: ['toggle', 'collapse'] },
+  { type: 'quote', icon: 'QTE', name: '引用', description: '突出一段观点、原则或摘录。', keywords: ['quote'] },
+  { type: 'callout', icon: 'NOTE', name: '标注', description: '重点提醒块，适合风险、提示和结论。', keywords: ['callout', 'note'] },
+  { type: 'code', icon: 'CODE', name: '代码', description: '代码片段或命令记录。', keywords: ['code', 'snippet'] },
+  { type: 'page', icon: 'PAGE', name: '子页面', description: '将内容拆到一个独立子页面。', keywords: ['page', 'subpage'] },
+  { type: 'link_page', icon: 'LINK', name: '页面链接', description: '链接到其他计划或页面。', keywords: ['link'] },
+  { type: 'image', icon: 'IMG', name: '图片', description: '图片素材或生成图结果。', keywords: ['image', 'media'] },
+  { type: 'video', icon: 'VID', name: '视频', description: '视频素材或生成视频结果。', keywords: ['video', 'media'] },
+  { type: 'audio', icon: 'AUD', name: '音频', description: '音频素材或声音记录。', keywords: ['audio', 'media'] },
+  { type: 'bookmark', icon: 'WEB', name: '网页书签', description: '保存网页标题、链接和摘要。', keywords: ['bookmark', 'web'] },
+  { type: 'database', icon: 'DB', name: '数据库视图', description: '表格、看板等长期结构化视图。', keywords: ['database', 'kanban'] },
+  { type: 'divider', icon: '---', name: '分割线', description: '分隔章节或阶段。', keywords: ['divider'] },
+  { type: 'button', icon: 'BTN', name: '按钮', description: '保存一个快捷操作入口。', keywords: ['button'] },
+  { type: 'equation', icon: 'EQ', name: '公式', description: '数学公式或 LaTeX 内容。', keywords: ['equation', 'formula', 'latex'] }
 ]
 
-// 过滤后的块类型
 const filteredBlockTypes = computed(() => {
-  if (!searchQuery.value) return blockTypes
-  
   const query = searchQuery.value.toLowerCase()
-  return blockTypes.filter(block => 
-    block.name.toLowerCase().includes(query) ||
-    block.description.toLowerCase().includes(query) ||
-    block.type.toLowerCase().includes(query)
-  )
-})
+  if (!query) return blockTypes
 
-const selectBlock = (type) => {
-  emit('select', type)
-  close()
-}
+  return blockTypes.filter((block) => {
+    const haystack = [block.type, block.name, block.description, ...(block.keywords || [])].join(' ').toLowerCase()
+    return haystack.includes(query)
+  })
+})
 
 const close = () => {
   emit('close')
   searchQuery.value = ''
 }
 
-// 键盘事件处理
-const handleKeydown = (e) => {
+const selectBlock = (type) => {
+  emit('select', type)
+  close()
+}
+
+const handleKeydown = (event) => {
   if (!props.show) return
-  
-  if (e.key === 'Escape') {
-    e.preventDefault()
+  if (event.key === 'Escape') {
+    event.preventDefault()
     close()
   }
 }
 
-// 图标组件
-const TextIcon = { template: '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>' }
-const HeadingIcon = { template: '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" /></svg>' }
-const TodoIcon = { template: '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>' }
-const ImageIcon = { template: '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>' }
-const CodeIcon = { template: '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>' }
-const QuoteIcon = { template: '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>' }
-const VideoIcon = { template: '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>' }
-const AudioIcon = { template: '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" /></svg>' }
-const CalloutIcon = { template: '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2m0 0V1a1 1 0 011-1h2a1 1 0 011 1v18a1 1 0 01-1 1H4a1 1 0 01-1-1V1a1 1 0 011-1h2a1 1 0 011 1v3m0 0h8" /></svg>' }
-const FormulaIcon = { template: '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>' }
-const CollapseIcon = { template: '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>' }
-const ColumnsIcon = { template: '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" /></svg>' }
-const TableIcon = { template: '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0V6a2 2 0 012-2h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2z" /></svg>' }
-const ListIcon = { template: '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>' }
-
-onMounted(() => {
-  document.addEventListener('keydown', handleKeydown)
+watch(() => props.show, async (show) => {
+  if (!show) return
+  await nextTick()
+  searchInputRef.value?.focus?.()
 })
 
-onUnmounted(() => {
-  document.removeEventListener('keydown', handleKeydown)
-})
-
-// 监听显示状态，自动聚焦搜索框
-watch(() => props.show, (newShow) => {
-  if (newShow) {
-    nextTick(() => {
-      const searchInput = document.querySelector('input[placeholder="搜索内容类型..."]')
-      if (searchInput) {
-        searchInput.focus()
-      }
-    })
-  }
-})
+onMounted(() => document.addEventListener('keydown', handleKeydown))
+onUnmounted(() => document.removeEventListener('keydown', handleKeydown))
 </script>
 
 <style scoped>
-/* 块选择器动画 */
-.block-selector-enter-active, .block-selector-leave-active {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+.block-selector-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(9, 9, 11, 0.34);
+  padding: 1.25rem;
+  backdrop-filter: blur(16px);
 }
 
-.block-selector-enter-from, .block-selector-leave-to {
+.block-selector-panel {
+  width: min(48rem, 100%);
+  max-height: min(76vh, 46rem);
+  overflow: hidden;
+  border: 1px solid rgba(212, 212, 216, 0.86);
+  border-radius: 1.65rem;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 34px 90px rgba(24, 24, 27, 0.18);
+  display: flex;
+  flex-direction: column;
+}
+
+.block-selector-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.35rem 1.35rem 1rem;
+}
+
+.block-selector-kicker {
+  color: rgb(113, 113, 122);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.block-selector-header h3 {
+  margin-top: 0.35rem;
+  color: rgb(9, 9, 11);
+  font-size: 1.3rem;
+  font-weight: 760;
+  letter-spacing: -0.04em;
+}
+
+.block-selector-close {
+  min-height: 2.25rem;
+  border: 1px solid rgba(212, 212, 216, 0.9);
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.82);
+  padding: 0 0.9rem;
+  color: rgb(82, 82, 91);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.block-selector-search {
+  display: grid;
+  gap: 0.45rem;
+  padding: 0 1.35rem 1rem;
+  color: rgb(113, 113, 122);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.block-selector-search input {
+  min-height: 2.85rem;
+  border: 1px solid rgba(212, 212, 216, 0.9);
+  border-radius: 1rem;
+  background: rgba(250, 250, 250, 0.94);
+  padding: 0 1rem;
+  color: rgb(24, 24, 27);
+  outline: none;
+}
+
+.block-selector-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  overflow-y: auto;
+  padding: 0 1.35rem 1.35rem;
+}
+
+.block-selector-item {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  min-height: 4.6rem;
+  border: 1px solid rgba(228, 228, 231, 0.9);
+  border-radius: 1.1rem;
+  background: rgba(250, 250, 250, 0.8);
+  padding: 0.78rem;
+  transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease;
+}
+
+.block-selector-item:hover {
+  transform: translateY(-1px);
+  border-color: rgba(24, 24, 27, 0.32);
+  background: white;
+}
+
+.block-selector-icon {
+  display: grid;
+  place-items: center;
+  width: 2.55rem;
+  height: 2.55rem;
+  flex-shrink: 0;
+  border-radius: 0.9rem;
+  background: rgb(24, 24, 27);
+  color: white;
+  font-size: 0.68rem;
+  font-weight: 850;
+  letter-spacing: 0.06em;
+}
+
+.block-selector-name {
+  display: block;
+  color: rgb(24, 24, 27);
+  font-size: 0.92rem;
+  font-weight: 760;
+}
+
+.block-selector-desc {
+  display: block;
+  margin-top: 0.22rem;
+  overflow: hidden;
+  color: rgb(113, 113, 122);
+  font-size: 0.76rem;
+  line-height: 1.45;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.block-selector-empty {
+  padding: 3rem 1.25rem;
+  text-align: center;
+  color: rgb(113, 113, 122);
+  font-size: 0.9rem;
+}
+
+.dark .block-selector-panel {
+  border-color: rgba(63, 63, 70, 0.86);
+  background: rgba(9, 9, 11, 0.96);
+  box-shadow: 0 34px 90px rgba(0, 0, 0, 0.42);
+}
+
+.dark .block-selector-header h3,
+.dark .block-selector-name {
+  color: white;
+}
+
+.dark .block-selector-kicker,
+.dark .block-selector-search,
+.dark .block-selector-desc,
+.dark .block-selector-empty {
+  color: rgb(161, 161, 170);
+}
+
+.dark .block-selector-close,
+.dark .block-selector-search input,
+.dark .block-selector-item {
+  border-color: rgba(63, 63, 70, 0.86);
+  background: rgba(24, 24, 27, 0.82);
+  color: rgb(228, 228, 231);
+}
+
+.dark .block-selector-item:hover {
+  border-color: rgba(255, 255, 255, 0.32);
+  background: rgba(39, 39, 42, 0.9);
+}
+
+.dark .block-selector-icon {
+  background: white;
+  color: rgb(24, 24, 27);
+}
+
+.block-selector-enter-active,
+.block-selector-leave-active {
+  transition: opacity 0.18s ease;
+}
+
+.block-selector-enter-from,
+.block-selector-leave-to {
   opacity: 0;
 }
 
-.block-selector-enter-from .bg-white,
-.block-selector-leave-to .bg-white {
-  transform: scale(0.95) translateY(20px);
-}
-
-/* 键盘快捷键样式 */
-kbd {
-  font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.025em;
-}
-
-/* 自定义滚动条 */
-::-webkit-scrollbar {
-  width: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: rgba(156, 163, 175, 0.3);
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(156, 163, 175, 0.5);
-}
-
-.dark ::-webkit-scrollbar-thumb {
-  background: rgba(75, 85, 99, 0.3);
-}
-
-.dark ::-webkit-scrollbar-thumb:hover {
-  background: rgba(75, 85, 99, 0.5);
+@media (max-width: 720px) {
+  .block-selector-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

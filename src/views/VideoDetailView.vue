@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <AppLayout :title="course?.title || '学习内容'" :show-back-button="true">
     <div class="space-y-6 p-4 lg:p-0">
       <div v-if="isLoading" class="rounded-[2rem] border border-zinc-200 bg-white py-20 text-center text-sm text-zinc-500 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
@@ -30,7 +30,7 @@
           </div>
         </section>
 
-        <section class="grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_0.8fr]">
+        <section class="grid gap-6 lg:grid-cols-2">
           <div class="space-y-6">
             <BaseCard title="课程摘要">
               <p class="text-sm leading-8 text-zinc-700 dark:text-zinc-300">{{ course.summary }}</p>
@@ -101,6 +101,17 @@
               <button class="mt-4 w-full rounded-2xl bg-zinc-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-zinc-800 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-200" @click="saveNote">
                 {{ savingNote ? '正在保存...' : '保存学习笔记' }}
               </button>
+              <div class="mt-3 grid gap-2 sm:grid-cols-2">
+                <button class="learning-action-button" type="button" :disabled="isCollectingNote || isCreatingPlan" @click="collectNote">
+                  {{ isCollectingNote ? '收集中...' : '加入收集箱' }}
+                </button>
+                <button class="learning-action-button learning-action-button-primary" type="button" :disabled="isCreatingPlan || isCollectingNote" @click="createPlanFromNote">
+                  {{ isCreatingPlan ? '创建中...' : '转为行动计划' }}
+                </button>
+              </div>
+              <p class="mt-3 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+                建议先把一个收获写成可执行动作，再转入计划或收集箱。
+              </p>
             </BaseCard>
 
             <BaseCard title="课程信息">
@@ -159,18 +170,24 @@
 
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import * as learningAPI from '@/api/learning.js'
+import { createQuickCapture } from '@/api/workspace.js'
 import { useToast } from '@/composables/useToast'
+import { usePlanStore } from '@/stores/plan'
 import AppLayout from '@/components/AppLayout.vue'
 import BaseCard from '@/components/BaseCard.vue'
 
 const route = useRoute()
+const router = useRouter()
+const planStore = usePlanStore()
 const { success, error } = useToast()
 
 const isLoading = ref(false)
 const savingNote = ref(false)
 const markingComplete = ref(false)
+const isCollectingNote = ref(false)
+const isCreatingPlan = ref(false)
 const course = ref(null)
 const note = ref('')
 const savedNote = ref('')
@@ -232,6 +249,26 @@ const formatSavedTime = (value) => {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
 }
 
+const buildLearningActionContent = () => {
+  const currentCourse = course.value || {}
+  const currentNote = note.value.trim()
+  const parts = [
+    `课程：${currentCourse.title || '学习内容'}`,
+    currentNote ? `学习笔记：\n${currentNote}` : '',
+    currentCourse.practice ? `行动练习：\n${currentCourse.practice}` : '',
+    currentCourse.reflectionQuestion ? `复盘问题：\n${currentCourse.reflectionQuestion}` : ''
+  ].filter(Boolean)
+
+  return parts.join('\n\n')
+}
+
+const ensureNoteSaved = async () => {
+  if (!course.value) return false
+  if (!isNoteDirty.value) return true
+  await saveNote()
+  return !isNoteDirty.value
+}
+
 const loadCourse = async () => {
   isLoading.value = true
   try {
@@ -278,7 +315,7 @@ const loadRecommendations = async () => {
 }
 
 const saveNote = async () => {
-  if (!course.value || savingNote.value) return
+  if (!course.value || savingNote.value) return false
 
   savingNote.value = true
   try {
@@ -292,13 +329,97 @@ const saveNote = async () => {
     note.value = savedNote.value
     lastSavedAt.value = formatSavedTime(response.data?.updatedAt)
     success('学习笔记已保存')
+    return true
   } catch (err) {
     error('笔记保存失败', {
       description: err.message || '请稍后重试'
     })
+    return false
   } finally {
     savingNote.value = false
   }
+}
+
+const collectNote = async () => {
+  const content = buildLearningActionContent()
+  if (!note.value.trim()) {
+    error('请先写下学习笔记', { description: '至少记录一个收获、疑问或行动，再加入收集箱。' })
+    return
+  }
+
+  isCollectingNote.value = true
+  const saved = await ensureNoteSaved()
+  if (!saved) {
+    isCollectingNote.value = false
+    return
+  }
+
+  const response = await createQuickCapture({
+    type: 'learning',
+    content,
+    metadata: {
+      source: 'learning_course',
+      courseId: Number(courseId.value),
+      courseTitle: course.value?.title || ''
+    }
+  })
+  isCollectingNote.value = false
+
+  if (!response.success) {
+    error('加入收集箱失败', { description: response.error || '请稍后重试' })
+    return
+  }
+
+  success('已加入学习收集箱')
+}
+
+const createPlanFromNote = async () => {
+  if (!note.value.trim()) {
+    error('请先写下学习笔记', { description: '把学习收获写下来后，再转成可执行计划。' })
+    return
+  }
+
+  isCreatingPlan.value = true
+  const saved = await ensureNoteSaved()
+  if (!saved) {
+    isCreatingPlan.value = false
+    return
+  }
+
+  const currentCourse = course.value || {}
+  const planResponse = await planStore.addPlan({
+    title: `学习行动：${currentCourse.title || '未命名课程'}`,
+    status: 'not_started',
+    priority: 'medium',
+    type: 'task'
+  })
+
+  if (!planResponse.success || !planResponse.data?.id) {
+    isCreatingPlan.value = false
+    error('创建行动计划失败', { description: planResponse.error || '请稍后重试' })
+    return
+  }
+
+  const planId = planResponse.data.id
+  const noteContent = buildLearningActionContent()
+  const blockResults = await Promise.allSettled([
+    planStore.addBlock(planId, 'text', { text: noteContent }),
+    planStore.addBlock(planId, 'todo', {
+      text: currentCourse.practice || `完成课程“${currentCourse.title || '学习内容'}”的一个可执行动作`,
+      done: false
+    })
+  ])
+  const failedBlocks = blockResults.filter((item) => item.status === 'rejected' || !item.value?.success)
+  isCreatingPlan.value = false
+
+  if (failedBlocks.length) {
+    error('行动计划已创建，但部分内容写入失败', { description: '可以进入计划页手动补充。' })
+    router.push(`/plan/${planId}`)
+    return
+  }
+
+  success('已转为行动计划')
+  router.push(`/plan/${planId}`)
 }
 
 const markAsCompleted = async () => {
@@ -336,3 +457,61 @@ watch(() => route.params.id, loadCourse)
 
 onMounted(loadCourse)
 </script>
+
+<style scoped>
+.learning-action-button {
+  min-height: 2.75rem;
+  border-radius: 1rem;
+  border: 1px solid rgb(212 212 216);
+  background: rgba(255, 255, 255, 0.86);
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: rgb(39 39 42);
+  box-shadow: 0 12px 30px rgba(24, 24, 27, 0.06);
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+
+.learning-action-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: rgb(113 113 122);
+  box-shadow: 0 18px 40px rgba(24, 24, 27, 0.12);
+}
+
+.learning-action-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.learning-action-button-primary {
+  border-color: rgb(24 24 27);
+  background: rgb(24 24 27);
+  color: white;
+}
+
+.learning-action-button-primary:hover:not(:disabled) {
+  background: rgb(39 39 42);
+}
+
+:global(.dark) .learning-action-button {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(39, 39, 42, 0.82);
+  color: rgb(244 244 245);
+  box-shadow: 0 16px 42px rgba(0, 0, 0, 0.28);
+}
+
+:global(.dark) .learning-action-button:hover:not(:disabled) {
+  border-color: rgba(255, 255, 255, 0.26);
+  background: rgba(63, 63, 70, 0.9);
+}
+
+:global(.dark) .learning-action-button-primary {
+  border-color: white;
+  background: white;
+  color: rgb(24 24 27);
+}
+
+:global(.dark) .learning-action-button-primary:hover:not(:disabled) {
+  background: rgb(228 228 231);
+}
+</style>

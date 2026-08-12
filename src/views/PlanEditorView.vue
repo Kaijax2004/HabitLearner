@@ -1,7 +1,7 @@
-﻿<template>
+<template>
   <AppLayout title="计划编辑" :showBackButton="true" :onBack="handleBack">
-    <div class="plan-editor-shell mx-auto max-w-[96rem] px-3 pb-20 pt-4 sm:px-6 lg:px-8">
-      <div class="plan-editor-surface mx-auto w-full max-w-[88rem]">
+    <div class="plan-editor-shell w-full px-3 pb-20 pt-4 sm:px-6 lg:px-8">
+      <div class="plan-editor-surface w-full">
         <header class="mb-8 space-y-6">
           <div class="flex flex-wrap items-center justify-between gap-3">
             <div class="flex flex-wrap items-center gap-2 text-sm">
@@ -23,6 +23,14 @@
                 @click="openAiPanel('outline')"
               >
                 AI 智能助手
+              </button>
+              <button
+                v-if="planId"
+                type="button"
+                class="btn-ghost px-3 py-2 text-sm"
+                @click="showUnscheduledPanel = true"
+              >
+                待安排池 {{ unscheduledBlocks.length }}
               </button>
               <button type="button" class="btn-ghost px-3 py-2 text-sm" @click="triggerImport">导入</button>
               <button type="button" class="btn-ghost px-3 py-2 text-sm" @click="toggleExportMenu">导出</button>
@@ -156,6 +164,7 @@
             <div class="plan-row-content">
               <component
                 :is="resolveBlock(block.type)"
+                :key="`${block.id}-${block.type}-${block.content?.level ?? ''}-${block.content?.viewType ?? ''}`"
                 :model-value="block.content"
                 :all-blocks="blocks"
                 :plan-title="title"
@@ -451,11 +460,199 @@
       >
         <button type="button" class="row-menu-item" @click="handleRowMenuAction('add-above')">在上方插入</button>
         <button type="button" class="row-menu-item" @click="handleRowMenuAction('add-below')">在下方插入</button>
+        <button type="button" class="row-menu-item" @click="handleRowMenuAction('schedule')">安排到日程</button>
         <button type="button" class="row-menu-item" @click="handleRowMenuAction('duplicate')">复制当前块</button>
         <button type="button" class="row-menu-item" @click="handleRowMenuAction('change-type')">切换类型</button>
         <button type="button" class="row-menu-item" @click="handleRowMenuAction('move-up')">上移</button>
         <button type="button" class="row-menu-item" @click="handleRowMenuAction('move-down')">下移</button>
         <button type="button" class="row-menu-item text-red-600 dark:text-red-300" @click="handleRowMenuAction('delete')">删除</button>
+      </div>
+    </Teleport>
+
+    <Teleport to="body">
+      <BlockTypeSelector
+        :show="blockTypeSelector.show"
+        @close="closeBlockTypeSelector"
+        @select="handleBlockTypeSelect"
+      />
+    </Teleport>
+
+    <Teleport to="body">
+      <div
+        v-if="showUnscheduledPanel"
+        class="fixed inset-0 z-[1240] flex justify-end bg-black/35 backdrop-blur-sm"
+        @click="showUnscheduledPanel = false"
+      >
+        <aside
+          class="flex h-full w-full max-w-md flex-col border-l border-zinc-200 bg-white/95 p-6 shadow-2xl dark:border-zinc-800 dark:bg-zinc-950/95"
+          @click.stop
+        >
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <p class="text-xs font-semibold uppercase tracking-[0.24em] text-zinc-500 dark:text-zinc-400">Unscheduled</p>
+              <h3 class="mt-2 text-xl font-semibold tracking-tight text-zinc-950 dark:text-white">待安排池</h3>
+              <p class="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400">
+                这些计划块还没有安排到具体日期。先放在这里，等你决定执行时间后再进入今日工作台。
+              </p>
+            </div>
+            <button
+              type="button"
+              class="rounded-full border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-500 transition hover:border-zinc-300 hover:text-zinc-950 dark:border-zinc-700 dark:text-zinc-300 dark:hover:border-zinc-600 dark:hover:text-white"
+              @click="showUnscheduledPanel = false"
+            >
+              关闭
+            </button>
+          </div>
+
+          <div class="mt-5 flex items-center justify-between rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm dark:border-zinc-800 dark:bg-zinc-900/70">
+            <span class="text-zinc-500 dark:text-zinc-400">当前未安排</span>
+            <strong class="text-lg font-semibold text-zinc-950 dark:text-white">{{ filteredUnscheduledBlocks.length }}</strong>
+          </div>
+
+          <div class="mt-4 grid gap-3 sm:grid-cols-2">
+            <label class="unscheduled-filter-field">
+              <span>搜索</span>
+              <input
+                v-model.trim="unscheduledSearch"
+                type="search"
+                placeholder="搜索计划块内容"
+              />
+            </label>
+            <label class="unscheduled-filter-field">
+              <span>类型</span>
+              <select v-model="unscheduledTypeFilter">
+                <option value="all">全部类型</option>
+                <option
+                  v-for="option in unscheduledTypeOptions"
+                  :key="option.value"
+                  :value="option.value"
+                >
+                  {{ option.label }}
+                </option>
+              </select>
+            </label>
+          </div>
+
+          <div class="mt-5 min-h-0 flex-1 overflow-y-auto pr-1">
+            <div v-if="scheduleBlocksLoading" class="rounded-3xl border border-dashed border-zinc-200 p-6 text-sm text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
+              正在同步日程状态...
+            </div>
+            <div v-else-if="!filteredUnscheduledBlocks.length" class="rounded-3xl border border-dashed border-zinc-200 p-6 text-sm leading-6 text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
+              {{ unscheduledEmptyText }}
+            </div>
+            <div v-else class="space-y-3">
+              <article
+                v-for="block in filteredUnscheduledBlocks"
+                :key="`unscheduled-${block.id}`"
+                class="rounded-3xl border border-zinc-200 bg-white p-4 shadow-sm transition hover:border-zinc-300 hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900/70 dark:hover:border-zinc-700"
+              >
+                <div class="flex items-start justify-between gap-3">
+                  <div class="min-w-0">
+                    <p class="line-clamp-2 text-sm font-semibold leading-6 text-zinc-950 dark:text-white">
+                      {{ getBlockTextContent(block) || '未命名计划块' }}
+                    </p>
+                    <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{{ blockTypeLabel(block.type) }}</p>
+                  </div>
+                  <button
+                    type="button"
+                    class="shrink-0 rounded-2xl bg-zinc-950 px-3 py-2 text-xs font-semibold text-white transition hover:bg-zinc-800 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-100"
+                    @click="openScheduleDialogFromShelf(block)"
+                  >
+                    安排
+                  </button>
+                </div>
+              </article>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </Teleport>
+
+    <Teleport to="body">
+      <div
+        v-if="scheduleDialog.show"
+        class="fixed inset-0 z-[1250] flex items-center justify-center bg-black/45 px-4 backdrop-blur-sm"
+        @click="closeScheduleDialog"
+      >
+        <div
+          class="w-full max-w-xl rounded-[28px] border border-zinc-200 bg-white p-6 shadow-2xl dark:border-zinc-800 dark:bg-zinc-950"
+          @click.stop
+        >
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <p class="text-xs font-semibold uppercase tracking-[0.24em] text-zinc-500 dark:text-zinc-400">Schedule Block</p>
+              <h3 class="mt-2 text-xl font-semibold tracking-tight text-zinc-950 dark:text-white">安排到日程</h3>
+              <p class="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400">这只会创建一次执行安排，不会删除或改写原计划块。</p>
+            </div>
+            <button
+              type="button"
+              class="rounded-full border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-500 transition hover:border-zinc-300 hover:text-zinc-950 dark:border-zinc-700 dark:text-zinc-300 dark:hover:border-zinc-600 dark:hover:text-white"
+              @click="closeScheduleDialog"
+            >
+              关闭
+            </button>
+          </div>
+
+          <div class="mt-5 grid gap-4">
+            <label class="grid gap-2 text-sm font-medium text-zinc-700 dark:text-zinc-200">
+              <span>执行标题</span>
+              <input
+                v-model="scheduleDialog.title"
+                class="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-950 outline-none transition focus:border-zinc-950 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white dark:focus:border-white"
+                maxlength="255"
+                placeholder="这次要执行什么"
+              />
+            </label>
+
+            <div class="grid gap-4 md:grid-cols-3">
+              <label class="grid gap-2 text-sm font-medium text-zinc-700 dark:text-zinc-200">
+                <span>日期</span>
+                <input
+                  v-model="scheduleDialog.date"
+                  type="date"
+                  class="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-950 outline-none transition focus:border-zinc-950 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white dark:focus:border-white"
+                />
+              </label>
+              <label class="grid gap-2 text-sm font-medium text-zinc-700 dark:text-zinc-200">
+                <span>开始时间</span>
+                <input
+                  v-model="scheduleDialog.startTime"
+                  type="time"
+                  class="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-950 outline-none transition focus:border-zinc-950 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white dark:focus:border-white"
+                />
+              </label>
+              <label class="grid gap-2 text-sm font-medium text-zinc-700 dark:text-zinc-200">
+                <span>持续分钟</span>
+                <input
+                  v-model.number="scheduleDialog.durationMinutes"
+                  type="number"
+                  min="5"
+                  max="480"
+                  step="5"
+                  class="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-950 outline-none transition focus:border-zinc-950 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white dark:focus:border-white"
+                />
+              </label>
+            </div>
+          </div>
+
+          <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
+            <button
+              type="button"
+              class="rounded-2xl border border-zinc-200 px-5 py-3 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-900"
+              @click="closeScheduleDialog"
+            >
+              取消
+            </button>
+            <button
+              type="button"
+              class="rounded-2xl bg-zinc-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-100"
+              :disabled="scheduleDialog.isSubmitting"
+              @click="submitScheduleDialog"
+            >
+              {{ scheduleDialog.isSubmitting ? '安排中...' : '确认安排' }}
+            </button>
+          </div>
+        </div>
       </div>
     </Teleport>
 
@@ -626,7 +823,7 @@
           </div>
 
           <div v-else-if="aiPanel.tab === 'image'" class="ai-panel-body space-y-4">
-            <div class="grid grid-cols-1 gap-4 lg:grid-cols-[1.1fr,0.9fr]">
+            <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
               <div class="space-y-4">
                 <div class="flex flex-wrap gap-2">
                   <button type="button" class="ai-mode-chip" :class="{ 'ai-mode-chip-active': aiImageMode === 'text_to_image' }" @click="aiImageMode = 'text_to_image'">文生图</button>
@@ -637,9 +834,17 @@
                 <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
                   <label class="ai-panel-field">
                     <span>模型</span>
-                    <select v-model="aiImageModel" class="ai-panel-input">
+                    <input
+                      v-model.trim="aiImageModel"
+                      class="ai-panel-input"
+                      list="ai-image-model-options"
+                      placeholder="从供应商模型列表选择或手动输入"
+                      @focus="ensureAiMediaModelsLoaded"
+                    />
+                    <datalist id="ai-image-model-options">
                       <option v-for="item in aiImageModelOptions" :key="item.value" :value="item.value">{{ item.label }}</option>
-                    </select>
+                    </datalist>
+                    <small class="text-xs text-zinc-500 dark:text-zinc-400">{{ aiMediaModelHint }}</small>
                   </label>
                   <label class="ai-panel-field">
                     <span>尺寸</span>
@@ -795,7 +1000,7 @@
           </div>
 
           <div v-else class="ai-panel-body space-y-4">
-            <div class="grid grid-cols-1 gap-4 lg:grid-cols-[1.1fr,0.9fr]">
+            <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
               <div class="space-y-4">
                 <div class="flex flex-wrap gap-2">
                   <button type="button" class="ai-mode-chip" :class="{ 'ai-mode-chip-active': aiVideoMode === 'text_to_video' }" @click="aiVideoMode = 'text_to_video'">文生视频</button>
@@ -805,9 +1010,17 @@
 
                 <label class="ai-panel-field">
                   <span>模型</span>
-                  <select v-model="aiVideoModel" class="ai-panel-input">
+                  <input
+                    v-model.trim="aiVideoModel"
+                    class="ai-panel-input"
+                    list="ai-video-model-options"
+                    placeholder="从供应商模型列表选择或手动输入"
+                    @focus="ensureAiMediaModelsLoaded"
+                  />
+                  <datalist id="ai-video-model-options">
                     <option v-for="item in aiVideoModelOptions" :key="item.value" :value="item.value">{{ item.label }}</option>
-                  </select>
+                  </datalist>
+                  <small class="text-xs text-zinc-500 dark:text-zinc-400">{{ aiMediaModelHint }}</small>
                 </label>
 
                 <label class="ai-panel-field">
@@ -1007,6 +1220,7 @@
 import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import AppLayout from '@/components/AppLayout.vue'
+import BlockTypeSelector from '@/components/BlockTypeSelector.vue'
 import {
   polishPlanBlockAI,
   generatePlanOutlineAI,
@@ -1020,15 +1234,19 @@ import {
   listPlanVideoHistoryAI,
   deletePlanVideoHistoryAI
 } from '@/api/plans'
+import { createScheduleBlock, listScheduleBlocks } from '@/api/scheduleBlocks'
+import { listAiProviderModels, listAiProviders } from '@/api/workspace'
 import { uploadImage } from '@/api/uploads'
 import { useImportExport } from '@/composables/useImportExport'
 import { useToast } from '@/composables/useToast'
 import { usePlanStore } from '@/stores/plan'
+import { useWorkspaceAiStore } from '@/stores/workspaceAi'
 import { resolveMediaUrl } from '@/utils/media'
 
 const route = useRoute()
 const router = useRouter()
 const planStore = usePlanStore()
+const workspaceAiStore = useWorkspaceAiStore()
 const { exportPlan, exportWorkspaceBackup, importPlan } = useImportExport()
 const { success: showSuccess, error: showError, info: showInfo } = useToast()
 
@@ -1053,6 +1271,21 @@ const titleRef = ref(null)
 const commandInputRef = ref(null)
 const commandListRef = ref(null)
 const rowMenu = ref({ show: false, blockId: null, blockIndex: -1, top: 0, left: 0 })
+const blockTypeSelector = ref({ show: false, blockId: null, blockIndex: -1 })
+const scheduleDialog = ref({
+  show: false,
+  blockId: null,
+  title: '',
+  date: '',
+  startTime: '',
+  durationMinutes: 60,
+  isSubmitting: false
+})
+const scheduleBlocks = ref([])
+const scheduleBlocksLoading = ref(false)
+const showUnscheduledPanel = ref(false)
+const unscheduledSearch = ref('')
+const unscheduledTypeFilter = ref('all')
 const dragState = ref({ draggingId: null, draggingIds: [], fromIndex: -1, overIndex: -1, position: 'after' })
 const commandMenu = ref({ show: false, mode: 'insert-after', index: null, top: 0, left: 0, query: '', selectedCategory: 'all', highlight: 0 })
 const aiPanel = ref({ show: false, tab: 'outline' })
@@ -1066,7 +1299,7 @@ const aiQuestionsLoading = ref(false)
 const aiQuestionsResult = ref(null)
 const aiPolishTarget = ref({ blockId: null, fieldKey: '', itemIndex: null })
 const aiImageMode = ref('text_to_image')
-const aiImageModel = ref('agnes-image-2.1-flash')
+const aiImageModel = ref('')
 const aiImagePrompt = ref('')
 const aiImageNegativePrompt = ref('')
 const aiImageSize = ref('1024x1024')
@@ -1079,7 +1312,7 @@ const aiImageHistoryLoading = ref(false)
 const aiImageDeletingTaskId = ref('')
 const aiImagePollingTimer = ref(null)
 const aiVideoMode = ref('text_to_video')
-const aiVideoModel = ref('agnes-video-v2.0')
+const aiVideoModel = ref('')
 const aiVideoPrompt = ref('')
 const aiVideoNegativePrompt = ref('')
 const aiVideoWidth = ref(720)
@@ -1096,6 +1329,9 @@ const aiVideoHistory = ref([])
 const aiVideoHistoryLoading = ref(false)
 const aiVideoDeletingTaskId = ref('')
 const aiVideoPollingTimer = ref(null)
+const aiMediaModelOptions = ref([])
+const aiMediaModelsLoading = ref(false)
+const aiMediaModelError = ref('')
 const AI_TEMPLATE_STORAGE_KEY = 'habitlearner.plan.ai-template.registry.v2'
 const createAiTemplateFields = (value = {}) => ({
   role: String(value.role || '').trim(),
@@ -1109,43 +1345,27 @@ const aiTemplateScopeLabels = {
   video: 'AI 视频'
 }
 const aiTemplateScopeDescriptions = {
-  text: '用于生成大纲、润色、提问和块内 AI。',
-  image: '用于生图、图生图、多图合成等视觉提示词。',
-  video: '用于文生视频、图生视频和关键帧动画。'
+  text: '用于生成大纲、润色、提问和块内 AI。默认不选择模板，只有主动选择后才会套用。',
+  image: '用于生图、图生图和多图合成。模板为可选项。',
+  video: '用于文生视频、图生视频和关键帧动画。模板为可选项。'
 }
 const aiTemplateBuiltinPresetsByScope = {
   text: [
     {
       key: 'execution_planner',
       label: '执行型规划师',
-      role: '你是一位有 10 年经验的中文计划编辑与执行规划顾问。',
-      task: '围绕当前计划内容进行生成、润色、提问、提纲整理时，优先保证可执行性、结构清晰和落地顺序。',
-      constraints: '输出简体中文；优先使用短句和明确动作；表达要适合直接粘贴进计划页；保留原始逻辑，但要更清楚。',
-      prohibitions: '不要输出空话；不要偏离计划主题；不要只做同义词替换；不要写成营销文案；不要输出额外解释。'
+      role: '你是一位严谨的中文执行规划顾问。',
+      task: '整理计划内容，给出清晰、可执行的输出。',
+      constraints: '输出简体中文，结构清楚，动作具体。',
+      prohibitions: '不要空泛，不要编造事实，不要输出额外解释。'
     },
     {
       key: 'editorial_writer',
       label: '专业文案编辑',
       role: '你是一位擅长简洁表达和结构化叙述的中文编辑。',
-      task: '把用户输入整理成更自然、更简洁、更有层次的内容。',
-      constraints: '输出需要克制、简洁、通顺；适合知识记录和计划页；保持原意不变。',
-      prohibitions: '不要夸张；不要加戏；不要扩展不存在的信息；不要生成冗长段落。'
-    },
-    {
-      key: 'analytic_advisor',
-      label: '严谨分析顾问',
-      role: '你是一位擅长分析问题、识别风险和补齐信息缺口的计划顾问。',
-      task: '帮助用户发现当前内容中的缺失项、冲突点、风险点和下一步行动。',
-      constraints: '输出要具体、可验证、偏事实；每条建议都应能直接用于推进计划。',
-      prohibitions: '不要泛泛而谈；不要重复同义内容；不要输出无意义鼓励；不要跳出上下文。'
-    },
-    {
-      key: 'notion_formatter',
-      label: 'Notion 风格整理器',
-      role: '你是一位熟悉 Notion 风格块结构的中文内容整理助手。',
-      task: '把输入内容整理成适合块编辑器的层级结构和清晰段落。',
-      constraints: '输出要像高质量工作区内容；强调标题、层级、待办和重点；保持视觉上易读。',
-      prohibitions: '不要把内容堆成一整段；不要忽略层级；不要过度装饰；不要输出与编辑器不兼容的格式。'
+      task: '将原文改写得更自然、更清楚、更有层次。',
+      constraints: '保持原意，克制表达，适合直接放入工作区。',
+      prohibitions: '不要夸张，不要加戏，不要扩展不存在的信息。'
     }
   ],
   image: [
@@ -1153,25 +1373,17 @@ const aiTemplateBuiltinPresetsByScope = {
       key: 'visual_director',
       label: '视觉导演',
       role: '你是一位专业视觉导演与图像提示词设计师。',
-      task: '围绕生图、图生图、多图合成，输出适合直接提交给模型的高质量图像提示词。',
-      constraints: '输出简体中文；重点描述主体、构图、光影、材质、风格、镜头感和画面比例。',
-      prohibitions: '不要空泛；不要塞入无关解释；不要让提示词过长失焦。'
+      task: '输出适合直接提交给图像模型的高质量提示词。',
+      constraints: '描述主体、构图、光影、材质、风格和镜头感。',
+      prohibitions: '不要空泛，不要跑题，不要堆砌无关风格词。'
     },
     {
-      key: 'ios_glass',
-      label: 'iOS 玻璃感',
-      role: '你是一位熟悉 iOS 玻璃拟态和高级极简风格的视觉提示词设计师。',
-      task: '生成有苹果式高级感的生图提示词，适合计划页、卡片和工具区视觉。',
-      constraints: '强调黑白主色、柔和高光、半透明玻璃、留白和秩序感。',
-      prohibitions: '不要使用花哨颜色；不要赛博科技蓝；不要堆砌复杂元素。'
-    },
-    {
-      key: 'poster_layout',
-      label: '海报构图师',
-      role: '你是一位擅长商业海报和信息可视化的视觉编辑。',
-      task: '把用户需求整理成适合直出海报或封面图的提示词。',
-      constraints: '强调层级、排版、视觉焦点和阅读动线。',
-      prohibitions: '不要生成杂乱拼贴；不要缺少主体；不要忽略留白。'
+      key: 'luxury_glass',
+      label: '冷调高奢感',
+      role: '你是熟悉黑白灰、玻璃拟态和高级极简风格的视觉设计师。',
+      task: '生成具有高奢冷调氛围的图像提示词。',
+      constraints: '强调黑白主色、克制留白、柔和高光和秩序感。',
+      prohibitions: '不要花哨配色，不要赛博科技蓝，不要元素过多。'
     }
   ],
   video: [
@@ -1179,9 +1391,9 @@ const aiTemplateBuiltinPresetsByScope = {
       key: 'motion_director',
       label: '镜头导演',
       role: '你是一位擅长视频镜头语言和节奏控制的导演。',
-      task: '围绕文生视频、图生视频和关键帧动画，输出适合直接提交给视频模型的高质量提示词。',
-      constraints: '输出简体中文；明确镜头推进、运动方式、转场节奏、画面风格和时长感。',
-      prohibitions: '不要只写静态画面；不要缺少镜头动作；不要让描述过于抽象。'
+      task: '生成适合直接提交给视频模型的提示词。',
+      constraints: '明确镜头推进、主体运动、转场节奏和画面氛围。',
+      prohibitions: '不要只写静态画面，不要缺少动作和节奏。'
     },
     {
       key: 'product_demo',
@@ -1189,21 +1401,13 @@ const aiTemplateBuiltinPresetsByScope = {
       role: '你是一位擅长产品演示视频策划的导演。',
       task: '把产品、工作流或计划页内容整理成流畅的视频提示词。',
       constraints: '强调步骤感、交互感、镜头变化和信息呈现顺序。',
-      prohibitions: '不要堆满旁白；不要让镜头切换混乱；不要忽略动作目标。'
-    },
-    {
-      key: 'cinematic_short',
-      label: '电影短片',
-      role: '你是一位擅长电影感短片创作的导演。',
-      task: '生成适合 Agnes Video V2.0 的电影感视频提示词。',
-      constraints: '突出氛围、光影、运动、景别和节奏，适合短时长成片。',
-      prohibitions: '不要写成长篇文案；不要缺少运动信息；不要过度抽象。'
+      prohibitions: '不要堆满旁白，不要让镜头切换混乱。'
     }
   ]
 }
 const createAiTemplateState = (scope) => ({
   mode: 'preset',
-  presetKey: aiTemplateBuiltinPresetsByScope[scope]?.[0]?.key || '',
+  presetKey: '',
   custom: createAiTemplateFields(),
   customBaseName: '',
   savedBases: []
@@ -1226,7 +1430,7 @@ const loadAiTemplateStore = () => {
         const state = parsed?.[scope]
         if (!state) return
         next[scope].mode = state.mode === 'custom' ? 'custom' : 'preset'
-        next[scope].presetKey = String(state.presetKey || '').trim() || next[scope].presetKey
+        next[scope].presetKey = String(state.presetKey || '').trim()
         next[scope].custom = createAiTemplateFields(state.custom)
         next[scope].customBaseName = String(state.customBaseName || '')
         next[scope].savedBases = Array.isArray(state.savedBases)
@@ -1245,7 +1449,7 @@ const loadAiTemplateStore = () => {
       const parsed = JSON.parse(legacyRaw)
       const next = createStore()
       next.text.mode = parsed?.mode === 'custom' ? 'custom' : 'preset'
-      next.text.presetKey = String(parsed?.preset || '').trim() || next.text.presetKey
+      next.text.presetKey = String(parsed?.preset || '').trim()
       next.text.custom = createAiTemplateFields(parsed?.custom)
       return next
     }
@@ -1286,8 +1490,8 @@ const ensureAiTemplateScopeState = (scope) => {
     item.template = createAiTemplateFields(item.template)
   })
   const allKeys = new Set([...availableKeys, ...state.savedBases.map((item) => item.id)])
-  if (!allKeys.has(state.presetKey)) {
-    state.presetKey = aiTemplateBuiltinPresetsByScope[scope]?.[0]?.key || ''
+  if (state.presetKey && !allKeys.has(state.presetKey)) {
+    state.presetKey = ''
   }
   return state
 }
@@ -1326,7 +1530,16 @@ const aiTemplatePresets = computed(() => {
     source: 'custom',
     template: createAiTemplateFields(item.template)
   }))
-  return [...builtins, ...savedBases]
+  return [
+    {
+      key: '',
+      label: '不使用模板',
+      source: 'none',
+      template: createAiTemplateFields()
+    },
+    ...builtins,
+    ...savedBases
+  ]
 })
 const activeAiTemplatePreset = computed(() => (
   aiTemplatePresets.value.find((item) => item.key === aiTemplatePreset.value) || aiTemplatePresets.value[0] || null
@@ -1334,19 +1547,24 @@ const activeAiTemplatePreset = computed(() => (
 const getResolvedAiTemplate = (scope = currentAiTemplateScope.value) => {
   const state = ensureAiTemplateScopeState(scope)
   if (state.mode === 'custom') {
+    const custom = createAiTemplateFields(state.custom)
+    if (!custom.role && !custom.task && !custom.constraints && !custom.prohibitions) return null
     return {
       presetKey: 'custom',
       presetLabel: '高级自定义',
-      ...createAiTemplateFields(state.custom)
+      ...custom
     }
   }
+
+  if (!state.presetKey) return null
 
   const preset = (
     (aiTemplateBuiltinPresetsByScope[scope] || []).find((item) => item.key === state.presetKey) ||
     state.savedBases.find((item) => item.id === state.presetKey) ||
-    aiTemplateBuiltinPresetsByScope[scope]?.[0] ||
     null
   )
+
+  if (!preset) return null
 
   const template = preset?.template || preset || {}
   return {
@@ -1358,6 +1576,7 @@ const getResolvedAiTemplate = (scope = currentAiTemplateScope.value) => {
 const resolvedAiTemplate = computed(() => getResolvedAiTemplate())
 const aiTemplateSummary = computed(() => {
   const template = resolvedAiTemplate.value
+  if (!template) return '当前不使用模板。你可以按需选择预设模板，或填写高级自定义四段式模板。'
   return [
     template.role,
     template.task,
@@ -1488,6 +1707,7 @@ const blockComponents = {
   bookmark: defineAsyncComponent(() => import('@/views/plan/blocks/BookmarkBlock.vue')),
   table: defineAsyncComponent(() => import('@/views/plan/blocks/TableBlock.vue')),
   list: defineAsyncComponent(() => import('@/views/plan/blocks/ListBlock.vue')),
+  columns: defineAsyncComponent(() => import('@/views/plan/blocks/ColumnsBlock.vue')),
   database: defineAsyncComponent(() => import('@/views/plan/blocks/DatabaseViewBlock.vue')),
   toc: defineAsyncComponent(() => import('@/views/plan/blocks/TableOfContentsBlock.vue')),
   button: defineAsyncComponent(() => import('@/views/plan/blocks/ButtonBlock.vue')),
@@ -1518,6 +1738,7 @@ const createBlockContent = (type) => ({
   bookmark: { url: '', title: '', description: '' },
   table: { headers: ['列 1', '列 2'], rows: [['', '']] },
   list: { listType: 'unordered', items: ['列表项 1', '列表项 2'] },
+  columns: { cols: 2, columns: [[], []] },
   database: { title: '数据库', viewType: 'table', rows: [{ id: '1', title: '条目 1', status: '未开始', date: '', note: '' }] },
   toc: { title: '目录' },
   button: { label: '按钮', url: '', style: 'primary' },
@@ -1638,14 +1859,77 @@ const getAiActionButtonText = (action, idleText, loading, loadingText = '处理�
   return cooldown > 0 ? `${cooldown}s 后再试` : idleText
 }
 
-const aiImageModelOptions = [
-  { value: 'agnes-image-2.0-flash', label: 'Agnes Image 2.0 Flash' },
-  { value: 'agnes-image-2.1-flash', label: 'Agnes Image 2.1 Flash' }
-]
+const normalizeAiModelOption = (item) => {
+  const value = String(item?.id || item?.value || item?.name || item || '').trim()
+  if (!value) return null
+  return {
+    value,
+    label: String(item?.name || item?.label || value).trim()
+  }
+}
 
-const aiVideoModelOptions = [
-  { value: 'agnes-video-v2.0', label: 'Agnes Video V2.0' }
-]
+const aiImageModelOptions = computed(() => aiMediaModelOptions.value.filter((item) => /image|img|draw|vision|agnes/i.test(item.value)))
+const aiVideoModelOptions = computed(() => aiMediaModelOptions.value.filter((item) => /video|wan|kling|runway|sora|agnes/i.test(item.value)))
+const aiMediaModelHint = computed(() => {
+  if (aiMediaModelsLoading.value) return '正在读取当前供应商模型列表...'
+  if (aiMediaModelError.value) return aiMediaModelError.value
+  if (aiMediaModelOptions.value.length) return '模型来自当前 AI 供应商，也可以手动输入上游模型名。'
+  return '尚未读取到模型列表，可以手动输入供应商支持的模型名。'
+})
+
+const resolveCurrentAiProvider = async () => {
+  const response = await listAiProviders()
+  if (!response.success) throw new Error(response.error || 'AI 供应商配置读取失败')
+
+  const providers = Array.isArray(response.data?.providers) ? response.data.providers : []
+  const explicitId = workspaceAiStore.hasExplicitSelection ? String(workspaceAiStore.normalizedSelectedProviderId) : ''
+  const selected = explicitId
+    ? providers.find((provider) => String(provider.id) === explicitId && provider.status === 'active')
+    : null
+  const provider = selected || response.data?.defaultProvider || providers.find((item) => item.is_default && item.status === 'active') || null
+
+  if (provider?.id && !explicitId) workspaceAiStore.setSelectedProviderId(provider.id)
+  return provider
+}
+
+const ensureAiMediaModelsLoaded = async ({ force = false } = {}) => {
+  if (aiMediaModelsLoading.value) return
+  if (!force && aiMediaModelOptions.value.length) return
+
+  aiMediaModelsLoading.value = true
+  aiMediaModelError.value = ''
+
+  try {
+    const provider = await resolveCurrentAiProvider()
+    if (!provider) {
+      aiMediaModelError.value = '尚未配置 AI 供应商，请先到“我的 / AI 供应商配置”中添加。'
+      return
+    }
+
+    if (provider.provider !== 'agnes') {
+      aiMediaModelError.value = '当前供应商不是 Agnes 媒体供应商，生图和生视频暂不可用。'
+      return
+    }
+
+    const response = await listAiProviderModels({ id: provider.id })
+    if (!response.success) throw new Error(response.error || '模型列表获取失败')
+
+    const options = (Array.isArray(response.data?.models) ? response.data.models : [])
+      .map(normalizeAiModelOption)
+      .filter(Boolean)
+
+    aiMediaModelOptions.value = options
+    const firstImageModel = options.find((item) => /image|img|draw|agnes/i.test(item.value)) || options[0]
+    const firstVideoModel = options.find((item) => /video|wan|kling|runway|sora|agnes/i.test(item.value)) || options[0]
+    if (!aiImageModel.value && firstImageModel?.value) aiImageModel.value = firstImageModel.value
+    if (!aiVideoModel.value && firstVideoModel?.value) aiVideoModel.value = firstVideoModel.value
+    if (!options.length) aiMediaModelError.value = '上游未返回模型列表，请手动输入供应商支持的模型名。'
+  } catch (err) {
+    aiMediaModelError.value = err.message || '模型列表获取失败，请手动输入模型名。'
+  } finally {
+    aiMediaModelsLoading.value = false
+  }
+}
 
 const aiImageSizeOptions = [
   '1024x1024',
@@ -1694,6 +1978,13 @@ const getBlockTextContent = (block) => {
       const rows = Array.isArray(content.rows) ? content.rows.map((row) => row.join(', ')).join('\n') : ''
       return [headers, rows].filter(Boolean).join('\n')
     }
+    case 'columns':
+      return Array.isArray(content.columns)
+        ? content.columns
+            .map((column) => Array.isArray(column) ? column.join('\n') : String(column || ''))
+            .filter(Boolean)
+            .join('\n')
+        : ''
     case 'database':
       return Array.isArray(content.rows) ? content.rows.map((row) => row.title || '').join('\n') : ''
     case 'equation':
@@ -1713,6 +2004,34 @@ const getBlockTextContent = (block) => {
       return content.text || ''
   }
 }
+
+const blockTypeLabel = (type) => ({
+  heading: '标题',
+  text: '文本',
+  todo: '待办',
+  list: '列表',
+  quote: '引用',
+  callout: '标注',
+  page: '子页面',
+  toggle: '折叠列表',
+  collapse: '折叠列表',
+  link_page: '页面链接',
+  image: '图片',
+  video: '视频',
+  audio: '音频',
+  code: '代码',
+  file: '文件',
+  bookmark: '网页书签',
+  table: '表格',
+  columns: '多列',
+  database: '数据库视图',
+  equation: '公式',
+  formula: '公式',
+  button: '按钮',
+  breadcrumb: '面包屑',
+  synced_block: '同步块',
+  embed: '嵌入'
+}[type] || '计划块')
 
 const getBlockById = (blockId) => blocks.value.find((block) => String(block.id) === String(blockId)) || null
 
@@ -2365,6 +2684,41 @@ const activeBlock = computed(() => {
 })
 
 const selectedBlockCount = computed(() => selectedBlockIds.value.size)
+const scheduledPlanBlockIds = computed(() => new Set(
+  scheduleBlocks.value
+    .filter((item) => item.plan_block_id || item.planBlockId)
+    .map((item) => String(item.plan_block_id || item.planBlockId))
+))
+const unscheduledBlocks = computed(() => blocks.value.filter((block) => {
+  if (!block?.id || String(block.id).startsWith('temp-')) return false
+  if (scheduledPlanBlockIds.value.has(String(block.id))) return false
+  return Boolean(getBlockTextContent(block).trim())
+}))
+const unscheduledTypeOptions = computed(() => {
+  const map = new Map()
+  unscheduledBlocks.value.forEach((block) => {
+    if (!block?.type || map.has(block.type)) return
+    map.set(block.type, blockTypeLabel(block.type))
+  })
+  return Array.from(map.entries())
+    .map(([value, label]) => ({ value, label }))
+    .sort((a, b) => a.label.localeCompare(b.label, 'zh-CN'))
+})
+const filteredUnscheduledBlocks = computed(() => {
+  const query = unscheduledSearch.value.trim().toLowerCase()
+  return unscheduledBlocks.value.filter((block) => {
+    if (unscheduledTypeFilter.value !== 'all' && block.type !== unscheduledTypeFilter.value) return false
+    if (!query) return true
+    const text = [getBlockTextContent(block), blockTypeLabel(block.type)].join(' ').toLowerCase()
+    return text.includes(query)
+  })
+})
+const unscheduledEmptyText = computed(() => {
+  if (unscheduledBlocks.value.length && !filteredUnscheduledBlocks.value.length) {
+    return '当前筛选条件下没有待安排计划块，可以清空搜索或切回全部类型。'
+  }
+  return '当前计划块都已经安排好了。你可以回到编辑器继续拆解下一步，或到今日工作台查看执行项。'
+})
 
 const activePolishHint = computed(() => {
   if (!activeBlock.value) {
@@ -2436,6 +2790,14 @@ const migrateBlockContent = (block, targetType) => {
       }
     case 'table':
       return buildTableContentFromText(text)
+    case 'columns':
+      return {
+        cols: current.cols || 2,
+        columns: Array.from({ length: current.cols || 2 }, (_, index) => {
+          if (index === 0 && text) return text.split('\n').map((line) => line.trim()).filter(Boolean)
+          return Array.isArray(current.columns?.[index]) ? current.columns[index] : []
+        })
+      }
     case 'database':
       return {
         title: current.title || '数据库',
@@ -2685,13 +3047,14 @@ const markDirty = () => {
 }
 
 const buildPlanAiPayload = (scope = 'text') => ({
+  providerId: workspaceAiStore.hasExplicitSelection ? workspaceAiStore.normalizedSelectedProviderId : null,
   title: title.value.trim() || '无标题',
   status: status.value,
   priority: priority.value,
   planType: planType.value,
   dueDate: dueDate.value || '',
   blocks: summarizeBlocksForAi(),
-  promptTemplate: getResolvedAiTemplate(scope)
+  promptTemplate: getResolvedAiTemplate(scope) || null
 })
 
 const openAiPanel = (tab = 'outline') => {
@@ -2699,9 +3062,11 @@ const openAiPanel = (tab = 'outline') => {
   closeRowMenu()
   aiPanel.value = { show: true, tab }
   if (tab === 'image') {
+    ensureAiMediaModelsLoaded()
     loadAiImageHistory({ restoreActive: true })
   }
   if (tab === 'video') {
+    ensureAiMediaModelsLoaded()
     loadAiVideoHistory({ restoreActive: true })
   }
 }
@@ -2845,16 +3210,27 @@ const applyAiPolish = () => {
 }
 
 const getAiFailureDescription = (res) => {
-  if (res?.code === 404) return 'AI 接口不存在，后端可能还是旧版本，请更新后再试。'
-  if (res?.code === 401) return '登录状态已失效，请重新登录后再试。'
-  if (res?.code === 402) return 'Agnes 额度不足或当前模型不可计费，请先检查余额。'
-  if (res?.code === 429) return res?.error || 'AI 请求过于频繁，请稍后再试。'
-  if (res?.code === 502) return res?.error || 'Agnes 当前服务繁忙，请稍后再试。'
-  if (res?.code === 422) return res?.error || '当前模式需要可公网访问的图片 URL。'
-  if (res?.code === 503) return res?.error || '当前 Agnes 媒体模型不可用，请检查模型配置。'
-  if (res?.code === 0) return 'AI 请求超时或网络不可达，请确认网络环境后重试。'
-  if (/No available channel for model/i.test(res?.error || '')) return '当前 Agnes 账号未开通该模型，请确认模型权限。'
-  return res?.error || '请稍后再试。'
+  const request = res?.data?.request || res?.details?.data?.request || res?.details?.data || null
+  const provider = res?.data?.provider || res?.details?.data?.provider || null
+  const debugParts = [
+    request?.protocol || provider?.protocol,
+    request?.requestUrl,
+    request?.model || provider?.model
+  ].filter(Boolean)
+  const debugText = debugParts.length ? `（${debugParts.join(' · ')}）` : ''
+
+  if (res?.code === 'AI_NOT_CONFIGURED') return '尚未配置 AI 能力，请先到“我的 / AI 供应商配置”中添加并设为默认。'
+  if (res?.code === 'AI_PROVIDER_NOT_FOUND') return '当前选择的 AI 供应商不存在或已停用，请回到 AI 供应商配置重新设置默认供应商。'
+  if (res?.code === 404) return `AI 接口不存在，请检查 Base URL 是否只填到 /v1，协议是否选对。${debugText}`
+  if (res?.code === 401 || res?.code === 403) return `AI Key 无效、权限不足或模型无权访问，请检查 Key 与模型名。${debugText}`
+  if (res?.code === 402) return `当前 AI Key 额度不足或账户不可用，请检查供应商余额与计费状态。${debugText}`
+  if (res?.code === 429) return `${res?.error || 'AI 请求过于频繁，请稍后再试。'}${debugText}`
+  if (res?.code === 422) return `${res?.error || '当前模式或参数不被供应商支持。'}${debugText}`
+  if (res?.code === 502) return `${res?.error || 'AI 服务暂时不可达，请检查后端网络、Base URL 或供应商状态。'}${debugText}`
+  if (res?.code === 503) return `${res?.error || '当前 AI 模型不可用，请检查模型配置。'}${debugText}`
+  if (res?.code === 504 || res?.code === 0) return `${res?.error || 'AI 请求超时或网络不可达，请确认服务器网络后重试。'}${debugText}`
+  if (/No available channel for model/i.test(res?.error || '')) return `当前供应商账号未开通该模型，请确认模型权限。${debugText}`
+  return `${res?.error || '请稍后再试。'}${debugText}`
 }
 
 const formatAiVideoTimestamp = (value) => {
@@ -3045,7 +3421,7 @@ const pollAiImageStatus = async () => {
   const taskId = aiImageResult.value?.taskId
   if (!taskId) return
 
-  const res = await getPlanImageStatusAI({ taskId })
+  const res = await getPlanImageStatusAI({ ...buildPlanAiPayload('image'), taskId })
   if (!res.success) {
     showError('获取生图状态失败', { description: getAiFailureDescription(res) })
     clearAiImagePolling()
@@ -3077,7 +3453,7 @@ const loadAiImageHistory = async ({ restoreActive = true } = {}) => {
 
   aiImageHistoryLoading.value = true
   try {
-    const res = await listPlanImageHistoryAI({ planId: planId.value, limit: 12 })
+    const res = await listPlanImageHistoryAI({ ...buildPlanAiPayload('image'), planId: planId.value, limit: 12 })
     if (!res.success) {
       showError('加载生图历史失败', { description: getAiFailureDescription(res) })
       return
@@ -3125,7 +3501,7 @@ const deleteAiImageHistory = async (task) => {
 
   aiImageDeletingTaskId.value = taskId
   try {
-    const res = await deletePlanImageHistoryAI(taskId)
+    const res = await deletePlanImageHistoryAI(taskId, buildPlanAiPayload('image'))
     if (!res.success) {
       showError('删除生图历史失败', { description: getAiFailureDescription(res) })
       return
@@ -3150,7 +3526,7 @@ const loadAiVideoHistory = async ({ restoreActive = true } = {}) => {
 
   aiVideoHistoryLoading.value = true
   try {
-    const res = await listPlanVideoHistoryAI({ planId: planId.value, limit: 12 })
+    const res = await listPlanVideoHistoryAI({ ...buildPlanAiPayload('video'), planId: planId.value, limit: 12 })
     if (!res.success) {
       showError('加载视频历史失败', { description: getAiFailureDescription(res) })
       return
@@ -3200,7 +3576,7 @@ const deleteAiVideoHistory = async (task) => {
 
   aiVideoDeletingTaskId.value = taskId
   try {
-    const res = await deletePlanVideoHistoryAI(taskId)
+    const res = await deletePlanVideoHistoryAI(taskId, buildPlanAiPayload('video'))
     if (!res.success) {
       showError('删除视频历史失败', { description: getAiFailureDescription(res) })
       return
@@ -3231,6 +3607,14 @@ const runAiImage = async () => {
   if (aiImageMode.value !== 'text_to_image' && !aiImageSources.value.length) {
     showInfo('请先上传参考图片')
     return
+  }
+
+  if (!aiImageModel.value.trim()) {
+    await ensureAiMediaModelsLoaded()
+    if (!aiImageModel.value.trim()) {
+      showInfo('Select or enter an image model', { description: aiMediaModelError.value || 'Model name must match your configured provider.' })
+      return
+    }
   }
 
   clearAiImagePolling()
@@ -3281,6 +3665,7 @@ const pollAiVideoStatus = async () => {
   if (!videoId) return
 
   const res = await getPlanVideoStatusAI({
+    providerId: workspaceAiStore.hasExplicitSelection ? workspaceAiStore.normalizedSelectedProviderId : null,
     videoId,
     model: aiVideoResult.value?.model || aiVideoModel.value
   })
@@ -3329,6 +3714,14 @@ const runAiVideo = async () => {
   if (aiVideoMode.value === 'keyframes' && availableSources.length < 2) {
     showInfo('关键帧动画至少需要 2 张参考图 URL')
     return
+  }
+
+  if (!aiVideoModel.value.trim()) {
+    await ensureAiMediaModelsLoaded()
+    if (!aiVideoModel.value.trim()) {
+      showInfo('Select or enter a video model', { description: aiMediaModelError.value || 'Model name must match your configured provider.' })
+      return
+    }
   }
 
   clearAiVideoPolling()
@@ -3650,6 +4043,24 @@ const persistCurrentOrder = async () => {
   return !!res.success
 }
 
+const loadPlanScheduleBlocks = async () => {
+  if (!planId.value) {
+    scheduleBlocks.value = []
+    return
+  }
+
+  scheduleBlocksLoading.value = true
+  const response = await listScheduleBlocks({ planId: planId.value, limit: 200 })
+  scheduleBlocksLoading.value = false
+
+  if (response.success) {
+    scheduleBlocks.value = Array.isArray(response.data) ? response.data : []
+    return
+  }
+
+  scheduleBlocks.value = []
+}
+
 const loadPlan = async () => {
   isLoading.value = true
   try {
@@ -3676,6 +4087,8 @@ const loadPlan = async () => {
       customTypeName.value = ''
       dueDate.value = ''
       blocks.value = []
+      scheduleBlocks.value = []
+      showUnscheduledPanel.value = false
       pendingBlockIds.value = new Set()
       saveStatus.value = 'saved'
       aiImageSources.value = []
@@ -3699,6 +4112,7 @@ const loadPlan = async () => {
         }))
       : []
 
+    await loadPlanScheduleBlocks()
     pendingBlockIds.value = new Set()
     saveStatus.value = 'saved'
     await loadAiImageHistory({ restoreActive: true })
@@ -3988,6 +4402,31 @@ const openRowMenu = (event, index, block) => {
   }
 }
 
+const openBlockTypeSelector = (block, index) => {
+  if (!block) return
+  blockTypeSelector.value = {
+    show: true,
+    blockId: block.id,
+    blockIndex: index
+  }
+}
+
+const closeBlockTypeSelector = () => {
+  blockTypeSelector.value = { show: false, blockId: null, blockIndex: -1 }
+}
+
+const handleBlockTypeSelect = async (type) => {
+  const context = blockTypeSelector.value
+  const block = blocks.value.find((item) => String(item.id) === String(context.blockId))
+  if (!block || !type) {
+    closeBlockTypeSelector()
+    return
+  }
+
+  changeBlockType(block, type, createBlockContent(type))
+  closeBlockTypeSelector()
+}
+
 const changeBlockType = (block, type, preferredContent = null) => {
   if (!block) return
   if (block.type === type && preferredContent) {
@@ -4060,6 +4499,98 @@ const moveBlock = async (fromIndex, toIndex) => {
   if (saved && block?.id) focusBlockById(block.id)
 }
 
+const getTodayDateKey = () => new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'Asia/Shanghai',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit'
+}).format(new Date())
+
+const openScheduleDialog = (block) => {
+  if (!block || String(block.id).startsWith('temp-')) {
+    showError('安排失败', { description: '请先等待当前块保存完成' })
+    return
+  }
+
+  const blockTitle = (getBlockTextContent(block) || title.value || '未命名计划块').trim().slice(0, 120)
+  scheduleDialog.value = {
+    show: true,
+    blockId: block.id,
+    title: blockTitle,
+    date: getTodayDateKey(),
+    startTime: '',
+    durationMinutes: 60,
+    isSubmitting: false
+  }
+}
+
+const openScheduleDialogFromShelf = (block) => {
+  showUnscheduledPanel.value = false
+  openScheduleDialog(block)
+}
+
+const closeScheduleDialog = () => {
+  if (scheduleDialog.value.isSubmitting) return
+  scheduleDialog.value = {
+    show: false,
+    blockId: null,
+    title: '',
+    date: '',
+    startTime: '',
+    durationMinutes: 60,
+    isSubmitting: false
+  }
+}
+
+const submitScheduleDialog = async () => {
+  const dialog = scheduleDialog.value
+  const block = blocks.value.find((item) => String(item.id) === String(dialog.blockId))
+  if (!block) {
+    showError('安排失败', { description: '计划块不存在或已被删除' })
+    closeScheduleDialog()
+    return
+  }
+
+  const scheduledTitle = String(dialog.title || '').trim()
+  if (!scheduledTitle) {
+    showError('安排失败', { description: '请先填写执行标题' })
+    return
+  }
+
+  if (!dialog.date) {
+    showError('安排失败', { description: '请选择执行日期' })
+    return
+  }
+
+  const durationMinutes = Math.min(Math.max(Number(dialog.durationMinutes || 60), 5), 480)
+  scheduleDialog.value.isSubmitting = true
+  const response = await createScheduleBlock({
+    source_type: 'plan_block',
+    plan_id: planId.value,
+    plan_block_id: block.id,
+    title: scheduledTitle.slice(0, 255),
+    scheduled_date: dialog.date,
+    start_time: dialog.startTime || null,
+    duration_minutes: durationMinutes
+  })
+  scheduleDialog.value.isSubmitting = false
+
+  if (!response.success) {
+    showError('安排失败', { description: response.error || '请稍后重试' })
+    return
+  }
+
+  if (response.data?.conflict_count) {
+    showInfo('已安排到日程，但时间有重叠', {
+      description: '可以到计划日程视图改期、延期或缩短时长，避免同一时间段任务过载。'
+    })
+  } else {
+    showSuccess('已安排到日程', { description: '你可以在今日工作台和后续日程视图查看这个执行项' })
+  }
+  await loadPlanScheduleBlocks()
+  closeScheduleDialog()
+}
+
 const handleRowMenuAction = async (action) => {
   const index = rowMenu.value.blockIndex
   const block = blocks.value[index]
@@ -4079,11 +4610,15 @@ const handleRowMenuAction = async (action) => {
       openCommandMenu({ currentTarget: anchor }, index, 'insert-below')
       closeRowMenu()
       return
+    case 'schedule':
+      openScheduleDialog(block)
+      closeRowMenu()
+      return
     case 'duplicate':
       await duplicateBlock(index)
       break
     case 'change-type':
-      openCommandMenu({ currentTarget: anchor }, index, 'replace-current')
+      openBlockTypeSelector(block, index)
       closeRowMenu()
       return
     case 'move-up':
@@ -4281,6 +4816,12 @@ watch(() => visibleCommandItems.value.length, (length) => {
   }
   if (commandMenu.value.highlight > length - 1) {
     commandMenu.value.highlight = length - 1
+  }
+})
+watch(unscheduledTypeOptions, (options) => {
+  if (unscheduledTypeFilter.value === 'all') return
+  if (!options.some((option) => option.value === unscheduledTypeFilter.value)) {
+    unscheduledTypeFilter.value = 'all'
   }
 })
 watch(
@@ -5809,6 +6350,52 @@ onBeforeUnmount(() => {
 
 .dark .ai-history-delete {
   color: rgb(252 165 165);
+}
+
+.unscheduled-filter-field {
+  display: grid;
+  gap: 0.42rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: rgb(82 82 91);
+}
+
+.unscheduled-filter-field input,
+.unscheduled-filter-field select {
+  min-height: 2.65rem;
+  width: 100%;
+  border: 1px solid rgba(212, 212, 216, 0.9);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.92);
+  padding: 0 0.9rem;
+  color: rgb(24 24 27);
+  font-size: 0.875rem;
+  font-weight: 600;
+  outline: none;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+
+.unscheduled-filter-field input:focus,
+.unscheduled-filter-field select:focus {
+  border-color: rgb(24 24 27);
+  box-shadow: 0 0 0 4px rgba(24, 24, 27, 0.08);
+}
+
+.dark .unscheduled-filter-field {
+  color: rgb(161 161 170);
+}
+
+.dark .unscheduled-filter-field input,
+.dark .unscheduled-filter-field select {
+  border-color: rgba(63, 63, 70, 0.9);
+  background: rgba(24, 24, 27, 0.82);
+  color: white;
+}
+
+.dark .unscheduled-filter-field input:focus,
+.dark .unscheduled-filter-field select:focus {
+  border-color: white;
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.08);
 }
 
 @media (max-width: 768px) {

@@ -1,7 +1,7 @@
 <template>
   <AppLayout title="提醒功能测试" :show-back-button="true">
     <div class="p-4 lg:p-0">
-      <div class="max-w-4xl mx-auto space-y-8">
+      <div class="w-full space-y-8">
         
         <!-- 提醒系统状态 -->
         <BaseCard title="提醒系统状态">

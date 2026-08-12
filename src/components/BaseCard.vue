@@ -1,13 +1,13 @@
 <template>
   <div
-    class="card-apple surface-panel flex flex-col"
+    class="card-apple surface-panel app-card flex flex-col"
     :class="[
       paddingClass,
       shadowClass,
       hoverClass
     ]"
   >
-    <div v-if="title || $slots.header" class="mb-4 flex items-center justify-between gap-3">
+    <div v-if="title || $slots.header" class="mb-5 flex items-center justify-between gap-4">
       <div class="min-w-0">
         <h3 v-if="title" class="title-secondary truncate">{{ title }}</h3>
         <slot name="subtitle"></slot>
@@ -53,8 +53,8 @@ const paddingClass = computed(() => {
   const paddingMap = {
     none: 'p-0',
     small: 'p-3',
-    default: 'p-4 sm:p-5',
-    large: 'p-6'
+    default: 'p-4 sm:p-5 lg:p-6',
+    large: 'p-5 sm:p-6 lg:p-7'
   }
 
   return paddingMap[props.padding]

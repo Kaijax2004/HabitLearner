@@ -81,7 +81,7 @@ const call = async (method, url, params = {}, body = null) => {
       return {
         success: false,
         error: data?.error || data?.message || `请求失败，状态码：${response.status}`,
-        code: response.status,
+        code: data?.code ?? response.status,
         details: data
       }
     }

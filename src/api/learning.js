@@ -6,7 +6,7 @@ export const getCourses = (params = {}) => api.get('/learning/courses', { params
 
 export const getDailyLearningCard = () => api.get('/learning/daily-card')
 
-export const refreshDailyLearningCard = () => api.post('/learning/daily-card/refresh')
+export const refreshDailyLearningCard = (payload = {}) => api.post('/learning/daily-card/refresh', payload)
 
 export const getCourseById = (id) => api.get(`/learning/courses/${id}`)
 
@@ -15,6 +15,8 @@ export const getVideoRecommendations = (params = {}) => api.get('/learning/recom
 export const prefetchVideoRecommendations = (data = {}) => api.post('/learning/recommendations/prefetch', data)
 
 export const getCourseNote = (id) => api.get(`/learning/courses/${id}/note`)
+
+export const listLearningNotes = (params = {}) => api.get('/learning/notes', { params })
 
 export const saveCourseNote = (id, content) => api.put(`/learning/courses/${id}/note`, { content })
 

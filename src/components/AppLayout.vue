@@ -35,24 +35,27 @@
           </button>
         </div>
 
-        <nav class="sidebar-nav flex-1 px-4 py-6 space-y-2">
-          <router-link
-            v-for="item in navigationItems"
-            :key="item.name"
-            :to="item.to"
-            class="sidebar-nav-link flex items-center rounded-apple px-4 py-3 text-sm font-medium transition-all duration-200"
-            :title="isSidebarCollapsed ? item.label : ''"
-            :class="isActive(item.to)
-              ? 'bg-zinc-100 text-zinc-950 dark:bg-white/10 dark:text-white'
-              : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-950 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-white'"
-          >
-            <component
-              :is="item.icon"
-              class="mr-3 h-5 w-5"
-              :class="isActive(item.to) ? 'text-zinc-950 dark:text-white' : 'text-current'"
-            />
-            <span class="sidebar-nav-label">{{ item.label }}</span>
-          </router-link>
+        <nav class="sidebar-nav flex-1 px-4 py-6">
+          <div v-for="group in navigationGroups" :key="group.label" class="sidebar-nav-group">
+            <p class="sidebar-nav-group-label">{{ group.label }}</p>
+            <router-link
+              v-for="item in group.items"
+              :key="item.name"
+              :to="item.to"
+              class="sidebar-nav-link flex items-center rounded-apple px-4 py-3 text-sm font-medium transition-all duration-200"
+              :title="isSidebarCollapsed ? item.label : ''"
+              :class="isActive(item.to)
+                ? 'bg-zinc-100 text-zinc-950 dark:bg-white/10 dark:text-white'
+                : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-950 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-white'"
+            >
+              <component
+                :is="item.icon"
+                class="mr-3 h-5 w-5"
+                :class="isActive(item.to) ? 'text-zinc-950 dark:text-white' : 'text-current'"
+              />
+              <span class="sidebar-nav-label">{{ item.label }}</span>
+            </router-link>
+          </div>
         </nav>
       </div>
     </aside>
@@ -97,7 +100,7 @@
 
     <header class="app-content-offset hidden lg:block">
       <div class="sticky top-0 z-40 border-b border-zinc-200 bg-white/90 backdrop-blur-apple dark:border-zinc-800 dark:bg-zinc-950/90">
-        <div class="px-6 py-4">
+        <div class="app-topbar-container px-6 py-4 lg:px-8">
           <div class="flex items-center justify-between gap-4">
             <div class="flex items-center">
               <button
@@ -132,8 +135,8 @@
       </div>
     </header>
 
-    <main class="app-content-offset">
-      <div class="mx-auto max-w-6xl px-4 py-6 lg:mx-0 lg:max-w-none lg:px-10 lg:py-8">
+    <main class="app-content-offset app-main">
+      <div class="app-main-container">
         <div class="pb-24 lg:pb-0">
           <slot></slot>
         </div>
@@ -141,13 +144,13 @@
     </main>
 
     <nav class="lg:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-zinc-200 bg-white/95 backdrop-blur-apple dark:border-zinc-800 dark:bg-black/95">
-      <div class="mx-auto max-w-md">
-        <div class="flex items-center justify-around py-2">
+      <div class="mx-auto max-w-md overflow-x-auto">
+        <div class="flex min-w-max items-center justify-around gap-1 px-2 py-2">
           <router-link
-            v-for="item in navigationItems"
+            v-for="item in mobileNavigationItems"
             :key="item.name"
             :to="item.to"
-            class="flex flex-col items-center rounded-xl px-3 py-2 transition-colors"
+            class="flex min-w-[4rem] flex-col items-center rounded-xl px-3 py-2 transition-colors"
             :class="isActive(item.to) ? 'text-zinc-950 dark:text-white' : 'text-zinc-500 dark:text-zinc-400'"
           >
             <component :is="item.icon" class="mb-1 h-6 w-6" />
@@ -156,6 +159,9 @@
         </div>
       </div>
     </nav>
+
+    <GlobalQuickCapture />
+    <WorkspacePet />
   </div>
 </template>
 
@@ -165,6 +171,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { useThemeStore } from '@/stores/theme'
 import { useSidebarState } from '@/composables/useSidebarState'
 import Logo from './Logo.vue'
+import GlobalQuickCapture from './GlobalQuickCapture.vue'
+import WorkspacePet from './WorkspacePet.vue'
 
 const props = defineProps({
   title: {
@@ -198,12 +206,30 @@ const sidebarToggleLabel = computed(() => (
   isSidebarCollapsed.value ? '\u5c55\u5f00\u4fa7\u8fb9\u680f' : '\u6536\u8d77\u4fa7\u8fb9\u680f'
 ))
 
-const navigationItems = [
-  { name: 'dashboard', label: '\u9996\u9875', to: '/dashboard', icon: 'HomeIcon' },
-  { name: 'plan', label: '\u8ba1\u5212', to: '/plan', icon: 'CalendarIcon' },
-  { name: 'learning', label: '\u5b66\u4e60', to: '/learning', icon: 'BookOpenIcon' },
-  { name: 'profile', label: '\u6211\u7684', to: '/profile', icon: 'UserIcon' }
+const navigationGroups = [
+  {
+    label: '\u6838\u5fc3',
+    items: [
+      { name: 'dashboard', label: '\u4eca\u65e5', to: '/dashboard', icon: 'HomeIcon' },
+      { name: 'plan', label: '\u8ba1\u5212', to: '/plan', icon: 'CalendarIcon' },
+      { name: 'tracks', label: '\u8f68\u9053', to: '/tracks', icon: 'TrackIcon' },
+      { name: 'profile', label: '\u6211\u7684', to: '/profile', icon: 'UserIcon' }
+    ]
+  },
+  {
+    label: '\u5de5\u4f5c\u533a',
+    items: [
+      { name: 'learning', label: '\u5b66\u4e60', to: '/learning', icon: 'BookOpenIcon' },
+      { name: 'focus', label: '\u4e13\u6ce8', to: '/focus', icon: 'FocusIcon' },
+      { name: 'captures', label: '\u6536\u96c6', to: '/captures', icon: 'InboxIcon' },
+      { name: 'review', label: '\u590d\u76d8', to: '/review', icon: 'ReviewIcon' },
+      { name: 'insights', label: '\u6d1e\u5bdf', to: '/insights', icon: 'InsightsIcon' }
+    ]
+  }
 ]
+
+const navigationItems = navigationGroups.flatMap((group) => group.items)
+const mobileNavigationItems = navigationItems.filter((item) => ['dashboard', 'plan', 'tracks', 'profile'].includes(item.name))
 
 const isActive = (path) => {
   if (path === '/dashboard') return route.path === '/dashboard'
@@ -256,6 +282,46 @@ const BookOpenIcon = {
   `
 }
 
+const TrackIcon = {
+  template: `
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7h4m8 0h4M8 7a4 4 0 018 0M4 17h4m8 0h4M8 17a4 4 0 018 0" />
+    </svg>
+  `
+}
+
+const FocusIcon = {
+  template: `
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6l4 2m5-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  `
+}
+
+const InboxIcon = {
+  template: `
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-4l-2 3h-4l-2-3H4m16 0l-2-8H6l-2 8" />
+    </svg>
+  `
+}
+
+const ReviewIcon = {
+  template: `
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h8M8 11h6m-7 9h10a2 2 0 002-2V6a2 2 0 00-2-2H7a2 2 0 00-2 2v12a2 2 0 002 2z" />
+    </svg>
+  `
+}
+
+const InsightsIcon = {
+  template: `
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 19V5m0 14h16M8 16v-5m4 5V8m4 8v-7" />
+    </svg>
+  `
+}
+
 const CalendarIcon = {
   template: `
     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -276,6 +342,11 @@ export default {
   components: {
     HomeIcon,
     CalendarIcon,
+    TrackIcon,
+    FocusIcon,
+    InboxIcon,
+    ReviewIcon,
+    InsightsIcon,
     BookOpenIcon,
     UserIcon
   }
@@ -309,6 +380,19 @@ export default {
   transition: padding-left 0.18s ease;
 }
 
+.app-main {
+  min-height: calc(100vh - 72px);
+}
+
+.app-main-container {
+  width: 100%;
+  padding: clamp(1rem, 1.6vw, 1.75rem);
+}
+
+.app-topbar-container {
+  width: 100%;
+}
+
 .sidebar-brand-row {
   min-height: 105px;
   transition: padding 0.22s ease, justify-content 0.22s ease;
@@ -327,6 +411,24 @@ export default {
 
 .sidebar-nav-label {
   max-width: 120px;
+}
+
+.sidebar-nav-group {
+  margin-bottom: 1.15rem;
+}
+
+.sidebar-nav-group:last-child {
+  margin-bottom: 0;
+}
+
+.sidebar-nav-group-label {
+  margin: 0 0 0.45rem;
+  padding: 0 1rem;
+  color: rgb(113, 113, 122);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  transition: max-height 0.16s ease, opacity 0.16s ease, transform 0.16s ease;
 }
 
 .sidebar-logo,
@@ -375,6 +477,17 @@ export default {
   transform: translateX(-6px);
 }
 
+.is-sidebar-collapsed .sidebar-nav-group {
+  margin-bottom: 0.6rem;
+}
+
+.is-sidebar-collapsed .sidebar-nav-group-label {
+  max-height: 0;
+  margin-bottom: 0;
+  opacity: 0;
+  transform: translateX(-6px);
+}
+
 .is-sidebar-collapsed .sidebar-collapse-button {
   position: absolute;
   right: -16px;
@@ -418,6 +531,10 @@ export default {
 @media (min-width: 1024px) {
   .app-content-offset {
     padding-left: var(--app-sidebar-width);
+  }
+
+  .app-main-container {
+    padding: clamp(1.35rem, 2.1vw, 2.4rem);
   }
 }
 </style>
