@@ -1,5 +1,5 @@
 ﻿<template>
-  <div class="workspace-pet-root" :class="{ 'is-panel-left': shouldOpenPanelLeft }" :style="rootStyle">
+  <div class="workspace-pet-root" :class="{ 'is-panel-left': shouldOpenPanelLeft, 'is-ready': isVisualReady }" :style="rootStyle">
     <button
       type="button"
       class="workspace-pet"
@@ -130,7 +130,9 @@ import {
   getPetScale,
   normalizePetSettings,
   normalizePetStateMap,
-  resolvePetRenderState
+  readCachedPetSettings,
+  resolvePetRenderState,
+  writeCachedPetSettings
 } from '@/utils/petSettings.js'
 
 const props = defineProps({
@@ -152,7 +154,7 @@ const CELL_HEIGHT = PET_SPRITE_GRID.cellHeight
 const SHEET_WIDTH = CELL_WIDTH * 8
 const SHEET_HEIGHT = CELL_HEIGHT * 9
 const POSITION_KEY = 'workspacePetPosition'
-const petSettings = ref({ ...DEFAULT_PET_SETTINGS })
+const petSettings = ref(readCachedPetSettings() || { ...DEFAULT_PET_SETTINGS })
 const petCatalog = ref([])
 const SHANGHAI_DATE_FORMATTER = new Intl.DateTimeFormat('en-CA', {
   timeZone: 'Asia/Shanghai',
@@ -392,6 +394,7 @@ const readInitialPosition = () => {
 }
 
 const isPanelOpen = ref(false)
+const isVisualReady = ref(false)
 const speechText = ref('')
 const activeTransientState = ref('')
 const frameIndex = ref(0)
@@ -1612,7 +1615,9 @@ const loadPetProfile = async () => {
     const response = await listWorkspacePets()
     if (!response?.success) return
     const data = response.data || {}
-    petSettings.value = normalizePetSettings(data.setting || {})
+    const nextSettings = normalizePetSettings(data.setting || {})
+    petSettings.value = nextSettings
+    writeCachedPetSettings(nextSettings)
     petCatalog.value = Array.isArray(data.pets) ? data.pets : []
     position.value = clampPosition(position.value.x, position.value.y)
     savePosition()
@@ -1647,7 +1652,10 @@ watch([activeState, renderState], () => {
 
 onMounted(() => {
   loadPetProfile()
-  frameTimer = window.requestAnimationFrame(tick)
+  window.requestAnimationFrame(() => {
+    isVisualReady.value = true
+    frameTimer = window.requestAnimationFrame(tick)
+  })
   window.addEventListener('workspace-pet-state', handleExternalPetState)
   window.addEventListener(PET_SETTINGS_UPDATED_EVENT, handlePetSettingsUpdated)
 })
@@ -1664,7 +1672,14 @@ onBeforeUnmount(() => {
 .workspace-pet-root {
   position: fixed;
   z-index: 48;
+  opacity: 0;
+  visibility: hidden;
   user-select: none;
+}
+
+.workspace-pet-root.is-ready {
+  opacity: 1;
+  visibility: visible;
 }
 
 .workspace-pet {

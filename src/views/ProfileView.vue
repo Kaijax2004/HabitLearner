@@ -18,6 +18,7 @@
             <div class="profile-avatar-ring">
               <img
                 v-if="displayAvatar"
+                :key="displayAvatar"
                 :src="displayAvatar"
                 alt="用户头像"
                 class="h-full w-full object-cover"
@@ -214,12 +215,12 @@
               <div class="flex-1">
                 <input
                   type="file"
-                  accept="image/jpeg,image/jpg,image/png,image/gif,image/webp,image/bmp,image/svg+xml,image/tiff,image/x-icon,image/vnd.microsoft.icon"
+                  accept="image/jpeg,image/jpg,image/png,image/gif,image/webp,image/svg+xml"
                   class="input-apple"
                   @change="handleAvatarChange"
                 />
                 <p class="mt-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
-                  支持 JPG、PNG、GIF、WebP、BMP、SVG、TIFF、ICO，大小不超过 20MB。
+                  支持 JPG、PNG、GIF、WebP、SVG，大小不超过 5MB。
                 </p>
               </div>
             </div>
@@ -1675,11 +1676,7 @@ const handleAvatarChange = (event) => {
     'image/png',
     'image/gif',
     'image/webp',
-    'image/bmp',
-    'image/svg+xml',
-    'image/tiff',
-    'image/x-icon',
-    'image/vnd.microsoft.icon'
+    'image/svg+xml'
   ])
 
   if (!supportedTypes.has(file.type.toLowerCase())) {
@@ -1687,8 +1684,8 @@ const handleAvatarChange = (event) => {
     return
   }
 
-  if (file.size > 20 * 1024 * 1024) {
-    warning('头像大小不能超过 20MB')
+  if (file.size > 5 * 1024 * 1024) {
+    warning('头像大小不能超过 5MB')
     return
   }
 

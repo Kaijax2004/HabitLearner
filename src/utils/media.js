@@ -12,6 +12,23 @@ const getAbsoluteBaseUrl = () => {
   }
 }
 
+const getMediaBaseUrl = () => {
+  const configuredMediaBase = import.meta.env.VITE_MEDIA_BASE_URL
+  if (configuredMediaBase) return configuredMediaBase
+
+  if (typeof window === 'undefined') return getAbsoluteBaseUrl()
+
+  try {
+    const apiUrl = new URL(getApiBaseUrl(), window.location.origin)
+    apiUrl.pathname = apiUrl.pathname.replace(/\/api\/?$/i, '/') || '/'
+    apiUrl.search = ''
+    apiUrl.hash = ''
+    return apiUrl.toString()
+  } catch (error) {
+    return window.location.origin
+  }
+}
+
 export const isRenderableMediaUrl = (value) => {
   if (typeof value !== 'string') return false
   const trimmed = value.trim()
@@ -35,7 +52,7 @@ export const resolveMediaUrl = (value) => {
   }
 
   try {
-    return new URL(normalizedPath, getAbsoluteBaseUrl()).toString()
+    return new URL(normalizedPath, getMediaBaseUrl()).toString()
   } catch (error) {
     return normalizedPath
   }

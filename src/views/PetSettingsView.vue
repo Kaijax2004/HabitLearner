@@ -172,7 +172,8 @@ import {
   getPetScale,
   getPetSizeOption,
   normalizePetSettings,
-  normalizePetStateMap
+  normalizePetStateMap,
+  writeCachedPetSettings
 } from '@/utils/petSettings.js'
 
 const { success, error: showError, warning } = useToast()
@@ -368,6 +369,7 @@ const saveCurrentSetting = async () => {
     })
     if (!response?.success) throw new Error(response?.error || '保存失败')
     settings.value = normalizePetSettings(response.data || {})
+    writeCachedPetSettings(settings.value)
     emitPetUpdated()
     success('宠物设置已保存', { description: '全局宠物已经同步更新。' })
   } catch (error) {

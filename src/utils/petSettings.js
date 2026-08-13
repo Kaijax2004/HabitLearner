@@ -1,4 +1,5 @@
 ﻿export const PET_SETTINGS_UPDATED_EVENT = 'habitLearner:workspace-pet-settings-updated'
+export const PET_SETTINGS_CACHE_KEY = 'habitLearner:workspace-pet-settings'
 
 export const PET_SIZE_OPTIONS = [
   { value: 'large', label: '大', description: '接近当前页面上的陪伴感，适合桌面端常驻。', scale: 0.88 },
@@ -53,6 +54,28 @@ export const normalizePetSettings = (settings = {}) => ({
   activePetId: settings.activePetId === undefined ? null : settings.activePetId,
   size: PET_SIZE_OPTIONS.some((item) => item.value === settings.size) ? settings.size : DEFAULT_PET_SETTINGS.size
 })
+
+export const readCachedPetSettings = () => {
+  if (typeof window === 'undefined') return null
+
+  try {
+    const cached = window.localStorage.getItem(PET_SETTINGS_CACHE_KEY)
+    return cached ? normalizePetSettings(JSON.parse(cached)) : null
+  } catch (error) {
+    console.warn('Failed to read workspace pet settings cache', error)
+    return null
+  }
+}
+
+export const writeCachedPetSettings = (settings = {}) => {
+  if (typeof window === 'undefined') return
+
+  try {
+    window.localStorage.setItem(PET_SETTINGS_CACHE_KEY, JSON.stringify(normalizePetSettings(settings)))
+  } catch (error) {
+    console.warn('Failed to write workspace pet settings cache', error)
+  }
+}
 
 export const normalizePetStateMap = (stateMap = {}) => {
   const nextMap = { ...DEFAULT_PET_STATE_MAP }
