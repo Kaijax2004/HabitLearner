@@ -17,7 +17,7 @@
           <div class="profile-identity-card">
             <div class="profile-avatar-ring">
               <img
-                v-if="displayAvatar"
+                v-if="displayAvatar && !avatarLoadFailed"
                 :key="displayAvatar"
                 :src="displayAvatar"
                 alt="用户头像"
@@ -1071,6 +1071,8 @@ const verifyForm = ref({
 
 const avatarFile = ref(null)
 const avatarPreview = ref('')
+const avatarVersion = ref(Date.now())
+const avatarLoadFailed = ref(false)
 const isSaving = ref(false)
 const isSendingCode = ref(false)
 const verifyCodeCountdown = ref(0)
@@ -1222,7 +1224,19 @@ const settingItems = computed(() => [
 const user = computed(() => authStore.user)
 const isAdmin = computed(() => Boolean(user.value?.isAdmin || user.value?.security?.isAdmin))
 const userDisplayName = computed(() => user.value?.username || user.value?.name || '用户')
-const displayAvatar = computed(() => resolveMediaUrl(user.value?.avatar || ''))
+const withAvatarCacheBust = (url) => {
+  if (!url || /^(data:|blob:)/i.test(url)) return url
+
+  try {
+    const parsed = new URL(url, window.location.origin)
+    parsed.searchParams.set('v', String(avatarVersion.value))
+    return parsed.toString()
+  } catch (error) {
+    const separator = url.includes('?') ? '&' : '?'
+    return `${url}${separator}v=${avatarVersion.value}`
+  }
+}
+const displayAvatar = computed(() => withAvatarCacheBust(resolveMediaUrl(user.value?.avatar || '')))
 const adminMailAssetTotalBytes = computed(() => (
   [...adminMailForm.value.inlineImages, ...adminMailForm.value.attachments]
     .reduce((sum, item) => sum + Number(item.size || 0), 0)
@@ -1797,10 +1811,14 @@ const handleAvatarChange = (event) => {
 
   avatarFile.value = file
   avatarPreview.value = URL.createObjectURL(file)
+  avatarLoadFailed.value = false
 }
 
 const handleAvatarError = (event) => {
-  event.target.style.display = 'none'
+  avatarLoadFailed.value = true
+  if (event?.target) {
+    event.target.removeAttribute('src')
+  }
 }
 
 const saveProfile = async () => {
@@ -1825,6 +1843,8 @@ const saveProfile = async () => {
     }
 
     authStore.updateUser(response.data)
+    avatarVersion.value = Date.now()
+    avatarLoadFailed.value = false
     success('资料已更新')
     closeEditModal()
     initUserData()
@@ -2194,6 +2214,10 @@ onMounted(async () => {
 })
 
 watch(() => route.query.panel, syncProfilePanelFromRoute)
+watch(() => user.value?.avatar, () => {
+  avatarVersion.value = Date.now()
+  avatarLoadFailed.value = false
+})
 
 onBeforeUnmount(() => {
   clearVerifyCodeTimer()
