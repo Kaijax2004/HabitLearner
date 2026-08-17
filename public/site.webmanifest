@@ -1,0 +1,25 @@
+{
+  "name": "习知 HabitLearner",
+  "short_name": "习知",
+  "description": "面向创作者、知识工作者和自我管理者的 AI 个人工作台。",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f7f6f3",
+  "theme_color": "#11100e",
+  "lang": "zh-CN",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "700x700",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/HabitLearner.png",
+      "sizes": "2048x2048",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
