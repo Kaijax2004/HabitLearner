@@ -3,15 +3,13 @@
     class="flex items-center justify-center"
     :class="containerClass"
   >
-    <!-- 如果有自定义logo图片且未加载失败 -->
     <img
-      v-if="useCustomLogo && customLogoUrl && !imageLoadError"
-      :src="customLogoUrl"
+      v-if="useCustomLogo && resolvedLogoUrl && !imageLoadError"
+      :src="resolvedLogoUrl"
       :alt="alt"
-      :class="imageClass"
+      :class="[imageClass, imageVariantClass]"
       @error="handleImageError"
     />
-    <!-- 默认SVG logo -->
     <svg
       v-else
       :class="svgClass"
@@ -23,12 +21,12 @@
         stroke-linecap="round"
         stroke-linejoin="round"
         stroke-width="2"
-        d="M13 10V3L4 14h7v7l9-11h-7z"
+        d="M4 13.2C4.4 7.9 8.8 4 14 4c4.2 0 7.4 2.9 8 6.7M20 14.2C19.2 18 16 20 12 20c-4.2 0-7.3-2.5-8-6.4"
       />
+      <circle cx="12" cy="12" r="2.2" fill="currentColor" stroke="none" />
     </svg>
-    
-    <!-- 品牌文字Logo -->
-    <div v-if="showText" class="ml-3 flex flex-col">
+
+    <div v-if="shouldShowText" class="ml-3 flex flex-col">
       <span class="font-bold" :class="[textSizeClass, onDarkBackground ? 'text-white' : 'text-gray-900 dark:text-white']">
         {{ brandName }}
       </span>
@@ -42,64 +40,63 @@
 <script setup>
 import { computed, ref } from 'vue'
 import { logoConfig } from '@/config/logo'
-import logoSvg from '@/assets/logo.svg'
 
-// Props
 const props = defineProps({
-  // 尺寸变体
   size: {
     type: String,
-    default: 'default', // 'small', 'default', 'large', 'xl', '2xl', '3xl', '4xl', '5xl'
+    default: 'default',
     validator: (value) => ['small', 'default', 'large', 'xl', '2xl', '3xl', '4xl', '5xl'].includes(value)
   },
-  // 是否使用自定义logo
+  variant: {
+    type: String,
+    default: 'mark',
+    validator: (value) => ['mark', 'brand'].includes(value)
+  },
   useCustomLogo: {
     type: Boolean,
     default: logoConfig.useCustomLogo
   },
-  // 自定义logo URL
   customLogoUrl: {
     type: String,
-    default: logoSvg
+    default: ''
   },
-  // 容器样式类
   containerClass: {
     type: String,
     default: ''
   },
-  // 图片alt文本
   alt: {
     type: String,
-    default: 'HabitLearner Logo'
+    default: logoConfig.defaultAlt
   },
-  // 是否显示文字
   showText: {
     type: Boolean,
     default: false
   },
-  // 是否显示副标题
   showSubtitle: {
     type: Boolean,
     default: false
   },
-  // 品牌名称
   brandName: {
     type: String,
     default: '习知'
   },
-  // 副标题
   subtitle: {
     type: String,
     default: 'HabitLearner'
   },
-  // 是否在深色背景上显示
   onDarkBackground: {
     type: Boolean,
     default: false
   }
 })
 
-// 计算属性 - SVG样式类
+const imageLoadError = ref(false)
+
+const resolvedLogoUrl = computed(() => {
+  if (props.customLogoUrl) return props.customLogoUrl
+  return props.variant === 'brand' ? logoConfig.brandLogoUrl : logoConfig.iconLogoUrl
+})
+
 const svgClass = computed(() => {
   const sizeClasses = {
     small: 'w-4 h-4',
@@ -114,9 +111,8 @@ const svgClass = computed(() => {
   return sizeClasses[props.size] || sizeClasses.default
 })
 
-// 计算属性 - 图片样式类
 const imageClass = computed(() => {
-  const sizeClasses = {
+  const markSizeClasses = {
     small: 'w-6 h-6',
     default: 'w-8 h-8',
     large: 'w-12 h-12',
@@ -126,10 +122,26 @@ const imageClass = computed(() => {
     '4xl': 'w-28 h-28',
     '5xl': 'w-36 h-36'
   }
+  const brandSizeClasses = {
+    small: 'h-6 w-auto max-w-[8rem]',
+    default: 'h-8 w-auto max-w-[10rem]',
+    large: 'h-10 w-auto max-w-[13rem]',
+    xl: 'h-14 w-auto max-w-[18rem]',
+    '2xl': 'h-16 w-auto max-w-[22rem]',
+    '3xl': 'h-20 w-auto max-w-[28rem]',
+    '4xl': 'h-24 w-auto max-w-[34rem]',
+    '5xl': 'h-32 w-auto max-w-[42rem]'
+  }
+  const sizeClasses = props.variant === 'brand' ? brandSizeClasses : markSizeClasses
   return `${sizeClasses[props.size] || sizeClasses.default} shrink-0 object-contain`
 })
 
-// 计算属性 - 文字大小类
+const imageVariantClass = computed(() => (
+  props.variant === 'brand'
+    ? 'rounded-[1.35rem] bg-zinc-950 shadow-[0_14px_32px_rgba(0,0,0,0.16)]'
+    : 'rounded-[1rem] bg-zinc-950'
+))
+
 const textSizeClass = computed(() => {
   const sizeClasses = {
     small: 'text-sm',
@@ -144,12 +156,10 @@ const textSizeClass = computed(() => {
   return sizeClasses[props.size] || sizeClasses.default
 })
 
-// 响应式数据
-const imageLoadError = ref(false)
+const shouldShowText = computed(() => props.showText && props.variant !== 'brand')
 
-// 方法
 const handleImageError = () => {
   imageLoadError.value = true
-  console.warn('Logo image failed to load, falling back to default SVG')
+  console.warn('Logo image failed to load, falling back to orbit mark SVG')
 }
 </script>

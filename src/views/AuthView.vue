@@ -5,7 +5,7 @@
     <nav class="auth-nav relative z-10 border-b border-zinc-200/80 bg-white/75 backdrop-blur-xl dark:border-zinc-800/80 dark:bg-zinc-950/72">
       <div class="auth-nav-inner flex items-center justify-between px-5 sm:px-8">
         <div class="auth-nav-brand flex items-center gap-3">
-          <div class="auth-nav-mark flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-950 text-white dark:bg-white dark:text-zinc-950">
+          <div class="auth-nav-mark flex h-10 w-10 items-center justify-center overflow-hidden rounded-[1rem] bg-zinc-950 text-white dark:bg-zinc-950 dark:text-white">
             <Logo size="default" class="brand-logo brand-logo--nav" />
           </div>
           <div>
@@ -33,39 +33,51 @@
     <main class="auth-layout relative z-10">
       <section class="auth-intro hidden lg:flex">
         <div class="auth-intro-content">
-          <div class="auth-brand-header">
-            <div class="auth-brand-mark">
-              <Logo size="4xl" class="brand-logo brand-logo--hero" />
+          <div class="auth-brand-header auth-brand-header--lockup">
+            <p class="auth-brand-kicker">Personal Workbench</p>
+            <div class="auth-brand-lockup-frame">
+              <Logo variant="brand" size="5xl" class="brand-logo brand-logo--hero-lockup" />
+            </div>
+            <div class="auth-brand-copyblock">
+              <p class="auth-brand-tagline">知易行难，习以为常。</p>
+              <p class="auth-brand-manifesto">
+                习知把今天的真实状态、下一步行动和长期轨道放在同一张工作台上，让记录不只是保存，而是推动下一次行动。
+              </p>
+              <div class="auth-brand-axis" aria-label="习知品牌动作">
+                <span>
+                  <strong>知</strong>
+                  <small>看见真实</small>
+                </span>
+                <span>
+                  <strong>行</strong>
+                  <small>收束行动</small>
+                </span>
+                <span>
+                  <strong>习</strong>
+                  <small>沉淀轨道</small>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="auth-narrative-panel" aria-label="习知工作流">
+            <div class="auth-orbit-figure" aria-hidden="true">
+              <div class="auth-orbit-figure__ring"></div>
+              <div class="auth-orbit-figure__path"></div>
+              <div class="auth-orbit-figure__core"></div>
             </div>
 
-            <div class="min-w-0">
-              <h1 class="text-[2.45rem] font-semibold tracking-[-0.05em] text-zinc-950 dark:text-white">习知</h1>
-              <p class="mt-1 text-[0.98rem] font-medium tracking-[0.01em] text-zinc-500 dark:text-zinc-400">HabitLearner</p>
-              <p class="mt-3.5 text-[0.98rem] leading-7 text-zinc-600 dark:text-zinc-300">知易行难，习以为常。</p>
-</div>
-</div>
-
-          <div class="auth-feature-stack">
-            <div
-              v-for="feature in features"
-              :key="feature.index"
-              class="auth-feature-card"
-            >
-              <div class="auth-feature-icon">
-                <svg v-if="feature.icon === 'habit'" class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M8 6v12M12 3v18M16 8v8" />
-                </svg>
-                <svg v-else-if="feature.icon === 'learning'" class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M4 6.5C5.4 5.5 7.3 5 9 5c1.8 0 3.7.5 5 1.5M4 6.5v11c1.4-1 3.3-1.5 5-1.5 1.8 0 3.7.5 5 1.5m0-11C15.3 5.5 17.2 5 19 5c1.7 0 3.6.5 5 1.5v11c-1.4-1-3.3-1.5-5-1.5-1.8 0-3.7.5-5 1.5" />
-                </svg>
-                <svg v-else class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M12 4v4m0 8v4M4 12h4m8 0h4M7.8 7.8l2.8 2.8m2.8 2.8 2.8 2.8m0-8.4-2.8 2.8m-2.8 2.8-2.8 2.8" />
-                </svg>
-              </div>
-
-              <div class="min-w-0">
-                <h2 class="text-[1.15rem] font-semibold tracking-[-0.02em] text-zinc-950 dark:text-white">{{ feature.title }}</h2>
-                <p class="mt-1.5 text-[0.95rem] leading-7 text-zinc-600 dark:text-zinc-300">{{ feature.description }}</p>
+            <div class="auth-feature-stack">
+              <div
+                v-for="feature in features"
+                :key="feature.index"
+                class="auth-feature-card"
+              >
+                <span class="auth-feature-index">{{ feature.index }}</span>
+                <div class="min-w-0">
+                  <h2 class="text-[1.15rem] font-semibold tracking-[-0.02em] text-zinc-950 dark:text-white">{{ feature.title }}</h2>
+                  <p class="mt-1.5 text-[0.95rem] leading-7 text-zinc-600 dark:text-zinc-300">{{ feature.description }}</p>
+                </div>
               </div>
             </div>
           </div>
@@ -76,7 +88,7 @@
         <div class="auth-form-shell w-full">
           <div class="mb-9 lg:hidden">
             <div class="flex items-center gap-3">
-              <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-zinc-950 text-white dark:bg-white dark:text-zinc-950">
+              <div class="flex h-12 w-12 items-center justify-center overflow-hidden rounded-[1.2rem] bg-zinc-950 p-1 text-white dark:bg-zinc-950 dark:text-white">
                 <Logo size="xl" class="brand-logo brand-logo--mobile" />
               </div>
               <div>
@@ -478,21 +490,18 @@ const router = useRouter()
 const features = [
   {
     index: '01',
-    icon: 'habit',
-    title: '习惯追踪',
-    description: '把打卡、连续天数和阶段变化整理成一套清晰可见的日常反馈。'
+    title: '看见真实状态',
+    description: '收集灵感、习惯、计划和内容进度，先判断今天真正发生了什么。'
   },
   {
     index: '02',
-    icon: 'learning',
-    title: '微学习内容',
-    description: '用轻量课程和学习记录承接每天的输入，降低开始学习的门槛。'
+    title: '收束下一步行动',
+    description: '把模糊想法整理成可以开始的计划块、专注会话或内容选题。'
   },
   {
     index: '03',
-    icon: 'focus',
-    title: '计划与专注',
-    description: '把计划编辑、番茄专注和复盘沉淀到同一个工作流里。'
+    title: '沉淀长期轨道',
+    description: '完成之后回写复盘和证据，让每一天都能连接到更长的趋势。'
   }
 ]
 
@@ -959,11 +968,11 @@ onBeforeUnmount(() => {
 .dark .auth-nav-mark {
   border-color: rgba(255, 255, 255, 0.08);
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.58), rgba(255, 255, 255, 0.18)),
-    linear-gradient(180deg, #f7f7f8 0%, #d4d4d8 100%);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.02)),
+    linear-gradient(180deg, #1a1a1b 0%, #09090b 100%);
   box-shadow:
     0 12px 24px rgba(0, 0, 0, 0.24),
-    inset 0 1px 0 rgba(255, 255, 255, 0.58);
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 .dark .auth-nav-mark::after {
@@ -1025,60 +1034,223 @@ onBeforeUnmount(() => {
 .auth-layout {
   display: grid;
   width: 100%;
-  max-width: 1600px;
+  max-width: 1720px;
   min-height: calc(100vh - 5rem);
   margin: 0 auto;
-  grid-template-columns: minmax(0, 1fr) minmax(460px, 1fr);
-  column-gap: clamp(2.25rem, 4vw, 4.5rem);
+  grid-template-columns: minmax(0, 1.2fr) minmax(420px, 0.76fr);
+  column-gap: clamp(2.25rem, 4.5vw, 5.75rem);
+  align-items: start;
 }
 
 .auth-intro {
   min-height: calc(100vh - 5rem);
-  justify-content: center;
-  align-items: center;
-  padding: 4.85rem clamp(3rem, 6.5vw, 6rem);
+  justify-content: flex-start;
+  align-items: flex-start;
+  padding: clamp(2.75rem, 5vw, 5rem) clamp(3.5rem, 7vw, 7rem) clamp(3rem, 6vw, 5rem);
 }
 
 .auth-intro-content {
-  width: min(100%, 34rem);
+  position: relative;
+  width: min(100%, 50rem);
   margin: 0 auto;
+  padding-top: clamp(0.35rem, 1vw, 0.8rem);
+}
+
+.auth-intro-content::before {
+  content: '习知';
+  position: absolute;
+  top: clamp(7.5rem, 12vw, 10.5rem);
+  right: clamp(-1.2rem, -2vw, -0.5rem);
+  z-index: -1;
+  writing-mode: vertical-rl;
+  font-family: "Iowan Old Style", "Palatino Linotype", "Noto Serif SC", "Songti SC", serif;
+  font-size: clamp(5.5rem, 10vw, 9rem);
+  font-weight: 700;
+  line-height: 0.78;
+  letter-spacing: -0.16em;
+  color: rgba(24, 24, 27, 0.035);
+  user-select: none;
+  pointer-events: none;
+}
+
+.dark .auth-intro-content::before {
+  color: rgba(255, 255, 255, 0.045);
 }
 
 .auth-brand-header {
-  display: flex;
-  align-items: center;
-  gap: 1.35rem;
-  margin-bottom: 2.7rem;
+  display: grid;
+  gap: 1.15rem;
+  margin-bottom: 1.45rem;
 }
 
-.auth-brand-header h1,
+.auth-brand-header--lockup {
+  display: grid;
+  gap: 0.95rem;
+  max-width: 44rem;
+}
+
+.auth-brand-kicker {
+  width: fit-content;
+  margin: 0;
+  border-bottom: 1px solid rgba(24, 24, 27, 0.18);
+  padding-bottom: 0.45rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: rgba(63, 63, 70, 0.74);
+}
+
+.dark .auth-brand-kicker {
+  border-bottom-color: rgba(255, 255, 255, 0.18);
+  color: rgba(212, 212, 216, 0.72);
+}
+
+.auth-brand-lockup-frame {
+  position: relative;
+  width: min(100%, 37.5rem);
+  padding: 0.55rem;
+  overflow: hidden;
+  border: 1px solid rgba(24, 24, 27, 0.08);
+  border-radius: 2.15rem;
+  background:
+    linear-gradient(120deg, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.24)),
+    radial-gradient(circle at 12% 18%, rgba(216, 197, 161, 0.18), transparent 42%);
+  box-shadow:
+    0 28px 60px rgba(24, 24, 27, 0.075),
+    inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(18px);
+}
+
+.auth-brand-lockup-frame::after {
+  content: '';
+  position: absolute;
+  inset: 0.55rem;
+  border-radius: 1.55rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  pointer-events: none;
+}
+
+.dark .auth-brand-lockup-frame {
+  border-color: rgba(255, 255, 255, 0.08);
+  background:
+    linear-gradient(120deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.025)),
+    radial-gradient(circle at 14% 18%, rgba(216, 197, 161, 0.1), transparent 42%),
+    rgba(16, 16, 18, 0.62);
+  box-shadow:
+    0 24px 54px rgba(0, 0, 0, 0.26),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.auth-brand-copyblock {
+  display: grid;
+  gap: 0.65rem;
+  max-width: 36rem;
+}
+
+.auth-brand-copyblock::before {
+  content: 'CURRENT TRUTH / NEXT STEP';
+  width: fit-content;
+  border-radius: 999px;
+  border: 1px solid rgba(24, 24, 27, 0.08);
+  background: rgba(255, 255, 255, 0.42);
+  padding: 0.42rem 0.68rem;
+  font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: rgba(82, 82, 91, 0.66);
+}
+
+.dark .auth-brand-copyblock::before {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.045);
+  color: rgba(212, 212, 216, 0.62);
+}
+
+.auth-brand-tagline {
+  margin: 0;
+  font-family: "Iowan Old Style", "Palatino Linotype", "Noto Serif SC", "Songti SC", serif;
+  font-size: clamp(2.15rem, 4.25vw, 4rem);
+  font-weight: 600;
+  line-height: 0.98;
+  letter-spacing: -0.07em;
+  text-wrap: balance;
+  color: rgba(24, 24, 27, 0.94);
+}
+
+.dark .auth-brand-tagline {
+  color: rgba(250, 250, 250, 0.86);
+}
+
+.auth-brand-manifesto {
+  max-width: 31.5rem;
+  margin: 0;
+  font-size: 0.98rem;
+  line-height: 1.85;
+  color: rgba(63, 63, 70, 0.8);
+}
+
+.dark .auth-brand-manifesto {
+  color: rgba(228, 228, 231, 0.72);
+}
+
+.auth-brand-axis {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: min(100%, 31.5rem);
+  margin-top: 0.15rem;
+  border-top: 1px solid rgba(24, 24, 27, 0.1);
+  border-bottom: 1px solid rgba(24, 24, 27, 0.1);
+}
+
+.auth-brand-axis span {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.82rem 0.95rem 0.85rem 0;
+}
+
+.auth-brand-axis span + span {
+  border-left: 1px solid rgba(24, 24, 27, 0.08);
+  padding-left: 0.95rem;
+}
+
+.auth-brand-axis strong {
+  font-family: "Iowan Old Style", "Palatino Linotype", "Noto Serif SC", "Songti SC", serif;
+  font-size: 1.72rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.08em;
+  color: rgba(24, 24, 27, 0.92);
+}
+
+.auth-brand-axis small {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: rgba(82, 82, 91, 0.7);
+}
+
+.dark .auth-brand-axis {
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.dark .auth-brand-axis span + span {
+  border-left-color: rgba(255, 255, 255, 0.09);
+}
+
+.dark .auth-brand-axis strong {
+  color: rgba(250, 250, 250, 0.9);
+}
+
+.dark .auth-brand-axis small {
+  color: rgba(212, 212, 216, 0.65);
+}
+
 .auth-form-shell h2,
 .auth-feature-card h2 {
   font-family: "Iowan Old Style", "Palatino Linotype", "Noto Serif SC", "Songti SC", serif;
   font-weight: 600;
-}
-
-.auth-brand-header h1 {
-  font-size: 2.85rem !important;
-  line-height: 0.96;
-  letter-spacing: -0.055em !important;
-}
-
-.auth-brand-header p:first-of-type {
-  font-size: 0.93rem !important;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.auth-brand-header p:last-of-type {
-  max-width: 20rem;
-  font-size: 0.95rem !important;
-  line-height: 1.9;
-  color: rgba(63, 63, 70, 0.84);
-}
-
-.dark .auth-brand-header p:last-of-type {
-  color: rgba(228, 228, 231, 0.76);
 }
 
 .auth-brand-mark {
@@ -1108,31 +1280,29 @@ onBeforeUnmount(() => {
 
 .auth-feature-stack {
   display: grid;
-  gap: 1.05rem;
+  gap: 0;
 }
 
 .auth-feature-card {
   display: grid;
-  grid-template-columns: 3.55rem minmax(0, 1fr);
-  align-items: center;
-  gap: 1.05rem;
-  min-height: 8.1rem;
-  border: 1px solid rgba(24, 24, 27, 0.08);
-  border-radius: 1.85rem;
-  background: rgba(255, 255, 255, 0.56);
-  padding: 1.45rem 1.5rem;
-  box-shadow:
-    0 20px 36px rgba(24, 24, 27, 0.045),
-    inset 0 1px 0 rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(18px);
+  grid-template-columns: 3.4rem minmax(0, 1fr);
+  align-items: start;
+  gap: 1rem;
+  border-top: 1px solid rgba(24, 24, 27, 0.09);
+  padding: 1rem 0 1rem;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
+}
+
+.auth-feature-card:last-child {
+  border-bottom: 1px solid rgba(24, 24, 27, 0.09);
+}
+
+.auth-feature-card:hover {
+  transform: translateX(0.22rem);
 }
 
 .dark .auth-feature-card {
-  border-color: rgba(255, 255, 255, 0.08);
-  background: rgba(18, 18, 20, 0.76);
-  box-shadow:
-    0 22px 40px rgba(0, 0, 0, 0.24),
-    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.1);
 }
 
 .auth-feature-card h2 {
@@ -1150,34 +1320,101 @@ onBeforeUnmount(() => {
   color: rgba(228, 228, 231, 0.76);
 }
 
-.auth-feature-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.75rem;
-  height: 2.75rem;
-  border-radius: 0.95rem;
-  background: linear-gradient(180deg, #171717 0%, #09090b 100%);
-  color: white;
-  box-shadow:
-    0 12px 24px rgba(24, 24, 27, 0.18),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+.auth-feature-index {
+  font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  color: rgba(24, 24, 27, 0.48);
 }
 
-.dark .auth-feature-icon {
-  background: linear-gradient(180deg, #f5f5f5 0%, #d4d4d8 100%);
-  color: rgb(9 9 11);
+.dark .auth-feature-index {
+  color: rgba(212, 212, 216, 0.52);
+}
+
+.auth-narrative-panel {
+  display: grid;
+  grid-template-columns: minmax(9rem, 11.25rem) minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(1.2rem, 2.5vw, 2rem);
+  width: min(100%, 44rem);
+  margin-top: 1.95rem;
+}
+
+.auth-orbit-figure {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  border: 1px solid rgba(24, 24, 27, 0.1);
+  background:
+    radial-gradient(circle at center, rgba(255, 255, 255, 0.34) 0 17%, transparent 18%),
+    radial-gradient(circle at center, transparent 56%, rgba(24, 24, 27, 0.035) 57% 58%, transparent 59%);
+}
+
+.dark .auth-orbit-figure {
+  border-color: rgba(255, 255, 255, 0.1);
+  background:
+    radial-gradient(circle at center, rgba(255, 255, 255, 0.055) 0 17%, transparent 18%),
+    radial-gradient(circle at center, transparent 56%, rgba(255, 255, 255, 0.05) 57% 58%, transparent 59%);
+}
+
+.auth-orbit-figure__ring,
+.auth-orbit-figure__path {
+  position: absolute;
+  inset: 1.2rem;
+  border-radius: 999px;
+  border: 2px solid rgba(24, 24, 27, 0.16);
+  border-left-color: transparent;
+  border-bottom-color: transparent;
+  transform: rotate(28deg);
+}
+
+.auth-orbit-figure__path {
+  inset: 2.45rem;
+  border-width: 1px;
+  border-color: rgba(216, 197, 161, 0.62);
+  border-right-color: transparent;
+  border-top-color: transparent;
+  transform: rotate(-18deg);
+}
+
+.dark .auth-orbit-figure__ring {
+  border-color: rgba(255, 255, 255, 0.16);
+  border-left-color: transparent;
+  border-bottom-color: transparent;
+}
+
+.dark .auth-orbit-figure__path {
+  border-color: rgba(216, 197, 161, 0.5);
+  border-right-color: transparent;
+  border-top-color: transparent;
+}
+
+.auth-orbit-figure__core {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: 2.75rem;
+  height: 2.75rem;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 34% 28%, rgba(255, 255, 255, 0.5), transparent 42%),
+    #d8c5a1;
+  box-shadow:
+    0 0 0 0.72rem rgba(216, 197, 161, 0.12),
+    0 18px 32px rgba(24, 24, 27, 0.12);
 }
 
 .auth-entry {
   min-height: calc(100vh - 5rem);
-  align-items: center;
-  padding-block: 4.25rem;
-  padding-inline: clamp(2rem, 4.75vw, 4.75rem);
+  align-items: flex-start;
+  justify-content: center;
+  padding-block: clamp(2.8rem, 5vw, 4rem);
+  padding-inline: clamp(2rem, 5vw, 5.5rem);
 }
 
 .auth-form-shell {
-  max-width: 31rem;
+  max-width: 33.5rem;
   margin: 0 auto;
   border: 1px solid rgba(24, 24, 27, 0.08);
   border-radius: 2rem;
@@ -1195,6 +1432,16 @@ onBeforeUnmount(() => {
   box-shadow:
     0 32px 60px rgba(0, 0, 0, 0.28),
     inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.auth-form-shell::before {
+  content: '';
+  display: block;
+  width: 4.25rem;
+  height: 0.25rem;
+  margin-bottom: 1.65rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(24, 24, 27, 0.18), rgba(216, 197, 161, 0.72));
 }
 
 .auth-form-shell h2 {
@@ -1219,6 +1466,7 @@ onBeforeUnmount(() => {
   max-width: 24rem;
   line-height: 1.8;
 }
+
 
 .auth-mode-switch {
   padding: 0.32rem;
@@ -1594,6 +1842,7 @@ onBeforeUnmount(() => {
     max-width: 34rem;
     padding: 2.1rem 1.55rem 1.85rem;
   }
+
 }
 
 .brand-logo--nav :deep(img),
@@ -1612,6 +1861,7 @@ onBeforeUnmount(() => {
   height: 34px !important;
   max-width: 34px !important;
   max-height: 34px !important;
+  border-radius: 0.95rem;
 }
 
 .brand-logo--hero :deep(img),
@@ -1624,6 +1874,23 @@ onBeforeUnmount(() => {
   object-fit: contain !important;
   box-shadow:
     0 8px 18px rgba(24, 24, 27, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.brand-logo--hero-lockup {
+  justify-content: flex-start;
+  width: 100%;
+}
+
+.brand-logo--hero-lockup :deep(img) {
+  width: 100% !important;
+  height: clamp(9.4rem, 14vw, 12.4rem) !important;
+  max-height: none !important;
+  border-radius: 1.55rem;
+  object-fit: cover !important;
+  object-position: left center;
+  box-shadow:
+    0 18px 40px rgba(24, 24, 27, 0.14),
     inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 </style>

@@ -330,47 +330,114 @@
       @close="showNotificationModal = false"
       @save="saveNotificationSettings"
     >
-      <ToggleRow v-model="notificationSettings.pushNotifications" title="推送通知" description="允许浏览器和应用内提醒弹窗" />
-      <ToggleRow v-model="notificationSettings.emailNotifications" title="邮件通知" description="接收邮件提醒和状态通知" />
-      <ToggleRow v-model="notificationSettings.habitReminders" title="习惯提醒" description="根据习惯提醒时间触发应用内提醒" />
-      <ToggleRow v-model="notificationSettings.planReminders" title="计划提醒" description="保留计划提醒开关，兼容后端设置字段" />
-      <ToggleRow v-model="notificationSettings.learningReminders" title="学习提醒" description="接收学习任务和内容更新提醒" />
-      <ToggleRow v-model="notificationSettings.weeklyReports" title="周报提醒" description="每周汇总习惯与学习进度" />
-      <ToggleRow v-model="notificationSettings.quietHours" title="免打扰时段" description="在指定时段内暂停推送提醒" />
+      <div class="notification-console">
+        <section class="notification-console__section">
+          <div class="notification-console__head">
+            <span>Reminder</span>
+            <h4>提醒渠道</h4>
+            <p>控制浏览器提醒、邮件提醒和默认提醒时间。</p>
+          </div>
+          <div class="notification-toggle-grid">
+            <ToggleRow v-model="notificationSettings.pushNotifications" title="推送通知" description="允许浏览器和应用内提醒弹窗" />
+            <ToggleRow v-model="notificationSettings.emailNotifications" title="邮件通知" description="接收邮件提醒和状态通知" />
+            <ToggleRow v-model="notificationSettings.habitReminders" title="习惯提醒" description="根据习惯提醒时间触发应用内提醒" />
+            <ToggleRow v-model="notificationSettings.planReminders" title="计划提醒" description="保留计划提醒开关，兼容后端设置字段" />
+            <ToggleRow v-model="notificationSettings.learningReminders" title="学习提醒" description="接收学习任务和内容更新提醒" />
+            <ToggleRow v-model="notificationSettings.weeklyReports" title="周报提醒" description="每周汇总习惯与学习进度" />
+          </div>
 
-      <div class="grid gap-4 rounded-apple border border-zinc-200/80 bg-zinc-50/80 p-4 dark:border-zinc-800 dark:bg-zinc-900/60">
-        <div class="flex items-center gap-3">
-          <span class="w-20 text-sm text-zinc-600 dark:text-zinc-300">每日提醒</span>
-          <input v-model="notificationSettings.reminderTime" type="time" class="input-apple flex-1" />
-        </div>
-        <div>
-          <div class="mb-3 text-sm text-zinc-600 dark:text-zinc-300">重复日期</div>
-          <div class="flex flex-wrap gap-2">
-            <button
-              v-for="day in weekdayOptions"
-              :key="day.value"
-              type="button"
-              :class="['day-chip', notificationSettings.reminderDays.includes(day.value) ? 'day-chip-active' : 'day-chip-inactive']"
-              @click="toggleReminderDay(day.value)"
-            >
-              {{ day.label }}
+          <div class="notification-control-card">
+            <label>
+              <span>每日提醒</span>
+              <input v-model="notificationSettings.reminderTime" type="time" class="input-apple" />
+            </label>
+            <button type="button" class="btn-secondary" @click="openReminderTest">
+              打开提醒测试页
             </button>
           </div>
-        </div>
-        <button type="button" class="btn-secondary" @click="openReminderTest">
-          打开提醒测试页
-        </button>
-      </div>
 
-      <div v-if="notificationSettings.quietHours" class="grid gap-3 rounded-apple border border-zinc-200/80 bg-zinc-50/80 p-4 dark:border-zinc-800 dark:bg-zinc-900/60">
-        <div class="flex items-center gap-3">
-          <span class="w-20 text-sm text-zinc-600 dark:text-zinc-300">开始时间</span>
-          <input v-model="notificationSettings.quietStartTime" type="time" class="input-apple flex-1" />
-        </div>
-        <div class="flex items-center gap-3">
-          <span class="w-20 text-sm text-zinc-600 dark:text-zinc-300">结束时间</span>
-          <input v-model="notificationSettings.quietEndTime" type="time" class="input-apple flex-1" />
-        </div>
+          <div>
+            <div class="mb-3 text-sm text-zinc-600 dark:text-zinc-300">重复日期</div>
+            <div class="flex flex-wrap gap-2">
+              <button
+                v-for="day in weekdayOptions"
+                :key="day.value"
+                type="button"
+                :class="['day-chip', notificationSettings.reminderDays.includes(day.value) ? 'day-chip-active' : 'day-chip-inactive']"
+                @click="toggleReminderDay(day.value)"
+              >
+                {{ day.label }}
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section class="notification-console__section notification-sound-panel">
+          <div class="notification-console__head">
+            <span>Sound</span>
+            <h4>声音反馈</h4>
+            <p>为关键动作设置克制的品牌提示音，所有声音都会尊重免打扰。</p>
+          </div>
+
+          <div class="notification-sound-topline">
+            <ToggleRow v-model="notificationSettings.soundEnabled" title="启用音效" description="关闭后所有通知、完成、专注和错误音效都会静音" />
+            <label class="notification-volume">
+              <span>音量 {{ notificationSettings.soundVolume }}%</span>
+              <input v-model.number="notificationSettings.soundVolume" type="range" min="0" max="100" />
+            </label>
+          </div>
+
+          <div class="notification-sound-grid">
+            <article
+              v-for="event in soundEventOptions"
+              :key="event.key"
+              class="notification-sound-row"
+            >
+              <div>
+                <strong>{{ event.label }}</strong>
+                <p>{{ event.description }}</p>
+              </div>
+              <div class="notification-sound-actions">
+                <select v-model="notificationSettings.soundEvents[event.key]">
+                  <option
+                    v-for="preset in soundPresetOptions"
+                    :key="preset.id"
+                    :value="preset.id"
+                  >
+                    {{ preset.label }}
+                  </option>
+                </select>
+                <button
+                  type="button"
+                  class="workbench-secondary"
+                  :disabled="!notificationSettings.soundEnabled || notificationSettings.soundEvents[event.key] === 'none'"
+                  @click="previewNotificationSound(event.key)"
+                >
+                  试听
+                </button>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section class="notification-console__section">
+          <div class="notification-console__head">
+            <span>Quiet</span>
+            <h4>免打扰</h4>
+            <p>在休息或睡眠时段暂停推送和音效。</p>
+          </div>
+          <ToggleRow v-model="notificationSettings.quietHours" title="免打扰时段" description="在指定时段内暂停推送提醒和事件音效" />
+          <div v-if="notificationSettings.quietHours" class="notification-control-card">
+            <label>
+              <span>开始时间</span>
+              <input v-model="notificationSettings.quietStartTime" type="time" class="input-apple" />
+            </label>
+            <label>
+              <span>结束时间</span>
+              <input v-model="notificationSettings.quietEndTime" type="time" class="input-apple" />
+            </label>
+          </div>
+        </section>
       </div>
     </SettingsModal>
 
@@ -761,7 +828,7 @@
       <div class="modal-card max-w-md">
         <ModalHeader title="关于应用" @close="showAboutModal = false" />
         <div class="space-y-5 p-6 text-center">
-          <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-zinc-950 text-white dark:bg-white dark:text-zinc-950">
+          <div class="mx-auto flex h-16 w-16 items-center justify-center overflow-hidden rounded-[1.45rem] bg-zinc-950 p-1 text-white dark:bg-zinc-950 dark:text-white">
             <Logo size="xl" />
           </div>
           <div>
@@ -799,8 +866,8 @@
 </template>
 
 <script setup>
-import { computed, defineComponent, h, onBeforeUnmount, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, defineComponent, h, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useHabitStore } from '@/stores/habit'
 import * as authAPI from '@/api/auth.js'
@@ -822,8 +889,11 @@ import {
   cacheNotificationSettings,
   readNotificationSettings,
   requestNotificationPermission,
-  normalizeNotificationSettings
+  normalizeNotificationSettings,
+  SOUND_EVENT_OPTIONS,
+  SOUND_PRESET_OPTIONS
 } from '@/utils/notificationSettings.js'
+import { useWorkbenchSound } from '@/composables/useWorkbenchSound.js'
 import AppLayout from '@/components/AppLayout.vue'
 import BaseCard from '@/components/BaseCard.vue'
 import Logo from '@/components/Logo.vue'
@@ -869,7 +939,7 @@ const SettingsModal = defineComponent({
       class: 'fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4 backdrop-blur-sm'
     }, [
       h('div', {
-        class: 'w-full max-w-xl overflow-hidden rounded-[28px] border border-zinc-200 bg-white shadow-apple-lg dark:border-zinc-800 dark:bg-zinc-950'
+        class: 'w-full max-w-3xl overflow-hidden rounded-[28px] border border-zinc-200 bg-white shadow-apple-lg dark:border-zinc-800 dark:bg-zinc-950'
       }, [
         h(ModalHeader, { title: props.title, onClose: () => emit('close') }),
         h('div', { class: 'space-y-4 p-6' }, slots.default?.()),
@@ -952,14 +1022,20 @@ const mapNotificationSettingsToApi = (settings) => ({
   quietStartTime: settings.quietStartTime,
   quietEndTime: settings.quietEndTime,
   reminderTime: settings.reminderTime,
-  reminderDays: settings.reminderDays
+  reminderDays: settings.reminderDays,
+  soundEnabled: settings.soundEnabled,
+  soundVolume: settings.soundVolume,
+  soundTheme: settings.soundTheme,
+  soundEvents: settings.soundEvents
 })
 
 const authStore = useAuthStore()
 const habitStore = useHabitStore()
 const workspaceAiStore = useWorkspaceAiStore()
 const router = useRouter()
+const route = useRoute()
 const { success, error: showError, warning } = useToast()
+const { previewWorkbenchSound } = useWorkbenchSound()
 
 const showEditModal = ref(false)
 const showVerifyModal = ref(false)
@@ -971,6 +1047,12 @@ const showHelpModal = ref(false)
 const showAboutModal = ref(false)
 const showAdminMailModal = ref(false)
 const showAiProviderModal = ref(false)
+
+const syncProfilePanelFromRoute = () => {
+  if (route.query.panel === 'notifications') {
+    showNotificationModal.value = true
+  }
+}
 
 const editForm = ref({
   username: '',
@@ -1082,14 +1164,39 @@ const weekdayOptions = [
   { value: 7, label: '周日' }
 ]
 
+const soundEventOptions = SOUND_EVENT_OPTIONS
+const soundPresetOptions = SOUND_PRESET_OPTIONS
+
 const settingItems = computed(() => [
+  {
+    title: '使用教程',
+    description: '查看完整功能说明、日常工作流和手机端使用方式。',
+    iconClass: 'border-stone-200 bg-stone-50 text-stone-700 dark:border-stone-800 dark:bg-white/8 dark:text-stone-100',
+    icon: 'M4 5.5A2.5 2.5 0 016.5 3H20v16H6.5A2.5 2.5 0 004 21.5v-16zM8 7h8M8 11h6M8 15h7',
+    action: () => { router.push('/guide') }
+  },
   {
     title: '宠物设置',
     description: '导入自定义宠物形象，并切换大 / 中 / 小显示尺寸。',
     iconClass: 'border-zinc-200 bg-zinc-100 text-zinc-700 dark:border-zinc-700 dark:bg-white/8 dark:text-white',
     icon: 'M12 3c3.866 0 7 2.91 7 6.5 0 2.01-.984 3.8-2.514 4.986L17 21l-5-2.5L7 21l.514-6.514C5.984 13.3 5 11.51 5 9.5 5 5.91 8.134 3 12 3zm-3 7h.01M15 10h.01M10 13c.667.667 3.333.667 4 0',
     action: () => { router.push('/profile/pet-settings') }
-  },  {
+  },
+  {
+    title: 'AI 技能管理',
+    description: '管理内置技能，上传自己的 SKILL.md 技能包',
+    iconClass: 'border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-900/70 dark:bg-sky-500/10 dark:text-sky-300',
+    icon: 'M12 3l1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9l4.4-1.6L12 3zm6 12l.8 2.2L21 18l-2.2.8L18 21l-.8-2.2L15 18l2.2-.8L18 15z',
+    action: () => { router.push('/profile/ai-skills') }
+  },
+  {
+    title: '外观与主题',
+    description: '自定义强调色、背景图、模糊材质和工作台布局密度。',
+    iconClass: 'border-stone-200 bg-stone-100 text-stone-700 dark:border-stone-700 dark:bg-white/8 dark:text-stone-100',
+    icon: 'M4 7h16M4 12h10M4 17h16m12-5l2-2 2 2-2 2-2-2z',
+    action: () => { router.push('/profile/appearance') }
+  },
+  {
     title: '通知设置',
     description: '统一管理提醒弹窗、推送与免打扰时间',
     iconClass: 'border-zinc-200 bg-zinc-100 text-zinc-700 dark:border-zinc-700 dark:bg-white/8 dark:text-white',
@@ -1242,7 +1349,6 @@ let verifyCodeTimer = null
 
 const getProtocolLabel = (protocol) => {
   if (protocol === 'openai_responses') return 'Responses API'
-  if (protocol === 'agnes_chat') return 'Agnes Chat'
   return 'Chat Completions'
 }
 
@@ -1832,6 +1938,20 @@ const toggleReminderDay = (day) => {
   notificationSettings.value.reminderDays = Array.from(nextDays).sort((a, b) => a - b)
 }
 
+const previewNotificationSound = async (eventKey) => {
+  try {
+    await previewWorkbenchSound(
+      eventKey,
+      notificationSettings.value.soundEvents?.[eventKey],
+      notificationSettings.value
+    )
+  } catch (err) {
+    showError('试听失败', {
+      description: err.message || '浏览器暂时无法播放音效'
+    })
+  }
+}
+
 const loadAdminAudience = async () => {
   if (!isAdmin.value) return
 
@@ -2069,7 +2189,11 @@ onMounted(async () => {
   if (isAdmin.value) {
     await loadAdminAudience()
   }
+
+  syncProfilePanelFromRoute()
 })
+
+watch(() => route.query.panel, syncProfilePanelFromRoute)
 
 onBeforeUnmount(() => {
   clearVerifyCodeTimer()
@@ -2142,15 +2266,24 @@ onBeforeUnmount(() => {
   min-width: 42px;
   align-items: center;
   justify-content: center;
-  padding: 0 10px;
+  overflow: hidden;
+  padding: 5px;
   border: 1px solid rgba(24, 24, 27, 0.12);
-  border-radius: 15px;
-  background: rgba(255, 255, 255, 0.58);
+  border-radius: 17px;
+  background: rgb(24, 24, 27);
+  box-shadow: 0 12px 24px rgba(24, 24, 27, 0.12);
 }
 
 .dark .profile-logo-mark {
   border-color: rgba(244, 244, 245, 0.14);
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(10, 10, 11);
+}
+
+.profile-logo-mark :deep(img),
+.profile-logo-mark :deep(svg) {
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: 12px;
 }
 
 .profile-kicker {
@@ -3137,6 +3270,139 @@ onBeforeUnmount(() => {
   color: rgb(212, 212, 216);
 }
 
+.notification-console {
+  display: grid;
+  gap: 18px;
+}
+
+.notification-console__section {
+  display: grid;
+  gap: 14px;
+  border: 1px solid var(--workbench-border);
+  border-radius: calc(var(--workbench-radius) * 0.95);
+  background: var(--workbench-surface-muted);
+  padding: 18px;
+}
+
+.notification-console__head span {
+  color: rgb(var(--workbench-accent-rgb));
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.notification-console__head h4 {
+  margin-top: 4px;
+  font-size: 18px;
+  font-weight: 750;
+  letter-spacing: -0.03em;
+  color: var(--workbench-text);
+}
+
+.notification-console__head p {
+  margin-top: 4px;
+  max-width: 58ch;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--workbench-text-muted);
+}
+
+.notification-toggle-grid,
+.notification-sound-topline {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.notification-control-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: end;
+  border: 1px solid var(--workbench-border);
+  border-radius: calc(var(--workbench-radius) * 0.8);
+  background: var(--workbench-surface);
+  padding: 14px;
+}
+
+.notification-control-card label,
+.notification-volume {
+  display: grid;
+  gap: 8px;
+  color: var(--workbench-text);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.notification-volume {
+  border: 1px solid var(--workbench-border);
+  border-radius: calc(var(--workbench-radius) * 0.8);
+  background: var(--workbench-surface);
+  padding: 16px;
+}
+
+.notification-volume input,
+.notification-sound-row select {
+  accent-color: var(--workbench-accent);
+}
+
+.notification-sound-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.notification-sound-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.85fr);
+  gap: 14px;
+  align-items: center;
+  border: 1px solid var(--workbench-border);
+  border-radius: calc(var(--workbench-radius) * 0.8);
+  background: var(--workbench-surface);
+  padding: 14px;
+  transition: transform 180ms var(--workbench-ease), border-color 180ms var(--workbench-ease);
+}
+
+.notification-sound-row:hover {
+  border-color: rgb(var(--workbench-accent-rgb) / 0.24);
+  transform: translateY(-1px);
+}
+
+.notification-sound-row strong {
+  display: block;
+  color: var(--workbench-text);
+  font-size: 14px;
+}
+
+.notification-sound-row p {
+  margin-top: 4px;
+  color: var(--workbench-text-muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.notification-sound-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+}
+
+.notification-sound-actions select {
+  min-height: 42px;
+  border: 1px solid var(--workbench-border);
+  border-radius: calc(var(--workbench-radius) * 0.65);
+  background: var(--workbench-surface-muted);
+  padding: 0 12px;
+  color: var(--workbench-text);
+  outline: none;
+}
+
+.notification-sound-actions select:focus {
+  border-color: rgb(var(--workbench-accent-rgb) / 0.45);
+  box-shadow: 0 0 0 3px rgb(var(--workbench-accent-rgb) / 0.12);
+}
+
 @media (max-width: 1100px) {
   .ai-provider-grid {
     grid-template-columns: 1fr;
@@ -3148,9 +3414,18 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 640px) {
+  .profile-page-shell {
+    gap: 14px;
+    padding-bottom: 18px;
+  }
+
   .profile-hero-panel,
   .ai-provider-shell {
     padding: 18px;
+  }
+
+  .profile-hero-panel {
+    border-radius: 24px;
   }
 
   .profile-hero-content,
@@ -3178,15 +3453,42 @@ onBeforeUnmount(() => {
 
   .profile-identity-card {
     width: 100%;
+    border-radius: 20px;
+    padding: 14px;
   }
 
   .profile-identity-card .summary-badge {
     display: none;
   }
 
+  .profile-metric-card {
+    border-radius: 18px;
+    padding: 14px 15px;
+  }
+
+  .profile-tool-button {
+    min-height: 76px;
+    border-radius: 18px;
+    padding: 15px;
+  }
+
+  .profile-tool-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 13px;
+  }
+
   .profile-action-row > *,
   .profile-bottom-actions > * {
     flex: 1 1 100%;
+  }
+
+  .notification-toggle-grid,
+  .notification-sound-topline,
+  .notification-control-card,
+  .notification-sound-row,
+  .notification-sound-actions {
+    grid-template-columns: 1fr;
   }
 
   .ai-provider-hero,
@@ -3215,11 +3517,13 @@ onBeforeUnmount(() => {
   }
 
   .modal-card {
-    border-radius: 24px;
+    max-height: min(92dvh, 860px);
+    border-radius: 24px 24px 18px 18px;
   }
 
   .modal-footer {
     flex-direction: column;
+    padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px));
   }
 }
 </style>

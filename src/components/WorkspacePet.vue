@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="workspace-pet-root" :class="{ 'is-panel-left': shouldOpenPanelLeft, 'is-ready': isVisualReady }" :style="rootStyle">
     <button
       type="button"
@@ -116,11 +116,8 @@
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { createHabit } from '@/api/habits.js'
-import { createPlan, generatePlanOutlineAI } from '@/api/plans.js'
-import { refreshDailyLearningCard } from '@/api/learning.js'
-import { createTrack } from '@/api/tracks.js'
-import { chatWithMascotAssistant, createQuickCapture, listWorkspacePets, saveReviewEntry } from '@/api/workspace.js'
+import { generatePlanOutlineAI } from '@/api/plans.js'
+import { chatWithMascotAssistant, listWorkspacePets, runMascotAssistantAction } from '@/api/workspace.js'
 import { useWorkspaceAiStore } from '@/stores/workspaceAi.js'
 import {
   DEFAULT_PET_SETTINGS,
@@ -173,7 +170,6 @@ const ui = {
   you: '\u4f60',
   placeholder: '\u95ee\u4e60\u77e5\uff1a\u4eca\u5929\u5148\u505a\u4ec0\u4e48\uff1f',
   welcome: '\u6211\u5728\u3002\u4f60\u53ef\u4ee5\u76f4\u63a5\u95ee\u4eca\u5929\u5148\u505a\u4ec0\u4e48\uff0c\u6216\u8ba9\u6211\u5e2e\u4f60\u628a\u6536\u96c6\u7bb1\u548c\u8ba1\u5212\u7406\u4e00\u904d\u3002',
-  fallback: '\u8fdc\u7a0b\u52a9\u624b\u6682\u65f6\u4e0d\u7a33\u3002\u6211\u5148\u7ed9\u4f60\u672c\u5730\u5efa\u8bae\uff1a\u9009\u4e00\u4ef6\u6700\u5c0f\u53ef\u63a8\u8fdb\u7684\u4e8b\uff0c\u5148\u505a 10 \u5206\u949f\u3002',
   actionsTitle: '\u5efa\u8bae\u52a8\u4f5c',
   goHandle: '\u53bb\u5904\u7406',
   flowTitle: '\u6b63\u5728\u5e2e\u4f60\u529e',
@@ -197,6 +193,8 @@ const ui = {
 
 const quickPrompts = [
   '\u4eca\u5929\u5148\u505a\u4ec0\u4e48',
+  '\u5f00\u59cb 30 \u5206\u949f\u4e13\u6ce8',
+  '\u5b8c\u6210\u4eca\u5929\u7b2c\u4e00\u4e2a\u4efb\u52a1',
   '\u5e2e\u6211\u5b89\u6392 30 \u5206\u949f',
   '\u6574\u7406\u6536\u96c6\u7bb1',
   '\u751f\u6210\u4eca\u65e5\u590d\u76d8\u8349\u7a3f'
@@ -208,7 +206,8 @@ const flowKindLabels = {
   capture: '\u521b\u5efa\u6536\u96c6',
   review: '\u5199\u590d\u76d8',
   track: '\u521b\u5efa\u8f68\u9053',
-  learningCard: '\u5237\u65b0\u5b66\u4e60\u5361'
+  learningCard: '\u5237\u65b0\u5b66\u4e60\u5361',
+  creatorItem: '\u521b\u5efa\u5185\u5bb9\u6761\u76ee'
 }
 
 const flowStepQuestions = {
@@ -246,6 +245,12 @@ const flowStepQuestions = {
   learningCard: {
     confirm: '\u8981\u6211\u73b0\u5728\u5237\u65b0\u4eca\u65e5\u5b66\u4e60\u5361\u5417\uff1f',
     done: '\u4eca\u65e5\u5b66\u4e60\u5361\u5df2\u7ecf\u7ed9\u4f60\u91cd\u65b0\u751f\u6210\u4e86\u3002'
+  },
+  creatorItem: {
+    type: '\u8fd9\u6761\u5185\u5bb9\u662f\u70ed\u70b9\u3001\u9009\u9898\uff0c\u8fd8\u662f\u8349\u7a3f\uff1f',
+    title: '\u5185\u5bb9\u6807\u9898\u662f\u4ec0\u4e48\uff1f',
+    platform: '\u76ee\u6807\u5e73\u53f0\u662f\u4ec0\u4e48\uff1f\u4e0d\u786e\u5b9a\u53ef\u4ee5\u56de\u590d\u201c\u8df3\u8fc7\u201d\u3002',
+    confirm: '\u6211\u53ef\u4ee5\u73b0\u5728\u521b\u5efa\u8fd9\u6761\u5185\u5bb9\uff0c\u8981\u7ee7\u7eed\u5417\uff1f'
   }
 }
 
@@ -321,6 +326,17 @@ const flowChoicePresets = {
     confirm: [
       { label: '\u5237\u65b0\u5b66\u4e60\u5361', value: 'refresh' },
       { label: '\u5148\u4e0d\u5237\u65b0', value: 'cancel' }
+    ]
+  },
+  creatorItem: {
+    type: [
+      { label: '\u9009\u9898', value: 'topic' },
+      { label: '\u70ed\u70b9', value: 'trend' },
+      { label: '\u8349\u7a3f', value: 'draft' }
+    ],
+    confirm: [
+      { label: '\u521b\u5efa\u5185\u5bb9', value: 'create' },
+      { label: '\u5148\u4e0d\u521b\u5efa', value: 'cancel' }
     ]
   }
 }
@@ -560,6 +576,14 @@ const flowSummary = computed(() => {
     return '刷新后会替换今日学习卡内容。'
   }
 
+  if (flowState.value.kind === 'creatorItem') {
+    return [
+      data.type ? `类型：${getCreatorTypeLabel(data.type)}` : '',
+      data.title ? `标题：${data.title.slice(0, 32)}` : '',
+      data.platform ? `平台：${data.platform}` : ''
+    ].filter(Boolean).join(' · ')
+  }
+
   return ''
 })
 
@@ -573,6 +597,7 @@ const flowQuestion = computed(() => {
   if (kind === 'review') return flowStepQuestions.review[step] || ''
   if (kind === 'track') return flowStepQuestions.track[step] || ''
   if (kind === 'learningCard') return flowStepQuestions.learningCard[step] || ''
+  if (kind === 'creatorItem') return flowStepQuestions.creatorItem[step] || ''
   return ''
 })
 
@@ -604,6 +629,10 @@ const flowChoices = computed(() => {
   }
   if (kind === 'learningCard') {
     if (step === 'confirm') return flowChoicePresets.learningCard.confirm
+  }
+  if (kind === 'creatorItem') {
+    if (step === 'type') return flowChoicePresets.creatorItem.type
+    if (step === 'confirm') return flowChoicePresets.creatorItem.confirm
   }
   return []
 })
@@ -665,6 +694,12 @@ const getTrackTypeLabel = (value) => ({
   project: '计划',
   custom: '自定义'
 }[value] || '自定义')
+
+const getCreatorTypeLabel = (value) => ({
+  trend: '热点',
+  topic: '选题',
+  draft: '草稿'
+}[value] || '选题')
 
 const extractGoalText = (text, keyword) => {
   const source = String(text || '').trim()
@@ -795,83 +830,26 @@ const startLearningCardFlow = async () => {
   await startAssistantMessage(flowQuestion.value)
 }
 
-const maybeStartOperationFlow = async (question) => {
-  const text = String(question || '').trim()
-  if (!text) return false
-
-  if (/(开始|进入|打开).*(专注|番茄|focus)|专注模式|开始专注/.test(text)) {
-    router.push('/focus')
-    sendState('running', 1000, '\u8fdb\u5165\u4e13\u6ce8')
-    return true
+const startCreatorItemFlow = async (text) => {
+  const candidate = String(text || '')
+    .replace(/^(新建|创建|添加|给我|帮我)/, '')
+    .replace(/(内容条目|内容|选题|热点|草稿|视频脚本|小红书|公众号)/g, '')
+    .trim()
+  const type = /热点/.test(text) ? 'trend' : /草稿|脚本/.test(text) ? 'draft' : 'topic'
+  flowState.value = {
+    kind: 'creatorItem',
+    step: candidate ? 'platform' : 'type',
+    data: {
+      type,
+      title: candidate.slice(0, 120),
+      platform: ''
+    }
   }
-
-  if (/(开始|进入|打开).*(今日|首页|仪表盘|dashboard)/.test(text)) {
-    router.push('/dashboard')
-    sendState('review', 1000, '\u8fd4\u56de\u4eca\u65e5')
-    return true
+  if (candidate) {
+    await startAssistantMessage(`我先记为：${candidate}。${flowStepQuestions.creatorItem.platform}`)
+    return
   }
-
-  if (/(开始|进入|打开).*(计划|plan)/.test(text)) {
-    router.push('/plan')
-    sendState('review', 1000, '\u8fdb\u5165\u8ba1\u5212')
-    return true
-  }
-
-  if (/(打开|进入).*(学习|learning)/.test(text)) {
-    router.push('/learning')
-    sendState('review', 1000, '\u8fdb\u5165\u5b66\u4e60')
-    return true
-  }
-
-  if (/(打开|进入).*(收集|收集箱|captures)/.test(text)) {
-    router.push('/captures')
-    sendState('waiting', 1000, '\u8fdb\u5165\u6536\u96c6')
-    return true
-  }
-
-  if (/(打开|进入).*(复盘|review)/.test(text)) {
-    router.push('/review')
-    sendState('review', 1000, '\u8fdb\u5165\u590d\u76d8')
-    return true
-  }
-
-  if (/(打开|进入).*(轨道|tracks)/.test(text)) {
-    router.push('/tracks')
-    sendState('review', 1000, '\u8fdb\u5165\u8f68\u9053')
-    return true
-  }
-
-  if (/(新建|创建|添加|建一个|做一个|给我).*习惯|习惯.*(新建|创建|添加)/.test(text)) {
-    await startHabitFlow(text)
-    return true
-  }
-
-  if (/(新建|创建|添加|建一个|做一个|安排一个|给我).*(计划|方案)|计划.*(新建|创建|添加)/.test(text)) {
-    await startPlanFlow(text)
-    return true
-  }
-
-  if (/(新建|创建|添加|收集|记录|记一条|加入收集箱).*(想法|任务|学习|计划|习惯|内容)|收集箱/.test(text)) {
-    await startCaptureFlow(text)
-    return true
-  }
-
-  if (/(写|生成|保存|整理).*(复盘|周复盘|日复盘)|复盘.*(写|保存|生成)?/.test(text)) {
-    await startReviewFlow(text)
-    return true
-  }
-
-  if (/(新建|创建|添加).*(轨道|track)|轨道.*(新建|创建|添加)/.test(text)) {
-    await startTrackFlow(text)
-    return true
-  }
-
-  if (/(刷新|生成|更新).*(学习卡|今日学习卡|学习卡片)|学习卡/.test(text)) {
-    await startLearningCardFlow()
-    return true
-  }
-
-  return false
+  await startAssistantMessage(flowQuestion.value)
 }
 
 const askNextFlowQuestion = async () => {
@@ -882,14 +860,14 @@ const askNextFlowQuestion = async () => {
 const completeHabitFlow = async () => {
   if (!flowState.value || flowState.value.kind !== 'habit') return
   isAsking.value = true
-  sendState('running', 1600, ui.thinking)
+  sendState('working', 1600, ui.thinking)
 
   try {
     const data = flowState.value.data
     const payload = {
       name: data.name,
       description: '',
-      icon: '📌',
+      icon: 'pin',
       color: '#111827',
       category: '其他',
       frequency: data.frequency || 'daily',
@@ -899,23 +877,14 @@ const completeHabitFlow = async () => {
       reminderTimes: data.reminderEnabled ? (data.reminderTimes || []) : [],
       reminderTime: data.reminderEnabled && data.reminderTimes?.length ? data.reminderTimes[0] : null
     }
-    const response = await createHabit(payload)
-    if (!response?.success) {
-      throw new Error(response?.error || response?.message || 'create habit failed')
-    }
+    const result = await runPetBackendAction('create_habit', payload)
+    const entity = result.entity || {}
 
-    lastCreatedHabit.value = response.data
+    lastCreatedHabit.value = entity
     resetFlow()
-    await startAssistantMessage(`已创建习惯「${response.data?.name || data.name}」。我没有替你打卡，只是把结构建好了。`)
-    lastActions.value = [
-      {
-        type: 'open_habit',
-        label: '查看习惯',
-        title: response.data?.name || data.name,
-        payload: { to: `/habit/${response.data?.id}` }
-      }
-    ].filter((item) => item.payload.to && !item.payload.to.endsWith('/undefined'))
-    sendState('jumping', 1200, ui.answered)
+    await startAssistantMessage(`${result.message || `已创建习惯「${entity.name || data.name}」。`} 我没有替你打卡，只是把结构建好了。`)
+    lastActions.value = normalizeBackendSuggestions(result.suggestions)
+    sendState(result.actionState || 'done', 1200, ui.answered)
   } catch (error) {
     console.warn('Workspace pet create habit failed', error)
     await startAssistantMessage(`创建失败：${error.message || '接口暂时不可用'}。我先保留这组信息，你可以稍后再确认一次。`)
@@ -929,44 +898,35 @@ const completeHabitFlow = async () => {
 const completePlanFlow = async () => {
   if (!flowState.value || flowState.value.kind !== 'plan') return
   isAsking.value = true
-  sendState('running', 1600, ui.thinking)
+  sendState('working', 1600, ui.thinking)
 
   try {
     const data = flowState.value.data
-    const response = await createPlan({
+    const result = await runPetBackendAction('create_plan', {
       title: data.title,
       status: 'not_started',
       priority: 'medium',
       type: 'project'
     })
-    if (!response?.success) {
-      throw new Error(response?.error || response?.message || 'create plan failed')
-    }
+    const entity = result.entity || {}
 
-    lastCreatedPlan.value = response.data
+    lastCreatedPlan.value = entity
     pendingOutline.value = {
-      planId: response.data?.id,
-      title: response.data?.title || data.title,
+      planId: entity.id,
+      title: entity.title || data.title,
       prompt: data.title
     }
     flowState.value = {
       kind: 'plan',
       step: 'outlineAfterCreate',
       data: {
-        title: response.data?.title || data.title,
-        planId: response.data?.id
+        title: entity.title || data.title,
+        planId: entity.id
       }
     }
-    await startAssistantMessage(`计划「${response.data?.title || data.title}」已经创建。要我继续生成一个初始大纲吗？`)
-    lastActions.value = [
-      {
-        type: 'open_plan',
-        label: '打开计划',
-        title: response.data?.title || data.title,
-        payload: { to: `/plan/${response.data?.id}` }
-      }
-    ].filter((item) => item.payload.to && !item.payload.to.endsWith('/undefined'))
-    sendState('jumping', 1200, ui.answered)
+    await startAssistantMessage(`${result.message || `计划「${entity.title || data.title}」已经创建。`} 要我继续生成一个初始大纲吗？`)
+    lastActions.value = normalizeBackendSuggestions(result.suggestions)
+    sendState(result.actionState || 'done', 1200, ui.answered)
   } catch (error) {
     console.warn('Workspace pet create plan failed', error)
     await startAssistantMessage(`创建失败：${error.message || '接口暂时不可用'}。我先不乱写，等接口恢复再继续。`)
@@ -981,7 +941,7 @@ const generateOutlineForCreatedPlan = async () => {
   const plan = pendingOutline.value
   if (!plan?.planId) return
   isAsking.value = true
-  sendState('running', 1800, ui.thinking)
+  sendState('thinking', 1800, ui.thinking)
 
   try {
     const response = await generatePlanOutlineAI({
@@ -1068,26 +1028,17 @@ const handleCaptureFlowInput = async (value) => {
   if (step === 'confirm') {
     if (text === 'create' || parseYesNo(text) === true) {
       isAsking.value = true
-      sendState('running', 1400, ui.thinking)
+      sendState('working', 1400, ui.thinking)
       try {
-        const response = await createQuickCapture({
+        const result = await runPetBackendAction('create_capture', {
           type: data.type || 'idea',
           content: data.content
         })
-        if (!response?.success) {
-          throw new Error(response?.error || response?.message || 'create capture failed')
-        }
+        const entity = result.entity || {}
         resetFlow()
-        await startAssistantMessage(`已加入收集箱：${response.data?.content || data.content}`)
-        lastActions.value = [
-          {
-            type: 'open_captures',
-            label: '查看收集箱',
-            title: '打开收集页',
-            payload: { to: '/captures' }
-          }
-        ]
-        sendState('jumping', 1200, ui.answered)
+        await startAssistantMessage(result.message || `已加入收集箱：${entity.content || data.content}`)
+        lastActions.value = normalizeBackendSuggestions(result.suggestions)
+        sendState(result.actionState || 'done', 1200, ui.answered)
       } catch (error) {
         console.warn('Workspace pet create capture failed', error)
         await startAssistantMessage(`收集失败：${error.message || '接口暂时不可用'}。我先不继续写入。`)
@@ -1157,9 +1108,9 @@ const handleReviewFlowInput = async (value) => {
   if (step === 'confirm') {
     if (text === 'create' || parseYesNo(text) === true) {
       isAsking.value = true
-      sendState('running', 1400, ui.thinking)
+      sendState('working', 1400, ui.thinking)
       try {
-        const response = await saveReviewEntry({
+        const result = await runPetBackendAction('save_review', {
           reviewDate: SHANGHAI_DATE_FORMATTER.format(new Date()),
           type: data.type || 'daily',
           completed: data.completed,
@@ -1168,20 +1119,10 @@ const handleReviewFlowInput = async (value) => {
           mood: data.mood,
           summary_snapshot: {}
         })
-        if (!response?.success) {
-          throw new Error(response?.error || response?.message || 'save review failed')
-        }
         resetFlow()
-        await startAssistantMessage(`复盘已保存。你可以去复盘页继续补充，或者把今天收口到明天第一步。`)
-        lastActions.value = [
-          {
-            type: 'open_review',
-            label: '打开复盘',
-            title: '进入复盘页',
-            payload: { to: '/review' }
-          }
-        ]
-        sendState('review', 1200, ui.answered)
+        await startAssistantMessage(result.message || '复盘已保存。你可以去复盘页继续补充，或者把今天收口到明天第一步。')
+        lastActions.value = normalizeBackendSuggestions(result.suggestions)
+        sendState(result.actionState || 'review', 1200, ui.answered)
       } catch (error) {
         console.warn('Workspace pet save review failed', error)
         await startAssistantMessage(`复盘保存失败：${error.message || '接口暂时不可用'}。`)
@@ -1235,29 +1176,20 @@ const handleTrackFlowInput = async (value) => {
   if (step === 'confirm') {
     if (text === 'create' || parseYesNo(text) === true) {
       isAsking.value = true
-      sendState('running', 1400, ui.thinking)
+      sendState('working', 1400, ui.thinking)
       try {
-        const response = await createTrack({
+        const result = await runPetBackendAction('create_track', {
           name: data.name,
           type: data.type || 'custom',
           color: data.color || '#18181b',
           source_type: 'custom',
           config: {}
         })
-        if (!response?.success) {
-          throw new Error(response?.error || response?.message || 'create track failed')
-        }
+        const entity = result.entity || {}
         resetFlow()
-        await startAssistantMessage(`轨道「${response.data?.name || data.name}」已创建。你可以去轨道页继续补充。`)
-        lastActions.value = [
-          {
-            type: 'open_tracks',
-            label: '打开轨道',
-            title: response.data?.name || data.name,
-            payload: { to: '/tracks' }
-          }
-        ]
-        sendState('jumping', 1200, ui.answered)
+        await startAssistantMessage(result.message || `轨道「${entity.name || data.name}」已创建。你可以去轨道页继续补充。`)
+        lastActions.value = normalizeBackendSuggestions(result.suggestions)
+        sendState(result.actionState || 'done', 1200, ui.answered)
       } catch (error) {
         console.warn('Workspace pet create track failed', error)
         await startAssistantMessage(`轨道创建失败：${error.message || '接口暂时不可用'}。`)
@@ -1280,23 +1212,13 @@ const handleLearningCardFlowInput = async (value) => {
   if (!text) return startAssistantMessage('如果要刷新学习卡，就回复“要”或者点按钮。')
   if (text === 'refresh' || parseYesNo(text) === true) {
     isAsking.value = true
-    sendState('running', 1200, ui.thinking)
+    sendState('working', 1200, ui.thinking)
     try {
-      const response = await refreshDailyLearningCard()
-      if (!response?.success) {
-        throw new Error(response?.error || response?.message || 'refresh learning card failed')
-      }
+      const result = await runPetBackendAction('refresh_learning_card')
       resetFlow()
-      await startAssistantMessage('今日学习卡已经刷新好了。要我顺手带你去学习页吗？')
-      lastActions.value = [
-        {
-          type: 'open_learning',
-          label: '打开学习',
-          title: '进入学习页',
-          payload: { to: '/learning' }
-        }
-      ]
-      sendState('review', 1200, ui.answered)
+      await startAssistantMessage(result.message || '今日学习卡已经刷新好了。要我顺手带你去学习页吗？')
+      lastActions.value = normalizeBackendSuggestions(result.suggestions)
+      sendState(result.actionState || 'review', 1200, ui.answered)
     } catch (error) {
       console.warn('Workspace pet refresh learning card failed', error)
       await startAssistantMessage(`学习卡刷新失败：${error.message || '接口暂时不可用'}。`)
@@ -1311,6 +1233,63 @@ const handleLearningCardFlowInput = async (value) => {
     return startAssistantMessage('好，那先不刷新。')
   }
   return startAssistantMessage('确认刷新就回复“要”，不刷新就回复“不用”。')
+}
+
+const handleCreatorItemFlowInput = async (value) => {
+  const data = flowState.value.data
+  const step = flowState.value.step
+  const text = String(value || '').trim()
+
+  if (step === 'type') {
+    const labelMatch = {
+      热点: 'trend',
+      选题: 'topic',
+      草稿: 'draft'
+    }[text]
+    if (['trend', 'topic', 'draft'].includes(text) || labelMatch) {
+      data.type = labelMatch || text
+      flowState.value.step = 'title'
+      return askNextFlowQuestion()
+    }
+    return startAssistantMessage('你也可以直接点“选题 / 热点 / 草稿”。')
+  }
+
+  if (step === 'title') {
+    if (!text) return startAssistantMessage('内容标题不能为空。先给我一个短标题就行。')
+    data.title = text.slice(0, 120)
+    flowState.value.step = 'platform'
+    return askNextFlowQuestion()
+  }
+
+  if (step === 'platform') {
+    if (!/^(跳过|不用|无|none|skip)$/i.test(text)) {
+      data.platform = text.slice(0, 80)
+    }
+    flowState.value.step = 'confirm'
+    return askNextFlowQuestion()
+  }
+
+  if (step === 'confirm') {
+    if (text === 'create' || parseYesNo(text) === true) {
+      await runSuggestedBackendAction({
+        action: 'create_creator_item',
+        title: data.title,
+        payload: {
+          title: data.title,
+          type: data.type || 'topic',
+          stage: 'inbox',
+          platform: data.platform || ''
+        }
+      })
+      resetFlow()
+      return
+    }
+    if (text === 'cancel' || parseYesNo(text) === false) {
+      resetFlow()
+      return startAssistantMessage('好，先不创建内容条目。')
+    }
+    return startAssistantMessage('确认创建就回复“确认”，不创建就回复“不用”。')
+  }
 }
 
 const handleHabitFlowInput = async (value) => {
@@ -1416,6 +1395,7 @@ const handleFlowInput = async (value) => {
   if (flowState.value.kind === 'review') await handleReviewFlowInput(value)
   if (flowState.value.kind === 'track') await handleTrackFlowInput(value)
   if (flowState.value.kind === 'learningCard') await handleLearningCardFlowInput(value)
+  if (flowState.value.kind === 'creatorItem') await handleCreatorItemFlowInput(value)
   await scrollMessagesToBottom()
   return true
 }
@@ -1434,6 +1414,55 @@ const scrollMessagesToBottom = async () => {
 }
 
 const getAssistantPayload = (response) => response?.data?.data || response?.data || response || {}
+
+const normalizeBackendSuggestions = (suggestions = []) => (
+  Array.isArray(suggestions)
+    ? suggestions.slice(0, 3).map((item) => ({
+      type: item.type || 'navigate',
+      action: item.action || '',
+      label: item.label || ui.goHandle,
+      title: item.title || item.to || ui.goHandle,
+      payload: item.payload && typeof item.payload === 'object'
+        ? { ...item.payload, to: item.to || item.payload.to || '' }
+        : { to: item.to || '' },
+      flow: item.flow || ''
+    }))
+    : []
+)
+
+const runPetBackendAction = async (action, payload = {}) => {
+  const response = await runMascotAssistantAction({
+    action,
+    payload: {
+      ...payload,
+      providerId: workspaceAiStore.normalizedSelectedProviderId
+    }
+  })
+  if (!response?.success) {
+    throw new Error(response?.error || response?.message || 'pet action failed')
+  }
+  return response.data || {}
+}
+
+const runSuggestedBackendAction = async (action) => {
+  if (!action?.action || isAsking.value) return
+  isAsking.value = true
+  lastActions.value = []
+  sendState('working', 1600, ui.thinking)
+  try {
+    const result = await runPetBackendAction(action.action, action.payload || {})
+    await startAssistantMessage(result.message || '动作已完成。')
+    lastActions.value = normalizeBackendSuggestions(result.suggestions)
+    sendState(result.actionState || 'done', 1300, ui.answered)
+  } catch (error) {
+    console.warn('Workspace pet action failed', error)
+    await startAssistantMessage(`执行失败：${error.message || '接口暂时不可用'}。`)
+    sendState('failed', 1500, ui.error)
+  } finally {
+    isAsking.value = false
+    await scrollMessagesToBottom()
+  }
+}
 
 const savePosition = () => {
   if (typeof window === 'undefined') return
@@ -1546,15 +1575,9 @@ const submitQuestion = async () => {
     return
   }
 
-  if (await maybeStartOperationFlow(question)) {
-    lastActions.value = []
-    await scrollMessagesToBottom()
-    return
-  }
-
   isAsking.value = true
   lastActions.value = []
-  sendState('running', 1800, ui.thinking)
+  sendState('thinking', 1800, ui.thinking)
   await scrollMessagesToBottom()
 
   try {
@@ -1568,7 +1591,7 @@ const submitQuestion = async () => {
         lastSource.value = 'not_configured'
         messages.value.push({ id: createMessageId(), role: 'assistant', content: '尚未配置 AI 能力。请先到“我的”页面进入 AI 供应商配置。' })
         lastActions.value = [
-          { type: 'open_profile', label: '前往配置', title: 'AI 供应商配置', payload: { to: '/profile' } }
+          { type: 'open_profile', label: '前往配置', title: 'AI 供应商配置', payload: { to: '/profile/ai-providers' } }
         ]
         sendState('failed', 1300, '需要配置')
         return
@@ -1577,15 +1600,15 @@ const submitQuestion = async () => {
     }
 
     const payload = getAssistantPayload(response)
-    const answer = payload.reply || payload.answer || payload.message || ui.fallback
+    const answer = payload.reply || payload.answer || payload.message || 'AI 没有返回可用内容。'
     lastSource.value = payload.source || 'configured'
     lastActions.value = Array.isArray(payload.proposedActions) ? payload.proposedActions.slice(0, 3) : []
     messages.value.push({ id: createMessageId(), role: 'assistant', content: answer })
-    sendState(payload.source === 'fallback' ? 'review' : 'waving', 1300, ui.answered)
+    sendState('waving', 1300, ui.answered)
   } catch (error) {
     console.warn('Workspace pet assistant failed', error)
-    lastSource.value = 'fallback'
-    messages.value.push({ id: createMessageId(), role: 'assistant', content: ui.fallback })
+    lastSource.value = 'configured'
+    messages.value.push({ id: createMessageId(), role: 'assistant', content: error.message || 'AI 请求失败' })
     sendState('failed', 1600, ui.error)
   } finally {
     isAsking.value = false
@@ -1594,6 +1617,39 @@ const submitQuestion = async () => {
 }
 
 const runProposedAction = (action) => {
+  if (action?.type === 'assistant_action') {
+    void runSuggestedBackendAction(action)
+    return
+  }
+
+  if (action?.type === 'start_flow') {
+    const flow = action.flow || action.payload?.flow
+    if (flow === 'creatorItem') {
+      void startCreatorItemFlow(action.title || '')
+      return
+    }
+    if (flow === 'review') {
+      void startReviewFlow('')
+      return
+    }
+    if (flow === 'plan') {
+      void startPlanFlow('')
+      return
+    }
+    if (flow === 'habit') {
+      void startHabitFlow('')
+      return
+    }
+    if (flow === 'capture') {
+      void startCaptureFlow('')
+      return
+    }
+    if (flow === 'track') {
+      void startTrackFlow('')
+      return
+    }
+  }
+
   const target = action?.payload?.to
   if (target) {
     router.push(target)
@@ -1725,19 +1781,17 @@ onBeforeUnmount(() => {
   position: absolute;
   left: calc(100% + 0.85rem);
   bottom: 0;
-  width: min(24.75rem, calc(100vw - 2rem));
-  max-height: min(36rem, calc(100vh - 2rem));
+  width: min(31rem, calc(100vw - 2rem));
+  max-height: min(42rem, calc(100vh - 2rem));
   display: flex;
   flex-direction: column;
-  border: 1px solid rgba(255, 255, 255, 0.42);
-  border-radius: 1.55rem;
-  background:
-    radial-gradient(circle at 14% 0%, rgba(255, 255, 255, 0.62), transparent 34%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.34));
-  padding: 0.88rem;
-  box-shadow: 0 16px 38px rgba(24, 24, 27, 0.08);
-  backdrop-filter: blur(26px) saturate(155%);
-  -webkit-backdrop-filter: blur(26px) saturate(155%);
+  border: 1px solid var(--workbench-border);
+  border-radius: calc(var(--workbench-radius) * 1.1);
+  background: var(--workbench-surface);
+  padding: 0;
+  box-shadow: 0 24px 70px rgba(24, 24, 27, 0.14);
+  backdrop-filter: blur(var(--workbench-backdrop-blur)) saturate(130%);
+  -webkit-backdrop-filter: blur(var(--workbench-backdrop-blur)) saturate(130%);
   overflow: hidden;
 }
 
@@ -1751,12 +1805,13 @@ onBeforeUnmount(() => {
   align-items: flex-start;
   justify-content: space-between;
   gap: 0.75rem;
-  padding-bottom: 0.72rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.36);
+  padding: 1rem 1rem 0.8rem;
+  border-bottom: 1px solid var(--workbench-border);
+  background: linear-gradient(180deg, var(--workbench-surface-muted), transparent);
 }
 
 .workspace-pet-kicker {
-  color: rgb(113, 113, 122);
+  color: var(--workbench-text-muted);
   font-size: 0.62rem;
   font-weight: 850;
   letter-spacing: 0.24em;
@@ -1764,15 +1819,15 @@ onBeforeUnmount(() => {
 
 .workspace-pet-title {
   margin-top: 0.22rem;
-  color: rgb(9, 9, 11);
+  color: var(--workbench-text);
   font-size: 1.08rem;
   font-weight: 860;
   letter-spacing: -0.03em;
 }
 
 .workspace-pet-subtitle {
-  max-width: 17rem;
-  color: rgb(113, 113, 122);
+  max-width: 22rem;
+  color: var(--workbench-text-muted);
   font-size: 0.7rem;
   line-height: 1.5;
 }
@@ -1781,7 +1836,8 @@ onBeforeUnmount(() => {
   display: flex;
   flex-wrap: wrap;
   gap: 0.42rem;
-  margin-top: 0.74rem;
+  margin: 0;
+  padding: 0.75rem 1rem 0;
 }
 
 .workspace-pet-panel-badge {
@@ -1789,10 +1845,10 @@ onBeforeUnmount(() => {
   align-items: center;
   min-height: 1.7rem;
   padding: 0 0.7rem;
-  border: 1px solid rgba(255, 255, 255, 0.42);
+  border: 1px solid var(--workbench-border);
   border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.42);
-  color: rgb(82, 82, 91);
+  background: var(--workbench-surface-muted);
+  color: var(--workbench-text-muted);
   font-size: 0.66rem;
   font-weight: 820;
   letter-spacing: 0.02em;
@@ -1806,8 +1862,8 @@ onBeforeUnmount(() => {
   min-height: 0;
   flex-direction: column;
   gap: 0.72rem;
-  margin-top: 0.82rem;
-  padding-right: 0.1rem;
+  margin-top: 0;
+  padding: 0.85rem 1rem 0;
   overflow: hidden;
 }
 
@@ -1818,7 +1874,7 @@ onBeforeUnmount(() => {
 }
 
 .workspace-pet-section-title {
-  color: rgb(113, 113, 122);
+  color: var(--workbench-text-muted);
   font-size: 0.62rem;
   font-weight: 850;
   letter-spacing: 0.18em;
@@ -1830,10 +1886,10 @@ onBeforeUnmount(() => {
 .workspace-pet-ghost,
 .workspace-pet-send,
 .workspace-pet-suggestion {
-  border: 1px solid rgba(255, 255, 255, 0.56);
+  border: 1px solid var(--workbench-border);
   border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.58);
-  color: rgb(39, 39, 42);
+  background: var(--workbench-surface-muted);
+  color: var(--workbench-text);
   font-size: 0.72rem;
   font-weight: 820;
   transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
@@ -1854,37 +1910,35 @@ onBeforeUnmount(() => {
 
 .workspace-pet-messages {
   display: grid;
-  gap: 0.55rem;
+  gap: 0.65rem;
   min-height: 0;
   padding-right: 0.18rem;
-  max-height: 14.8rem;
+  max-height: 18.5rem;
   overflow-y: auto;
   scrollbar-width: thin;
 }
 
 .workspace-pet-message {
-  max-width: 88%;
-  border: 1px solid rgba(255, 255, 255, 0.44);
-  border-radius: 1.05rem;
-  padding: 0.66rem 0.76rem;
-  background: rgba(255, 255, 255, 0.44);
-  color: rgb(39, 39, 42);
-  box-shadow: 0 8px 18px rgba(24, 24, 27, 0.04);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  max-width: 92%;
+  border: 1px solid var(--workbench-border);
+  border-radius: calc(var(--workbench-radius) * 0.75);
+  padding: 0.72rem 0.82rem;
+  background: var(--workbench-surface-muted);
+  color: var(--workbench-text);
+  box-shadow: 0 8px 22px rgba(24, 24, 27, 0.035);
 }
 
 .workspace-pet-message--user {
   justify-self: end;
-  border-color: rgba(24, 24, 27, 0.12);
-  background: rgba(24, 24, 27, 0.88);
-  color: white;
+  border-color: var(--workbench-text);
+  background: var(--workbench-text);
+  color: var(--workbench-page);
 }
 
 .workspace-pet-message-name {
   display: block;
   margin-bottom: 0.22rem;
-  color: rgb(113, 113, 122);
+  color: var(--workbench-text-muted);
   font-size: 0.62rem;
   font-weight: 850;
   letter-spacing: 0.12em;
@@ -1902,22 +1956,16 @@ onBeforeUnmount(() => {
 }
 
 .workspace-pet-chips {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.45rem;
-  overflow-x: auto;
   padding: 0.2rem 0 0.05rem;
-  scrollbar-width: none;
-}
-
-.workspace-pet-chips::-webkit-scrollbar {
-  display: none;
 }
 
 .workspace-pet-chip {
-  flex: 0 0 auto;
   min-height: 2rem;
   padding: 0 0.76rem;
-  background: rgba(255, 255, 255, 0.54);
+  background: var(--workbench-surface-muted);
 }
 
 .workspace-pet-chip:disabled,
@@ -1936,9 +1984,9 @@ onBeforeUnmount(() => {
 
 .workspace-pet-flow {
   margin-top: 0.18rem;
-  border: 1px solid rgba(255, 255, 255, 0.44);
-  border-radius: 1.06rem;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.48), rgba(255, 255, 255, 0.34));
+  border: 1px solid var(--workbench-border);
+  border-radius: calc(var(--workbench-radius) * 0.78);
+  background: var(--workbench-surface-muted);
   padding: 0.76rem;
   box-shadow: 0 10px 22px rgba(24, 24, 27, 0.035);
 }
@@ -2016,14 +2064,12 @@ onBeforeUnmount(() => {
 }
 
 .workspace-pet-composer {
-  margin-top: 0.82rem;
-  border: 1px solid rgba(255, 255, 255, 0.42);
-  border-radius: 1.08rem;
-  background: rgba(255, 255, 255, 0.45);
+  margin: 0.85rem 1rem 1rem;
+  border: 1px solid var(--workbench-border);
+  border-radius: calc(var(--workbench-radius) * 0.82);
+  background: var(--workbench-surface-muted);
   padding: 0.62rem;
   box-shadow: 0 10px 22px rgba(24, 24, 27, 0.035);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
 }
 
 .workspace-pet-input {
@@ -2033,7 +2079,7 @@ onBeforeUnmount(() => {
   border: 0;
   outline: none;
   background: transparent;
-  color: rgb(24, 24, 27);
+  color: var(--workbench-text);
   font-size: 0.8rem;
   line-height: 1.55;
 }
@@ -2155,21 +2201,19 @@ onBeforeUnmount(() => {
 }
 
 :global(.dark) .workspace-pet-panel {
-  border-color: rgba(255, 255, 255, 0.08);
-  background:
-    radial-gradient(circle at 14% 0%, rgba(255, 255, 255, 0.09), transparent 34%),
-    linear-gradient(180deg, rgba(24, 24, 27, 0.7), rgba(9, 9, 11, 0.58));
+  border-color: var(--workbench-border);
+  background: var(--workbench-surface);
   box-shadow: 0 20px 48px rgba(0, 0, 0, 0.22);
 }
 
 :global(.dark) .workspace-pet-panel-header,
 :global(.dark) .workspace-pet-suggestions {
-  border-color: rgba(255, 255, 255, 0.08);
+  border-color: var(--workbench-border);
 }
 
 :global(.dark) .workspace-pet-flow {
-  border-color: rgba(255, 255, 255, 0.1);
-  background: linear-gradient(180deg, rgba(24, 24, 27, 0.66), rgba(9, 9, 11, 0.54));
+  border-color: var(--workbench-border);
+  background: var(--workbench-surface-muted);
 }
 
 :global(.dark) .workspace-pet-kicker,
@@ -2201,20 +2245,20 @@ onBeforeUnmount(() => {
 :global(.dark) .workspace-pet-ghost,
 :global(.dark) .workspace-pet-suggestion,
 :global(.dark) .workspace-pet-composer {
-  border-color: rgba(255, 255, 255, 0.08);
-  background: rgba(24, 24, 27, 0.38);
+  border-color: var(--workbench-border);
+  background: var(--workbench-surface-muted);
   color: white;
 }
 
 :global(.dark) .workspace-pet-panel-badge {
-  border-color: rgba(255, 255, 255, 0.08);
-  background: rgba(24, 24, 27, 0.42);
+  border-color: var(--workbench-border);
+  background: var(--workbench-surface-muted);
   color: rgb(212, 212, 216);
 }
 
 :global(.dark) .workspace-pet-message {
-  border-color: rgba(255, 255, 255, 0.1);
-  background: rgba(24, 24, 27, 0.36);
+  border-color: var(--workbench-border);
+  background: var(--workbench-surface-muted);
 }
 
 :global(.dark) .workspace-pet-message--user,
@@ -2248,3 +2292,4 @@ onBeforeUnmount(() => {
   }
 }
 </style>
+

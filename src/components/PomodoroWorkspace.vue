@@ -703,11 +703,13 @@ import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import * as pomodoroAPI from '@/api/pomodoro.js'
 import { useToast } from '@/composables/useToast'
 import { useAmbientMixer } from '@/composables/useAmbientMixer.js'
+import { useWorkbenchSound } from '@/composables/useWorkbenchSound.js'
 import BaseCard from './BaseCard.vue'
 import WhiteNoiseConsole from './WhiteNoiseConsole.vue'
 
 const { success, error } = useToast()
 const { stopAll: stopAmbientPlayback } = useAmbientMixer()
+const { playWorkbenchSound } = useWorkbenchSound()
 
 const DEFAULT_PREFERENCES = {
   focusDurationMinutes: 20,
@@ -1125,10 +1127,12 @@ const startSession = async () => {
       throw new Error(response.error || '启动番茄钟失败')
     }
 
+    void playWorkbenchSound('focus_start', { focusSoundEnabled: preferences.soundEnabled })
     success('番茄钟已启动')
     showWorkspace.value = true
     await loadDashboard(true)
   } catch (err) {
+    void playWorkbenchSound('error')
     error('启动失败', {
       description: err.message || '请稍后重试'
     })
@@ -1162,9 +1166,14 @@ const runAction = async (action, payload = {}, options = {}) => {
       success(options.successMessage || '操作成功')
     }
 
+    if (options.soundEvent) {
+      void playWorkbenchSound(options.soundEvent, { focusSoundEnabled: activeSession.value?.soundEnabled ?? preferences.soundEnabled })
+    }
+
     await loadDashboard(true)
     return true
   } catch (err) {
+    void playWorkbenchSound('error')
     error(options.errorTitle || '操作失败', {
       description: err.message || '请稍后重试'
     })
@@ -1181,17 +1190,20 @@ const pauseSession = () => runAction('pause', {}, {
 
 const resumeSession = () => runAction('resume', {}, {
   successMessage: '已继续专注',
-  errorTitle: '继续失败'
+  errorTitle: '继续失败',
+  soundEvent: 'focus_start'
 })
 
 const completeSession = () => runAction('complete', {}, {
   successMessage: '本次专注已完成',
-  errorTitle: '完成失败'
+  errorTitle: '完成失败',
+  soundEvent: 'focus_end'
 })
 
 const cancelSession = () => runAction('cancel', {}, {
   successMessage: '已取消当前番茄钟',
-  errorTitle: '取消失败'
+  errorTitle: '取消失败',
+  soundEvent: 'dismiss'
 })
 
 const advanceSession = (silentSuccess = false) => runAction('advance', {}, {

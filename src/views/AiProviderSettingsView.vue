@@ -371,6 +371,7 @@ const refreshAiProviderModels = async () => {
     }
 
     aiProviderModels.value = Array.isArray(response.data?.models) ? response.data.models : []
+    workspaceAiStore.setModelOptions(aiProviderModels.value, aiProviderForm.value.id || '')
     if (!aiProviderModels.value.length) {
       warning('上游没有返回模型列表', {
         description: '这不影响使用。可以直接手动填写模型名后保存并测试。'
@@ -452,6 +453,9 @@ const saveAiProviderConfig = async () => {
     await loadAiProviders()
     if (response.data?.id) editAiProvider(response.data)
     else resetAiProviderForm()
+    if (response.data?.id && aiProviderModels.value.length) {
+      workspaceAiStore.setModelOptions(aiProviderModels.value, response.data.id)
+    }
   } catch (err) {
     showError('保存 AI 供应商失败', {
       description: getErrorDescription(err, '请稍后重试。')

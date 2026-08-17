@@ -1,286 +1,212 @@
-// 专业音效管理器
-// 提供多种类型的通知音效和音频处理功能
-
 class AudioManager {
   constructor() {
     this.audioContext = null
     this.isInitialized = false
-    this.volume = 0.3 // 默认音量
+    this.volume = 0.36
     this.soundEnabled = true
   }
 
-  // 初始化音频上下文
   async init() {
-    if (this.isInitialized) return
+    if (typeof window === 'undefined') return false
+    if (this.isInitialized && this.audioContext) return true
 
     try {
       this.audioContext = new (window.AudioContext || window.webkitAudioContext)()
-      
-      // 如果音频上下文被暂停，需要用户交互来恢复
       if (this.audioContext.state === 'suspended') {
         await this.audioContext.resume()
       }
-      
       this.isInitialized = true
-      console.log('🔊 音频管理器初始化成功')
+      return true
     } catch (error) {
-      console.error('❌ 音频管理器初始化失败:', error)
+      console.warn('Audio manager initialization failed:', error)
+      return false
     }
   }
 
-  // 设置音量
   setVolume(volume) {
-    this.volume = Math.max(0, Math.min(1, volume))
+    const parsed = Number(volume)
+    this.volume = Number.isFinite(parsed) ? Math.max(0, Math.min(1, parsed)) : this.volume
   }
 
-  // 启用/禁用音效
   setSoundEnabled(enabled) {
-    this.soundEnabled = enabled
+    this.soundEnabled = Boolean(enabled)
   }
 
-  // 创建音调
-  createTone(frequency, duration, type = 'sine', volume = this.volume) {
-    if (!this.soundEnabled || !this.audioContext) return
+  createTone(frequency, duration, type = 'sine', volume = this.volume, offset = 0) {
+    if (!this.soundEnabled || !this.audioContext) return null
 
+    const startAt = this.audioContext.currentTime + offset
     const oscillator = this.audioContext.createOscillator()
     const gainNode = this.audioContext.createGain()
-    
+
     oscillator.connect(gainNode)
     gainNode.connect(this.audioContext.destination)
-    
+
     oscillator.type = type
-    oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime)
-    
-    gainNode.gain.setValueAtTime(0, this.audioContext.currentTime)
-    gainNode.gain.linearRampToValueAtTime(volume, this.audioContext.currentTime + 0.01)
-    gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + duration)
-    
-    oscillator.start(this.audioContext.currentTime)
-    oscillator.stop(this.audioContext.currentTime + duration)
-    
+    oscillator.frequency.setValueAtTime(frequency, startAt)
+
+    gainNode.gain.setValueAtTime(0.0001, startAt)
+    gainNode.gain.exponentialRampToValueAtTime(Math.max(0.0001, volume), startAt + 0.018)
+    gainNode.gain.exponentialRampToValueAtTime(0.0001, startAt + duration)
+
+    oscillator.start(startAt)
+    oscillator.stop(startAt + duration + 0.03)
     return oscillator
   }
 
-  // 创建和弦
-  createChord(frequencies, duration, type = 'sine', volume = this.volume) {
-    if (!this.soundEnabled || !this.audioContext) return
-
-    const oscillators = []
-    
-    frequencies.forEach(freq => {
-      const oscillator = this.audioContext.createOscillator()
-      const gainNode = this.audioContext.createGain()
-      
-      oscillator.connect(gainNode)
-      gainNode.connect(this.audioContext.destination)
-      
-      oscillator.type = type
-      oscillator.frequency.setValueAtTime(freq, this.audioContext.currentTime)
-      
-      gainNode.gain.setValueAtTime(0, this.audioContext.currentTime)
-      gainNode.gain.linearRampToValueAtTime(volume * 0.7, this.audioContext.currentTime + 0.01)
-      gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + duration)
-      
-      oscillator.start(this.audioContext.currentTime)
-      oscillator.stop(this.audioContext.currentTime + duration)
-      
-      oscillators.push(oscillator)
-    })
-    
-    return oscillators
+  createChord(frequencies, duration, type = 'sine', volume = this.volume, offset = 0) {
+    if (!Array.isArray(frequencies)) return []
+    return frequencies.map((frequency) => this.createTone(frequency, duration, type, volume * 0.72, offset)).filter(Boolean)
   }
 
-  // 通知音效 - 温和提醒
+  async playPreset(presetId, options = {}) {
+    if (presetId === 'none') return false
+    if (options.enabled === false || !this.soundEnabled) return false
+
+    const ready = await this.init()
+    if (!ready) return false
+
+    const baseVolume = Number.isFinite(Number(options.volume)) ? Number(options.volume) : this.volume
+    this.setVolume(baseVolume)
+
+    const preset = SOUND_PRESETS[presetId] || SOUND_PRESETS.atelier_chime
+    preset.forEach((step) => {
+      if (Array.isArray(step.frequencies)) {
+        this.createChord(step.frequencies, step.duration, step.type, this.volume * (step.gain ?? 1), step.offset ?? 0)
+        return
+      }
+      this.createTone(step.frequency, step.duration, step.type, this.volume * (step.gain ?? 1), step.offset ?? 0)
+    })
+
+    return true
+  }
+
+  playEventSound(eventKey, soundId, options = {}) {
+    const fallbackSoundId = DEFAULT_EVENT_SOUNDS[eventKey] || 'atelier_chime'
+    return this.playPreset(soundId || fallbackSoundId, options)
+  }
+
   playNotificationSound() {
-    this.init().then(() => {
-      console.log('🔔 播放通知音效')
-      
-      // 创建温和的上升音调
-      const frequencies = [523, 659, 784] // C5, E5, G5
-      const durations = [0.15, 0.15, 0.2]
-      
-      frequencies.forEach((freq, index) => {
-        setTimeout(() => {
-          this.createTone(freq, durations[index], 'sine', this.volume * 0.6)
-        }, index * 100)
-      })
-    })
+    return this.playEventSound('notification')
   }
 
-  // 完成音效 - 成功提示
   playSuccessSound() {
-    this.init().then(() => {
-      console.log('✅ 播放完成音效')
-      
-      // 创建胜利和弦
-      const chord1 = [523, 659, 784] // C5, E5, G5
-      const chord2 = [659, 784, 1047] // E5, G5, C6
-      
-      setTimeout(() => {
-        this.createChord(chord1, 0.3, 'sine', this.volume * 0.7)
-      }, 0)
-      
-      setTimeout(() => {
-        this.createChord(chord2, 0.4, 'sine', this.volume * 0.8)
-      }, 200)
-    })
+    return this.playEventSound('complete')
   }
 
-  // 错误音效 - 错误提示
   playErrorSound() {
-    this.init().then(() => {
-      console.log('❌ 播放错误音效')
-      
-      // 创建下降音调
-      const frequencies = [440, 392, 349] // A4, G4, F4
-      const durations = [0.2, 0.2, 0.3]
-      
-      frequencies.forEach((freq, index) => {
-        setTimeout(() => {
-          this.createTone(freq, durations[index], 'sawtooth', this.volume * 0.5)
-        }, index * 150)
-      })
-    })
+    return this.playEventSound('error')
   }
 
-  // 稍后提醒音效 - 延迟提示
   playSnoozeSound() {
-    this.init().then(() => {
-      console.log('⏰ 播放稍后提醒音效')
-      
-      // 创建温和的延迟音效
-      const frequencies = [392, 440] // G4, A4
-      const durations = [0.2, 0.3]
-      
-      frequencies.forEach((freq, index) => {
-        setTimeout(() => {
-          this.createTone(freq, durations[index], 'triangle', this.volume * 0.4)
-        }, index * 200)
-      })
-    })
+    return this.playEventSound('snooze')
   }
 
-  // 忽略音效 - 取消提示
   playDismissSound() {
-    this.init().then(() => {
-      console.log('🚫 播放忽略音效')
-      
-      // 创建简短的取消音效
-      this.createTone(330, 0.15, 'square', this.volume * 0.3)
-    })
+    return this.playEventSound('dismiss')
   }
 
-  // 专注开始音效 - 番茄钟开始
   playFocusStartSound() {
-    this.init().then(() => {
-      console.log('🎯 播放专注开始音效')
-      
-      // 创建激励性的开始音效
-      const frequencies = [440, 554, 659] // A4, C#5, E5
-      const durations = [0.2, 0.2, 0.3]
-      
-      frequencies.forEach((freq, index) => {
-        setTimeout(() => {
-          this.createTone(freq, durations[index], 'sine', this.volume * 0.6)
-        }, index * 100)
-      })
-    })
+    return this.playEventSound('focus_start')
   }
 
-  // 专注结束音效 - 番茄钟结束
   playFocusEndSound() {
-    this.init().then(() => {
-      console.log('🏁 播放专注结束音效')
-      
-      // 创建完成音效
-      const chord = [523, 659, 784, 1047] // C5, E5, G5, C6
-      this.createChord(chord, 0.5, 'sine', this.volume * 0.8)
-    })
+    return this.playEventSound('focus_end')
   }
 
-  // 休息开始音效
   playBreakStartSound() {
-    this.init().then(() => {
-      console.log('☕ 播放休息开始音效')
-      
-      // 创建放松音效
-      const frequencies = [392, 440, 523] // G4, A4, C5
-      const durations = [0.3, 0.3, 0.4]
-      
-      frequencies.forEach((freq, index) => {
-        setTimeout(() => {
-          this.createTone(freq, durations[index], 'sine', this.volume * 0.5)
-        }, index * 150)
-      })
-    })
+    return this.playPreset('quiet_snooze')
   }
 
-  // 自定义音效
   playCustomSound(frequencies, duration = 0.3, type = 'sine', volume = this.volume) {
-    this.init().then(() => {
-      console.log('🎵 播放自定义音效')
-      
+    return this.init().then((ready) => {
+      if (!ready) return false
       if (Array.isArray(frequencies)) {
         this.createChord(frequencies, duration, type, volume)
       } else {
         this.createTone(frequencies, duration, type, volume)
       }
+      return true
     })
   }
 
-  // 播放音效序列
   playSoundSequence(sounds) {
-    this.init().then(() => {
-      console.log('🎼 播放音效序列')
-      
+    return this.init().then((ready) => {
+      if (!ready || !Array.isArray(sounds)) return false
       sounds.forEach((sound, index) => {
-        setTimeout(() => {
-          const { frequencies, duration, type, volume } = sound
+        const delay = (sound.delay ?? 180) * index
+        window.setTimeout(() => {
+          const { frequencies, frequency, duration, type, volume } = sound
           if (Array.isArray(frequencies)) {
             this.createChord(frequencies, duration, type, volume)
           } else {
-            this.createTone(frequencies, duration, type, volume)
+            this.createTone(frequency ?? frequencies, duration, type, volume)
           }
-        }, index * (sound.delay || 200))
+        }, delay)
       })
+      return true
     })
   }
 
-  // 测试所有音效
   testAllSounds() {
-    console.log('🧪 测试所有音效')
-    
-    const sounds = [
-      { name: '通知音效', fn: () => this.playNotificationSound() },
-      { name: '完成音效', fn: () => this.playSuccessSound() },
-      { name: '错误音效', fn: () => this.playErrorSound() },
-      { name: '稍后提醒音效', fn: () => this.playSnoozeSound() },
-      { name: '忽略音效', fn: () => this.playDismissSound() },
-      { name: '专注开始音效', fn: () => this.playFocusStartSound() },
-      { name: '专注结束音效', fn: () => this.playFocusEndSound() },
-      { name: '休息开始音效', fn: () => this.playBreakStartSound() }
-    ]
-    
-    sounds.forEach((sound, index) => {
-      setTimeout(() => {
-        console.log(`🔊 测试: ${sound.name}`)
-        sound.fn()
-      }, index * 1000)
+    return Object.entries(DEFAULT_EVENT_SOUNDS).forEach(([eventKey, soundId], index) => {
+      window.setTimeout(() => {
+        this.playEventSound(eventKey, soundId)
+      }, index * 720)
     })
   }
 
-  // 清理资源
   cleanup() {
     if (this.audioContext) {
       this.audioContext.close()
       this.audioContext = null
       this.isInitialized = false
-      console.log('🧹 音频管理器已清理')
     }
   }
 }
 
-// 创建全局实例
+export const DEFAULT_EVENT_SOUNDS = {
+  notification: 'atelier_chime',
+  dismiss: 'soft_tap',
+  complete: 'warm_resolve',
+  focus_start: 'deep_start',
+  error: 'low_notice',
+  focus_end: 'clear_finish',
+  snooze: 'quiet_snooze'
+}
+
+export const SOUND_PRESETS = {
+  atelier_chime: [
+    { frequency: 523.25, duration: 0.16, type: 'sine', gain: 0.42, offset: 0 },
+    { frequency: 659.25, duration: 0.18, type: 'sine', gain: 0.36, offset: 0.08 },
+    { frequencies: [783.99, 987.77], duration: 0.28, type: 'triangle', gain: 0.24, offset: 0.18 }
+  ],
+  warm_resolve: [
+    { frequencies: [392, 493.88, 587.33], duration: 0.22, type: 'triangle', gain: 0.34, offset: 0 },
+    { frequencies: [440, 554.37, 659.25], duration: 0.34, type: 'sine', gain: 0.3, offset: 0.18 }
+  ],
+  deep_start: [
+    { frequency: 196, duration: 0.16, type: 'triangle', gain: 0.32, offset: 0 },
+    { frequency: 293.66, duration: 0.18, type: 'triangle', gain: 0.28, offset: 0.11 },
+    { frequencies: [392, 493.88], duration: 0.24, type: 'sine', gain: 0.24, offset: 0.22 }
+  ],
+  clear_finish: [
+    { frequencies: [523.25, 659.25], duration: 0.18, type: 'sine', gain: 0.3, offset: 0 },
+    { frequencies: [659.25, 783.99, 1046.5], duration: 0.4, type: 'triangle', gain: 0.26, offset: 0.18 }
+  ],
+  quiet_snooze: [
+    { frequency: 349.23, duration: 0.18, type: 'triangle', gain: 0.24, offset: 0 },
+    { frequency: 392, duration: 0.24, type: 'triangle', gain: 0.2, offset: 0.18 }
+  ],
+  soft_tap: [
+    { frequency: 261.63, duration: 0.08, type: 'sine', gain: 0.18, offset: 0 }
+  ],
+  low_notice: [
+    { frequency: 246.94, duration: 0.14, type: 'triangle', gain: 0.22, offset: 0 },
+    { frequency: 220, duration: 0.2, type: 'triangle', gain: 0.18, offset: 0.13 }
+  ]
+}
+
 const audioManager = new AudioManager()
 
 export default audioManager

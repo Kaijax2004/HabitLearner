@@ -364,6 +364,7 @@ const typeLabel = (type) => ({
   learning: '学习',
   focus: '专注',
   project: '计划',
+  pipeline: '内容创作',
   custom: '自定义'
 }[type] || '轨道')
 
@@ -508,6 +509,14 @@ const metricCards = computed(() => {
     ]
   }
 
+  if (type === 'pipeline') {
+    return [
+      { label: '内容阶段', value: '7', hint: '热点到复盘的完整流水线阶段' },
+      { label: '今日重点', value: '选题', hint: '先从一个真实来源开始推进' },
+      { label: '下一步', value: '研究', hint: '把热点转成可验证的内容角度' }
+    ]
+  }
+
   return [
     { label: '轨道类型', value: typeLabel(type), hint: '自定义轨道可继续补充目标和记录' }
   ]
@@ -521,6 +530,7 @@ const actionEntries = computed(() => {
   if (type === 'learning') entries.push({ label: '进入学习工作区', action: () => router.push('/learning') })
   if (type === 'focus') entries.push({ label: '进入专注工作区', action: () => router.push('/focus') })
   if (type === 'project') entries.push({ label: '进入计划工作区', action: () => router.push('/plan') })
+  if (type === 'pipeline') entries.push({ label: '进入内容工作区', action: () => router.push('/creator') })
 
   entries.push({ label: '回到轨道总览', action: () => router.push('/tracks') })
   return entries
@@ -594,6 +604,23 @@ const nextStepSuggestions = computed(() => {
         description: '不确定怎么安排的任务先进入收集箱，避免散落在脑子里。',
         actionLabel: '打开收集箱',
         action: () => router.push('/captures')
+      }
+    ]
+  }
+
+  if (type === 'pipeline') {
+    return [
+      {
+        title: weakTrend ? '先放入一个真实热点或选题' : '推进当前内容阶段',
+        description: '内容轨道不追求一次写完，先让一个条目从收件箱向前移动。',
+        actionLabel: '打开内容创作',
+        action: () => router.push('/creator')
+      },
+      {
+        title: '给内容保留来源和发布时间',
+        description: '有来源的素材才方便后续研究、引用和复盘。',
+        actionLabel: '内容工作区',
+        action: () => router.push('/creator')
       }
     ]
   }

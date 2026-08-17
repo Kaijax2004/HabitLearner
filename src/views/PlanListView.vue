@@ -627,7 +627,11 @@ const createNew = async () => {
 
   if (res.success && res.data?.id) {
     success('计划创建成功')
-    router.push({ name: 'PlanEditor', params: { id: res.data.id } })
+    router.push({
+      name: 'PlanEditor',
+      params: { id: res.data.id },
+      query: res.data.editor_page_id ? { editorPageId: res.data.editor_page_id } : undefined
+    })
     return
   }
 

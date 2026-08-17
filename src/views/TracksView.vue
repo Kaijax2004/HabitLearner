@@ -138,6 +138,7 @@ const typeLabel = (type) => ({
   learning: '学习',
   focus: '专注',
   project: '计划',
+  pipeline: '内容创作',
   custom: '自定义'
 }[type] || '轨道')
 

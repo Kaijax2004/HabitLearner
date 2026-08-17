@@ -75,8 +75,8 @@ export default {
         }
       },
       fontFamily: {
-        'apple': ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', 'sans-serif'],
-        'display': ['Poppins', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+        'apple': ['Geist Sans', 'SF Pro Display', 'PingFang SC', 'Microsoft YaHei', 'sans-serif'],
+        'display': ['Geist Sans', 'SF Pro Display', 'PingFang SC', 'Microsoft YaHei', 'sans-serif'],
         'chinese': ['PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'WenQuanYi Micro Hei', 'sans-serif']
       },
       borderRadius: {

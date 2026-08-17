@@ -2,6 +2,8 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { resolve } from 'path'
 
+const devApiTarget = process.env.VITE_DEV_API_TARGET || 'http://localhost:8080'
+
 export default defineConfig({
   plugins: [vue()],
   resolve: {
@@ -31,7 +33,7 @@ export default defineConfig({
     open: true,
     proxy: {
       '/api': {
-        target: 'http://localhost:8080',
+        target: devApiTarget,
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/api/, '/api'),
@@ -45,10 +47,11 @@ export default defineConfig({
         }
       },
       '/uploads': {
-        target: 'http://localhost:8080',
+        target: devApiTarget,
         changeOrigin: true,
         secure: false
       }
     }
   }
 })
+

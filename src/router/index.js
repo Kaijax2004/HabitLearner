@@ -5,6 +5,7 @@ const routes = [
   { path: '/', redirect: '/dashboard' },
   { path: '/plan', name: 'PlanList', component: () => import('@/views/PlanListView.vue'), meta: { requiresAuth: true } },
   { path: '/plan/:id', name: 'PlanEditor', component: () => import('@/views/PlanEditorView.vue'), meta: { requiresAuth: true } },
+  { path: '/workspace/pages/:id', name: 'WorkspacePage', component: () => import('@/views/WorkspacePageView.vue'), meta: { requiresAuth: true } },
   { path: '/auth', name: 'Auth', component: () => import('@/views/AuthView.vue'), meta: { requiresGuest: true } },
   { path: '/dashboard', name: 'Dashboard', component: () => import('@/views/DashboardView.vue'), meta: { requiresAuth: true } },
   { path: '/focus', name: 'Focus', component: () => import('@/views/FocusView.vue'), meta: { requiresAuth: true } },
@@ -13,14 +14,18 @@ const routes = [
   { path: '/insights', name: 'Insights', component: () => import('@/views/InsightsView.vue'), meta: { requiresAuth: true } },
   { path: '/tracks', name: 'Tracks', component: () => import('@/views/TracksView.vue'), meta: { requiresAuth: true } },
   { path: '/tracks/:id', name: 'TrackDetail', component: () => import('@/views/TrackDetailView.vue'), meta: { requiresAuth: true } },
+  { path: '/creator', name: 'CreatorWorkspace', component: () => import('@/views/CreatorWorkspaceView.vue'), meta: { requiresAuth: true } },
   { path: '/habit/create', name: 'HabitCreate', component: () => import('@/views/HabitFormView.vue'), meta: { requiresAuth: true } },
   { path: '/habit/:id', name: 'HabitDetail', component: () => import('@/views/HabitDetailView.vue'), meta: { requiresAuth: true } },
   { path: '/habit/:id/edit', name: 'HabitEdit', component: () => import('@/views/HabitFormView.vue'), meta: { requiresAuth: true } },
   { path: '/learning', name: 'LearningContent', component: () => import('@/views/LearningContentView.vue'), meta: { requiresAuth: true } },
   { path: '/learning/course/:id', alias: '/learning/video/:id', name: 'LearningCourse', component: () => import('@/views/VideoDetailView.vue'), meta: { requiresAuth: true } },
   { path: '/profile', name: 'Profile', component: () => import('@/views/ProfileView.vue'), meta: { requiresAuth: true } },
+  { path: '/profile/appearance', name: 'AppearanceSettings', component: () => import('@/views/AppearanceSettingsView.vue'), meta: { requiresAuth: true } },
   { path: '/profile/ai-providers', name: 'AiProviderSettings', component: () => import('@/views/AiProviderSettingsView.vue'), meta: { requiresAuth: true } },
+  { path: '/profile/ai-skills', name: 'AiSkillSettings', component: () => import('@/views/AiSkillSettingsView.vue'), meta: { requiresAuth: true } },
   { path: '/profile/pet-settings', name: 'PetSettings', component: () => import('@/views/PetSettingsView.vue'), meta: { requiresAuth: true } },
+  { path: '/guide', name: 'UsageGuide', component: () => import('@/views/UsageGuideView.vue'), meta: { requiresAuth: true } },
   { path: '/reminder-test', name: 'ReminderTest', component: () => import('@/views/ReminderTestView.vue'), meta: { requiresAuth: true } }
 ]
 

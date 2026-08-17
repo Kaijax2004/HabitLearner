@@ -49,7 +49,7 @@
               <div class="learning-daily-card">
                 <div class="flex flex-wrap items-center gap-2 text-xs">
                   <span class="rounded-full bg-zinc-950 px-3 py-1 text-white dark:bg-white dark:text-zinc-950">{{ dailyCard.focusCategoryName || '今日主题' }}</span>
-                  <span class="rounded-full bg-white px-3 py-1 text-zinc-600 dark:bg-zinc-900 dark:text-zinc-300">{{ dailyCard.source === 'agnes' ? 'AI 推荐' : '本地策略' }}</span>
+                  <span class="rounded-full bg-white px-3 py-1 text-zinc-600 dark:bg-zinc-900 dark:text-zinc-300">已配置供应商</span>
                 </div>
                 <h3 class="mt-4 text-2xl font-semibold leading-tight text-zinc-950 dark:text-white">{{ dailyCard.title }}</h3>
                 <p class="mt-3 text-sm leading-7 text-zinc-600 dark:text-zinc-300">{{ dailyCard.summary }}</p>

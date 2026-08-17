@@ -258,19 +258,9 @@ export const useHabitStore = defineStore('habit', () => {
       
       // 处理真实习惯（后端删除）
       if (realHabits.length > 0) {
-        const deletePromises = realHabits.map(id => habitAPI.deleteHabit(id))
-        const responses = await Promise.all(deletePromises)
-        console.log('deleteHabits API 响应:', responses)
-        
-        // 检查所有删除操作是否成功
-        const failedDeletes = responses.filter(response => !response.success)
-        
-        if (failedDeletes.length > 0) {
-          // 有删除失败的情况
-          const errorMessages = failedDeletes.map(response => response.error).join(', ')
-          console.error('部分删除失败:', errorMessages)
-          return { success: false, error: `删除失败: ${errorMessages}` }
-        }
+        const response = await habitAPI.deleteHabits(realHabits)
+        console.log('deleteHabits API 响应:', response)
+        if (!response.success) return { success: false, error: response.error || '批量删除失败' }
         
         // 成功删除后，从本地数组中移除这些习惯
         realHabits.forEach(id => {

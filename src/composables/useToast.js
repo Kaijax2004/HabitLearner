@@ -1,4 +1,5 @@
 import { ref, reactive } from 'vue'
+import { useWorkbenchSound } from '@/composables/useWorkbenchSound.js'
 
 // 全局Toast状态管理
 const toasts = ref([])
@@ -54,6 +55,11 @@ export const useToast = () => {
   }
   
   const error = (message, options = {}) => {
+    if (options.sound !== false) {
+      const { playWorkbenchSound } = useWorkbenchSound()
+      void playWorkbenchSound('error')
+    }
+
     return addToast({
       type: 'error',
       message,

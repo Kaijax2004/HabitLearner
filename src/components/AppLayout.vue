@@ -5,17 +5,16 @@
     :style="layoutVars"
   >
     <div class="absolute inset-0 pointer-events-none">
-      <div class="absolute inset-0 opacity-[0.02] dark:opacity-[0.05]">
+      <div class="absolute inset-0 opacity-[0.012] dark:opacity-[0.025]">
         <div class="grid-pattern"></div>
       </div>
-      <div class="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-96 bg-gradient-radial from-zinc-200/25 to-transparent dark:from-white/8 dark:to-transparent blur-3xl"></div>
-      <div class="absolute bottom-0 right-0 w-64 h-64 bg-gradient-radial from-zinc-300/15 to-transparent dark:from-white/4 dark:to-transparent blur-2xl"></div>
+      <div class="absolute top-0 left-1/2 -translate-x-1/2 w-80 h-80 bg-gradient-radial from-zinc-200/12 to-transparent dark:from-white/4 dark:to-transparent blur-3xl"></div>
     </div>
 
     <aside class="app-sidebar hidden lg:fixed lg:inset-y-0 lg:flex lg:flex-col">
       <div class="flex h-full flex-col border-r border-zinc-200 bg-white/90 backdrop-blur-apple dark:border-zinc-800 dark:bg-zinc-950/90">
         <div class="sidebar-brand-row flex items-center gap-4 border-b border-zinc-200 px-6 py-6 dark:border-zinc-800">
-          <div class="sidebar-logo flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-zinc-950 text-white dark:bg-white dark:text-zinc-950">
+          <div class="sidebar-logo flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-[1.35rem] bg-zinc-950 p-1 text-white shadow-sm dark:bg-zinc-950 dark:text-white">
             <Logo :size="isSidebarCollapsed ? 'default' : 'xl'" />
           </div>
           <div class="sidebar-brand-copy min-w-0">
@@ -60,29 +59,32 @@
       </div>
     </aside>
 
-    <nav class="lg:hidden nav-apple sticky top-0 z-50">
-      <div class="mx-auto max-w-md px-4 py-3">
+    <nav class="mobile-brand-nav lg:hidden sticky top-0 z-50">
+      <div class="mx-auto max-w-screen-sm px-4 py-3">
         <div class="flex items-center justify-between">
-          <div class="flex items-center">
+          <div class="flex min-w-0 items-center">
             <button
               v-if="showBackButton"
               @click="handleBack"
-              class="rounded-full p-2 transition-colors hover:bg-white/10"
+              class="mobile-icon-button"
             >
               <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
               </svg>
             </button>
-            <div v-if="title === 'HabitLearner'" class="ml-2">
-              <Logo show-text show-subtitle size="default" :brand-name="BRAND_NAME" subtitle="HabitLearner" :on-dark-background="true" />
+            <div v-if="title === 'HabitLearner'" class="mobile-brand-mark ml-2">
+              <Logo show-text show-subtitle size="default" :brand-name="BRAND_NAME" subtitle="HabitLearner" />
             </div>
-            <h1 v-else class="ml-2 text-lg font-medium text-white">{{ title }}</h1>
+            <div v-else class="ml-2 min-w-0">
+              <p class="mobile-brand-eyebrow">HabitLearner</p>
+              <h1 class="mobile-page-title">{{ title }}</h1>
+            </div>
           </div>
 
           <div class="flex items-center gap-2">
             <button
               @click="themeStore.toggleTheme()"
-              class="rounded-full p-2 transition-colors hover:bg-white/10"
+              class="mobile-icon-button"
               :title="themeStore.isDarkMode ? '切换到浅色模式' : '切换到深色模式'"
             >
               <svg v-if="themeStore.isDarkMode" class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -143,35 +145,82 @@
       </div>
     </main>
 
-    <nav class="lg:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-zinc-200 bg-white/95 backdrop-blur-apple dark:border-zinc-800 dark:bg-black/95">
-      <div class="mx-auto max-w-md overflow-x-auto">
-        <div class="flex min-w-max items-center justify-around gap-1 px-2 py-2">
+    <nav class="mobile-bottom-nav lg:hidden">
+      <div class="mx-auto max-w-screen-sm px-3">
+        <div class="mobile-bottom-nav-inner">
           <router-link
-            v-for="item in mobileNavigationItems"
+            v-for="item in mobilePrimaryNavigationItems"
             :key="item.name"
             :to="item.to"
-            class="flex min-w-[4rem] flex-col items-center rounded-xl px-3 py-2 transition-colors"
-            :class="isActive(item.to) ? 'text-zinc-950 dark:text-white' : 'text-zinc-500 dark:text-zinc-400'"
+            class="mobile-nav-item"
+            :class="{ 'is-active': isActive(item.to) }"
           >
             <component :is="item.icon" class="mb-1 h-6 w-6" />
             <span class="text-xs font-medium">{{ item.label }}</span>
           </router-link>
+          <button
+            type="button"
+            class="mobile-nav-item mobile-workspace-trigger"
+            :class="{ 'is-active': isMobileWorkspaceActive || showMobileWorkspace }"
+            @click="showMobileWorkspace = true"
+          >
+            <GridIcon class="mb-1 h-6 w-6" />
+            <span class="text-xs font-medium">工作区</span>
+          </button>
         </div>
       </div>
     </nav>
 
-    <GlobalQuickCapture />
+    <Transition name="mobile-workspace">
+      <div v-if="showMobileWorkspace" class="mobile-workspace-layer lg:hidden" @click.self="closeMobileWorkspace">
+        <section class="mobile-workspace-drawer" aria-label="移动端工作区导航">
+          <div class="mobile-workspace-handle"></div>
+          <header class="mobile-workspace-head">
+            <div>
+              <p class="mobile-brand-eyebrow">Workspace</p>
+              <h2>所有工作区</h2>
+              <span>保持手机端完整能力，不再把功能藏在桌面侧栏里。</span>
+            </div>
+            <button type="button" class="mobile-icon-button" aria-label="关闭工作区" @click="closeMobileWorkspace">
+              <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </header>
+
+          <div class="mobile-workspace-groups">
+            <div v-for="group in mobileWorkspaceGroups" :key="group.label" class="mobile-workspace-group">
+              <p>{{ group.label }}</p>
+              <div class="mobile-workspace-grid">
+                <router-link
+                  v-for="item in group.items"
+                  :key="item.name"
+                  :to="item.to"
+                  class="mobile-workspace-link"
+                  :class="{ 'is-active': isMobileWorkspaceItemActive(item) }"
+                  @click="closeMobileWorkspace"
+                >
+                  <component :is="item.icon" class="h-5 w-5" />
+                  <span>{{ item.label }}</span>
+                  <small>{{ item.description }}</small>
+                </router-link>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </Transition>
+
     <WorkspacePet />
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useThemeStore } from '@/stores/theme'
 import { useSidebarState } from '@/composables/useSidebarState'
 import Logo from './Logo.vue'
-import GlobalQuickCapture from './GlobalQuickCapture.vue'
 import WorkspacePet from './WorkspacePet.vue'
 
 const props = defineProps({
@@ -223,17 +272,64 @@ const navigationGroups = [
       { name: 'focus', label: '\u4e13\u6ce8', to: '/focus', icon: 'FocusIcon' },
       { name: 'captures', label: '\u6536\u96c6', to: '/captures', icon: 'InboxIcon' },
       { name: 'review', label: '\u590d\u76d8', to: '/review', icon: 'ReviewIcon' },
-      { name: 'insights', label: '\u6d1e\u5bdf', to: '/insights', icon: 'InsightsIcon' }
+      { name: 'insights', label: '\u6d1e\u5bdf', to: '/insights', icon: 'InsightsIcon' },
+      { name: 'creator', label: '\u5185\u5bb9\u521b\u4f5c', to: '/creator', icon: 'CreatorIcon' }
     ]
   }
 ]
 
 const navigationItems = navigationGroups.flatMap((group) => group.items)
-const mobileNavigationItems = navigationItems.filter((item) => ['dashboard', 'plan', 'tracks', 'profile'].includes(item.name))
+const mobilePrimaryNavigationItems = navigationItems.filter((item) => ['dashboard', 'plan', 'tracks', 'profile'].includes(item.name))
+const showMobileWorkspace = ref(false)
+
+const mobileWorkspaceGroups = computed(() => [
+  {
+    label: '\u5de5\u4f5c\u533a',
+    items: navigationGroups.find((group) => group.label === '\u5de5\u4f5c\u533a')?.items.map((item) => ({
+      ...item,
+      description: {
+        learning: '\u5b66\u4e60\u5185\u5bb9\u4e0e\u7b14\u8bb0',
+        focus: '\u756a\u8304\u949f\u4e0e\u6df1\u5ea6\u6267\u884c',
+        captures: '\u5feb\u901f\u6536\u96c6\u548c\u8f6c\u5316',
+        review: '\u4eca\u65e5\u590d\u76d8\u548c\u6c89\u6dc0',
+        insights: '\u8f68\u9053\u8d8b\u52bf\u4e0e\u6d1e\u5bdf',
+        creator: '\u70ed\u70b9\u3001\u9009\u9898\u4e0e\u53d1\u5e03'
+      }[item.name] || ''
+    })) || []
+  },
+  {
+    label: '\u63a7\u5236\u4e2d\u5fc3',
+    items: [
+      { name: 'guide', label: '\u4f7f\u7528\u6559\u7a0b', to: '/guide', icon: 'GuideIcon', description: '\u529f\u80fd\u8bf4\u660e\u548c\u65e5\u5e38\u5de5\u4f5c\u6d41' },
+      { name: 'ai-providers', label: 'AI \u8bbe\u7f6e', to: '/profile/ai-providers', icon: 'SparkIcon', description: '\u7edf\u4e00\u4f9b\u5e94\u5546\u548c\u6a21\u578b' },
+      { name: 'ai-skills', label: 'AI \u6280\u80fd', to: '/profile/ai-skills', icon: 'SparkIcon', description: '\u7ba1\u7406\u5185\u7f6e\u4e0e\u81ea\u5b9a\u4e49 skills' },
+      { name: 'appearance', label: '\u5916\u89c2\u4e3b\u9898', to: '/profile/appearance', icon: 'BrushIcon', description: '\u80cc\u666f\u3001\u914d\u8272\u548c\u5bc6\u5ea6' },
+      { name: 'notifications', label: '\u901a\u77e5\u58f0\u97f3', to: { path: '/profile', query: { panel: 'notifications' } }, icon: 'BellIcon', description: '\u63d0\u9192\u3001\u97f3\u6548\u548c\u514d\u6253\u6270' }
+    ]
+  }
+])
+
+const getItemPath = (to) => (typeof to === 'string' ? to : to?.path || '')
+
+const isMobileWorkspaceActive = computed(() => mobileWorkspaceGroups.value
+  .flatMap((group) => group.items)
+  .some((item) => isMobileWorkspaceItemActive(item)))
 
 const isActive = (path) => {
+  path = getItemPath(path)
   if (path === '/dashboard') return route.path === '/dashboard'
   return route.path.startsWith(path)
+}
+
+const isMobileWorkspaceItemActive = (item) => {
+  if (item.name === 'notifications') {
+    return route.path === '/profile' && route.query.panel === 'notifications'
+  }
+  return isActive(item.to)
+}
+
+const closeMobileWorkspace = () => {
+  showMobileWorkspace.value = false
 }
 
 const handleBack = () => {
@@ -262,6 +358,10 @@ const handleBack = () => {
 
 onMounted(() => {
   themeStore.initTheme()
+})
+
+watch(() => route.fullPath, () => {
+  closeMobileWorkspace()
 })
 </script>
 
@@ -322,6 +422,54 @@ const InsightsIcon = {
   `
 }
 
+const CreatorIcon = {
+  template: `
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 19h16M6 16V8m4 8V5m4 11v-6m4 6V3" />
+    </svg>
+  `
+}
+
+const GridIcon = {
+  template: `
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5.5A1.5 1.5 0 015.5 4h3A1.5 1.5 0 0110 5.5v3A1.5 1.5 0 018.5 10h-3A1.5 1.5 0 014 8.5v-3zm10 0A1.5 1.5 0 0115.5 4h3A1.5 1.5 0 0120 5.5v3a1.5 1.5 0 01-1.5 1.5h-3A1.5 1.5 0 0114 8.5v-3zm-10 10A1.5 1.5 0 015.5 14h3a1.5 1.5 0 011.5 1.5v3A1.5 1.5 0 018.5 20h-3A1.5 1.5 0 014 18.5v-3zm10 0a1.5 1.5 0 011.5-1.5h3a1.5 1.5 0 011.5 1.5v3a1.5 1.5 0 01-1.5 1.5h-3a1.5 1.5 0 01-1.5-1.5v-3z" />
+    </svg>
+  `
+}
+
+const SparkIcon = {
+  template: `
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3zm6 10l.9 2.1L21 16l-2.1.9L18 19l-.9-2.1L15 16l2.1-.9L18 13z" />
+    </svg>
+  `
+}
+
+const BrushIcon = {
+  template: `
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 20h7m7.5-13.5a2.1 2.1 0 010 3L11 17l-4 1 1-4 7.5-7.5a2.1 2.1 0 013 0z" />
+    </svg>
+  `
+}
+
+const BellIcon = {
+  template: `
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17H9m9-2V11a6 6 0 10-12 0v4l-2 2h16l-2-2zm-5 5a2 2 0 01-4 0" />
+    </svg>
+  `
+}
+
+const GuideIcon = {
+  template: `
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5.5A2.5 2.5 0 016.5 3H20v16H6.5A2.5 2.5 0 004 21.5v-16zM8 7h8M8 11h6M8 15h7" />
+    </svg>
+  `
+}
+
 const CalendarIcon = {
   template: `
     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -348,7 +496,13 @@ export default {
     ReviewIcon,
     InsightsIcon,
     BookOpenIcon,
-    UserIcon
+    UserIcon,
+    CreatorIcon,
+    GridIcon,
+    SparkIcon,
+    BrushIcon,
+    BellIcon,
+    GuideIcon
   }
 }
 </script>
@@ -372,6 +526,7 @@ export default {
 }
 
 .app-sidebar {
+  z-index: 30;
   width: var(--app-sidebar-width);
   transition: width 0.22s ease;
 }
@@ -381,16 +536,267 @@ export default {
 }
 
 .app-main {
+  position: relative;
   min-height: calc(100vh - 72px);
 }
 
 .app-main-container {
-  width: 100%;
-  padding: clamp(1rem, 1.6vw, 1.75rem);
+  width: min(calc(100% - clamp(1rem, 2.2vw, 2.5rem)), var(--workbench-content-width));
+  margin-inline: auto;
+  padding: clamp(0.85rem, 1.15vw, 1.35rem) 0;
 }
 
 .app-topbar-container {
   width: 100%;
+}
+
+.mobile-brand-nav {
+  border-bottom: 1px solid var(--workbench-border);
+  background: rgb(247 246 243 / 0.88);
+  color: var(--workbench-text);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 12px 30px rgba(32, 31, 29, 0.05);
+}
+
+.dark .mobile-brand-nav {
+  background: rgb(16 16 15 / 0.9);
+}
+
+.mobile-brand-mark {
+  overflow: hidden;
+  border-radius: 1rem;
+}
+
+.mobile-brand-eyebrow {
+  margin: 0;
+  color: var(--workbench-text-muted);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.mobile-page-title {
+  max-width: 54vw;
+  overflow: hidden;
+  margin-top: 0.22rem;
+  color: var(--workbench-text);
+  font-size: 1.05rem;
+  font-weight: 750;
+  letter-spacing: -0.035em;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mobile-icon-button {
+  display: inline-flex;
+  min-width: 2.35rem;
+  height: 2.35rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--workbench-border);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.58);
+  color: var(--workbench-text);
+  transition: transform var(--workbench-motion-duration) var(--workbench-ease), background var(--workbench-motion-duration) var(--workbench-ease);
+}
+
+.mobile-icon-button:active {
+  transform: scale(0.96);
+}
+
+.dark .mobile-icon-button {
+  background: rgb(24 24 27 / 0.68);
+}
+
+.mobile-bottom-nav {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 44;
+  padding-bottom: max(0.55rem, env(safe-area-inset-bottom, 0px));
+  pointer-events: none;
+}
+
+.mobile-bottom-nav-inner {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.22rem;
+  border: 1px solid var(--workbench-border);
+  border-radius: 1.45rem;
+  background: rgb(255 255 255 / 0.88);
+  padding: 0.35rem;
+  box-shadow: 0 18px 44px rgba(32, 31, 29, 0.16);
+  backdrop-filter: blur(18px);
+  pointer-events: auto;
+}
+
+.dark .mobile-bottom-nav-inner {
+  background: rgb(16 16 15 / 0.9);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.36);
+}
+
+.mobile-nav-item {
+  display: flex;
+  min-width: 0;
+  min-height: 3.3rem;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 1.05rem;
+  background: transparent;
+  color: var(--workbench-text-muted);
+  transition: transform var(--workbench-motion-duration) var(--workbench-ease), background var(--workbench-motion-duration) var(--workbench-ease), color var(--workbench-motion-duration) var(--workbench-ease);
+}
+
+.mobile-nav-item.is-active {
+  background: var(--workbench-text);
+  color: var(--workbench-page);
+}
+
+.mobile-nav-item:active {
+  transform: scale(0.97);
+}
+
+.mobile-workspace-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: flex-end;
+  padding: 0.75rem;
+  background: rgba(24, 24, 27, 0.26);
+  backdrop-filter: blur(10px);
+}
+
+.mobile-workspace-drawer {
+  width: min(100%, 44rem);
+  max-height: min(82dvh, 46rem);
+  margin-inline: auto;
+  overflow: hidden;
+  border: 1px solid var(--workbench-border);
+  border-radius: 1.65rem 1.65rem 1.25rem 1.25rem;
+  background:
+    radial-gradient(circle at 92% 0%, rgb(var(--workbench-accent-rgb) / 0.12), transparent 30%),
+    var(--workbench-surface);
+  box-shadow: 0 28px 78px rgba(32, 31, 29, 0.24);
+}
+
+.mobile-workspace-handle {
+  width: 2.8rem;
+  height: 0.24rem;
+  margin: 0.7rem auto 0;
+  border-radius: 999px;
+  background: rgb(161 161 170 / 0.72);
+}
+
+.mobile-workspace-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.05rem 0.75rem;
+}
+
+.mobile-workspace-head h2 {
+  margin-top: 0.3rem;
+  color: var(--workbench-text);
+  font-size: 1.35rem;
+  font-weight: 760;
+  letter-spacing: -0.045em;
+}
+
+.mobile-workspace-head span {
+  display: block;
+  max-width: 26rem;
+  margin-top: 0.35rem;
+  color: var(--workbench-text-muted);
+  font-size: 0.78rem;
+  line-height: 1.6;
+}
+
+.mobile-workspace-groups {
+  display: grid;
+  max-height: calc(min(82dvh, 46rem) - 7.6rem);
+  gap: 1rem;
+  overflow-y: auto;
+  padding: 0 1rem calc(1rem + env(safe-area-inset-bottom, 0px));
+}
+
+.mobile-workspace-group > p {
+  margin: 0 0 0.55rem;
+  color: var(--workbench-text-muted);
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.mobile-workspace-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.mobile-workspace-link {
+  display: grid;
+  min-height: 6rem;
+  align-content: start;
+  gap: 0.45rem;
+  border: 1px solid var(--workbench-border);
+  border-radius: 1.1rem;
+  background: rgb(255 255 255 / 0.58);
+  color: var(--workbench-text);
+  padding: 0.9rem;
+  transition: transform var(--workbench-motion-duration) var(--workbench-ease), border-color var(--workbench-motion-duration) var(--workbench-ease), background var(--workbench-motion-duration) var(--workbench-ease);
+}
+
+.dark .mobile-workspace-link {
+  background: rgb(24 24 27 / 0.58);
+}
+
+.mobile-workspace-link.is-active,
+.mobile-workspace-link:hover {
+  border-color: rgb(var(--workbench-accent-rgb) / 0.32);
+  background: var(--workbench-surface-muted);
+  transform: translateY(-1px);
+}
+
+.mobile-workspace-link span {
+  font-size: 0.86rem;
+  font-weight: 760;
+  letter-spacing: -0.02em;
+}
+
+.mobile-workspace-link small {
+  color: var(--workbench-text-muted);
+  font-size: 0.7rem;
+  line-height: 1.45;
+}
+
+.mobile-workspace-enter-active,
+.mobile-workspace-leave-active {
+  transition: opacity 220ms var(--workbench-ease);
+}
+
+.mobile-workspace-enter-active .mobile-workspace-drawer,
+.mobile-workspace-leave-active .mobile-workspace-drawer {
+  transition: transform 260ms var(--workbench-ease), opacity 220ms var(--workbench-ease);
+}
+
+.mobile-workspace-enter-from,
+.mobile-workspace-leave-to {
+  opacity: 0;
+}
+
+.mobile-workspace-enter-from .mobile-workspace-drawer,
+.mobile-workspace-leave-to .mobile-workspace-drawer {
+  opacity: 0;
+  transform: translateY(1.25rem) scale(0.985);
 }
 
 .sidebar-brand-row {
@@ -434,7 +840,38 @@ export default {
 .sidebar-logo,
 .sidebar-nav-link,
 .sidebar-collapse-button svg {
-  transition: all 0.2s ease;
+  transition: all var(--workbench-motion-duration) var(--workbench-ease);
+}
+
+.sidebar-logo :deep(img),
+.sidebar-logo :deep(svg) {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  border-radius: 1rem;
+}
+
+.sidebar-nav-link {
+  position: relative;
+  overflow: hidden;
+}
+
+.sidebar-nav-link::before {
+  content: '';
+  position: absolute;
+  inset: 8px auto 8px 6px;
+  width: 3px;
+  border-radius: 999px;
+  background: rgb(var(--workbench-accent-rgb));
+  opacity: 0;
+  transform: translateX(-6px);
+  transition: opacity var(--workbench-motion-duration) var(--workbench-ease), transform var(--workbench-motion-duration) var(--workbench-ease);
+}
+
+.sidebar-nav-link[aria-current='page']::before {
+  opacity: 1;
+  transform: translateX(0);
 }
 
 .sidebar-collapse-button {
@@ -534,7 +971,51 @@ export default {
   }
 
   .app-main-container {
-    padding: clamp(1.35rem, 2.1vw, 2.4rem);
+    padding: clamp(1.15rem, 1.7vw, 1.9rem);
+  }
+}
+
+@media (max-width: 1023px) {
+  .app-main-container {
+    width: min(calc(100% - 1rem), var(--workbench-content-width));
+    padding-top: 0.8rem;
+    padding-bottom: calc(6.25rem + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+@media (max-width: 380px) {
+  .mobile-bottom-nav-inner {
+    border-radius: 1.25rem;
+    padding: 0.28rem;
+  }
+
+  .mobile-nav-item {
+    min-height: 3rem;
+  }
+
+  .mobile-nav-item svg {
+    height: 1.25rem;
+    width: 1.25rem;
+  }
+
+  .mobile-nav-item span {
+    font-size: 0.66rem;
+  }
+
+  .mobile-workspace-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mobile-nav-item,
+  .mobile-icon-button,
+  .mobile-workspace-link,
+  .mobile-workspace-enter-active,
+  .mobile-workspace-leave-active,
+  .mobile-workspace-enter-active .mobile-workspace-drawer,
+  .mobile-workspace-leave-active .mobile-workspace-drawer {
+    transition: none;
   }
 }
 </style>

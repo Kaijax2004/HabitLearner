@@ -1,114 +1,57 @@
 <template>
   <AppLayout title="计划编辑" :showBackButton="true" :onBack="handleBack">
-    <div class="plan-editor-shell w-full px-3 pb-20 pt-4 sm:px-6 lg:px-8">
+    <div class="plan-editor-workbench" :class="{ 'plan-editor-workbench-ai-open': aiPanel.show }">
+      <div class="plan-editor-left-rail">
+        <PlanEditorPageTree
+          :pages="editorPageTree"
+          :current-page-id="editorPageId"
+          @open="openEditorPage"
+          @create="createEditorChildPage"
+        />
+        <PlanEditorOutline :outline-items="outlineItems" @scroll-to-block="scrollToBlock" />
+      </div>
+
+      <div class="plan-editor-shell w-full px-3 pb-20 pt-4 sm:px-6 lg:px-8">
       <div class="plan-editor-surface w-full">
-        <header class="mb-8 space-y-6">
-          <div class="flex flex-wrap items-center justify-between gap-3">
-            <div class="flex flex-wrap items-center gap-2 text-sm">
-              <span class="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
-                <span class="h-2 w-2 rounded-full" :class="saveDotClass"></span>
-                <span>{{ saveStatusText }}</span>
-              </span>
-              <span
-                v-if="selectedBlockCount"
-                class="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300"
-              >
-                <span>已选 {{ selectedBlockCount }} 块</span>
-                <button type="button" class="text-xs text-zinc-500 hover:text-zinc-950 dark:hover:text-white" @click="clearSelectedBlocks">清空</button>
-              </span>
-              <button
-                type="button"
-                class="btn-ghost ai-quick-menu-trigger px-3 py-2 text-sm"
-                title="Ctrl / Command + Shift + K"
-                @click="openAiPanel('outline')"
-              >
-                AI 智能助手
-              </button>
-              <button
-                v-if="planId"
-                type="button"
-                class="btn-ghost px-3 py-2 text-sm"
-                @click="showUnscheduledPanel = true"
-              >
-                待安排池 {{ unscheduledBlocks.length }}
-              </button>
-              <button type="button" class="btn-ghost px-3 py-2 text-sm" @click="triggerImport">导入</button>
-              <button type="button" class="btn-ghost px-3 py-2 text-sm" @click="toggleExportMenu">导出</button>
-              <button
-                v-if="planId"
-                type="button"
-                class="btn-ghost px-3 py-2 text-sm text-red-600 hover:text-red-700 dark:text-red-300 dark:hover:text-red-200"
-                @click="deleteCurrentPlan"
-              >
-                删除计划
-              </button>
-            </div>
-
-            <div class="flex flex-wrap items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
-              <span class="rounded-full bg-zinc-100 px-2.5 py-1 dark:bg-zinc-900">{{ statusLabel }}</span>
-              <span class="rounded-full bg-zinc-100 px-2.5 py-1 dark:bg-zinc-900">{{ priorityLabel }}</span>
-              <span class="rounded-full bg-zinc-100 px-2.5 py-1 dark:bg-zinc-900">{{ typeLabel }}</span>
-              <span v-if="dueDate" class="rounded-full bg-zinc-100 px-2.5 py-1 dark:bg-zinc-900">截止 {{ dueDate }}</span>
-            </div>
-          </div>
-
-          <div class="space-y-4">
-            <textarea
-              ref="titleRef"
-              v-model="title"
-              class="plan-title-input"
-              rows="1"
-              placeholder="无标题"
-              @input="handleTitleInput"
-            />
-
-            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-12">
-              <label class="plan-meta-field" :class="isCustomPlanType ? 'lg:col-span-2' : 'lg:col-span-3'">
-                <span>状态</span>
-                <select v-model="status" @change="markDirty">
-                  <option value="not_started">未开始</option>
-                  <option value="in_progress">进行中</option>
-                  <option value="completed">已完成</option>
-                  <option value="archived">已归档</option>
-                </select>
-              </label>
-              <label class="plan-meta-field" :class="isCustomPlanType ? 'lg:col-span-2' : 'lg:col-span-3'">
-                <span>优先级</span>
-                <select v-model="priority" @change="markDirty">
-                  <option value="low">低优先级</option>
-                  <option value="medium">中优先级</option>
-                  <option value="high">高优先级</option>
-                </select>
-              </label>
-              <label class="plan-meta-field" :class="isCustomPlanType ? 'lg:col-span-6' : 'lg:col-span-3'">
-                <span>类型</span>
-                <div class="plan-meta-type-row" :class="{ 'plan-meta-type-row-custom': isCustomPlanType }">
-                  <select v-model="planType" @change="markDirty">
-                    <option value="project">项目</option>
-                    <option value="task">任务</option>
-                    <option value="goal">目标</option>
-                    <option value="custom">自定义</option>
-                  </select>
-                  <input
-                    v-if="isCustomPlanType"
-                    v-model.trim="customTypeName"
-                    class="plan-meta-type-input"
-                    type="text"
-                    maxlength="50"
-                    placeholder="例如：会议、灵感、复盘、研究"
-                    @input="markDirty"
-                  />
-                </div>
-              </label>
-              <label class="plan-meta-field" :class="isCustomPlanType ? 'lg:col-span-2' : 'lg:col-span-3'">
-                <span>截止日期</span>
-                <input v-model="dueDate" type="date" @change="markDirty" />
-              </label>
-            </div>
-          </div>
-        </header>
-
+        <PlanEditorTopbar
+          :plan-id="planId"
+          :title="title"
+          :status="status"
+          :priority="priority"
+          :plan-type="planType"
+          :custom-type-name="customTypeName"
+          :due-date="dueDate"
+          :is-custom-plan-type="isCustomPlanType"
+          :status-label="statusLabel"
+          :priority-label="priorityLabel"
+          :type-label="typeLabel"
+          :save-status-text="saveStatusText"
+          :save-dot-class="saveDotClass"
+          :selected-block-count="selectedBlockCount"
+          :unscheduled-count="unscheduledBlocks.length"
+          @update:title="title = $event"
+          @update:status="status = $event"
+          @update:priority="priority = $event"
+          @update:planType="planType = $event"
+          @update:customTypeName="customTypeName = $event"
+          @update:dueDate="dueDate = $event"
+          @title-input="handleTitleInput"
+          @dirty="markDirty"
+          @clear-selection="clearSelectedBlocks"
+          @open-unscheduled="showUnscheduledPanel = true"
+          @import="triggerImport"
+          @export="toggleExportMenu"
+          @delete="deleteCurrentPlan"
+        />
         <div v-if="isLoading" class="py-24 text-center text-zinc-500 dark:text-zinc-400">正在加载计划...</div>
+        <div v-else-if="loadError" class="plan-load-error">
+          <div class="text-lg font-semibold text-zinc-900 dark:text-white">{{ loadError.title }}</div>
+          <p class="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400">{{ loadError.message }}</p>
+          <div class="mt-5 flex flex-wrap justify-center gap-2">
+            <button type="button" class="btn-primary px-4 py-2 text-sm" @click="loadPlan">重试</button>
+            <button type="button" class="btn-secondary px-4 py-2 text-sm" @click="router.push('/plan')">返回计划</button>
+          </div>
+        </div>
 
         <section v-else class="plan-document">
           <div v-if="!blocks.length" class="plan-empty-state" @click="createFirstBlock">
@@ -118,157 +61,60 @@
             </p>
           </div>
 
-          <div
+          <PlanEditorBlockRow
             v-for="(block, index) in blocks"
             :key="block.id"
-            :data-block-id="String(block.id)"
-            class="plan-row"
-            :class="{
-              'plan-row-active': activeBlockId === block.id,
-              'plan-row-selected': selectedBlockIds.has(block.id),
-              'plan-row-drop-before': dragState.overIndex === index && dragState.position === 'before' && !dragState.draggingIds.includes(block.id),
-              'plan-row-drop-after': dragState.overIndex === index && dragState.position === 'after' && !dragState.draggingIds.includes(block.id),
-              'plan-row-dragging': dragState.draggingIds.includes(block.id)
-            }"
-            @mouseenter="hoveredBlockId = block.id; extendBlockSelection(index)"
-            @mouseleave="hoveredBlockId = null"
-            @dragover.prevent="onRowDragOver($event, index)"
-            @drop.prevent="onRowDrop(index)"
+            :block="block"
+            :index="index"
+            :all-blocks="blocks"
+            :plan-title="title"
+            :plan-id="planId"
+            :resolve-block="resolveBlock"
+            :active-block-id="activeBlockId"
+            :hovered-block-id="hoveredBlockId"
+            :selected-block-ids="selectedBlockIds"
+            :block-selection="blockSelection"
+            :drag-state="dragState"
+            @hover="(_id, rowIndex) => { hoveredBlockId = block.id; extendBlockSelection(rowIndex) }"
+            @leave="hoveredBlockId = null"
+            @row-click="handleBlockRowClick"
+            @drag-over="onRowDragOver"
+            @drop="onRowDrop"
+            @begin-selection="beginBlockSelection"
+            @drag-start="onHandleDragStart"
+            @drag-end="onHandleDragEnd"
+            @open-menu="openRowMenu"
+            @open-type-menu="openHandleTypeSelector"
+            @update-content="updateBlockContent"
+            @toggle-complete="toggleBlockComplete"
+            @delete-block="removeBlock"
+            @create-new-block="insertTextAfter"
+            @open-ai="openAiComposerFromBlock"
+            @open-slash-menu="(event, rowIndex) => openCommandMenu(event, rowIndex, 'replace-current')"
+            @change-type="changeBlockType"
+            @insert-blocks="insertBlocksAfter"
+            @focus="handleBlockFocus"
+            @blur="clearActiveBlock"
           >
-            <div class="plan-row-gutter">
-              <button
-                type="button"
-                class="plan-row-select"
-                :class="{
-                  'opacity-100': hoveredBlockId === block.id || activeBlockId === block.id || selectedBlockIds.has(block.id) || blockSelection.active,
-                  'plan-row-select-active': selectedBlockIds.has(block.id)
-                }"
-                title="按住拖动可多选块"
-                @mousedown.prevent="beginBlockSelection($event, index)"
-              >
-                <span></span>
-              </button>
-              <button
-                type="button"
-                draggable="true"
-                class="plan-row-handle"
-                :class="{ 'opacity-100': hoveredBlockId === block.id || activeBlockId === block.id || dragState.draggingId === block.id }"
-                @dragstart="onHandleDragStart($event, index, block)"
-                @dragend="onHandleDragEnd"
-                @click="(event) => openRowMenu(event, index, block)"
-              >
-                <span>&#8942;&#8942;</span>
-              </button>
-            </div>
-
-            <div class="plan-row-content">
-              <component
-                :is="resolveBlock(block.type)"
-                :key="`${block.id}-${block.type}-${block.content?.level ?? ''}-${block.content?.viewType ?? ''}`"
-                :model-value="block.content"
-                :all-blocks="blocks"
-                :plan-title="title"
-                :plan-id="planId"
-                :block-id="block.id"
-                @update:modelValue="(value) => updateBlockContent(block, value)"
-                @toggle-complete="toggleBlockComplete(block)"
-                @delete-block="removeBlock(block)"
-                @create-new-block="insertTextAfter(index)"
-                @open-ai="openInlineAiFromBlock(block)"
-                @open-slash-menu="(event) => openCommandMenu(event, index, 'replace-current')"
-                @change-type="(type) => changeBlockType(block, type)"
-                @insert-blocks="(payload) => insertBlocksAfter(index, payload)"
-                @focus="handleBlockFocus(block.id)"
-                @blur="clearActiveBlock(block.id)"
+            <template #default="{ block: slotBlock }">
+              <PlanEditorAiComposer
+                v-if="aiComposer.show && aiComposer.context?.blockId === slotBlock.id"
+                :context="aiComposer.context"
+                :skills="aiSkills"
+                v-model:model="aiSelectedModel"
+                :model-options="aiModelOptions"
+                :model-loading="aiMediaModelsLoading"
+                :loading="aiComposer.loading"
+                :result="aiComposer.result"
+                @run="runAiComposer"
+                @load-models="ensureAiMediaModelsLoaded"
+                @apply="applyAiComposerText"
+                @apply-blocks="applyAiComposerBlocks"
+                @manage-skills="router.push('/profile/ai-skills')"
+                @close="closeAiComposer"
               />
-
-              <div v-if="inlineAi.show && inlineAi.blockId === block.id" class="inline-ai-card">
-                <div class="inline-ai-header">
-                  <div class="inline-ai-chip-row">
-                    <button
-                      v-for="action in inlineAiActions"
-                      :key="action.key"
-                      type="button"
-                      class="inline-ai-chip"
-                      :class="{ 'inline-ai-chip-active': inlineAi.action === action.key }"
-                      @click="switchInlineAiAction(action.key)"
-                    >
-                      {{ action.label }}
-                    </button>
-                  </div>
-                  <button type="button" class="inline-ai-close" @click="closeInlineAi">关闭</button>
-                </div>
-
-                <div class="inline-ai-context">
-                  <span class="inline-ai-context-label">{{ inlineAi.hasSelection ? '当前选中文本' : '当前块内容' }}</span>
-                  <p>{{ inlineAiContextPreview }}</p>
-                </div>
-
-                <label class="inline-ai-field">
-                  <span>{{ currentInlineAiAction?.fieldLabel || '补充要求' }}</span>
-                  <textarea
-                    v-model="inlineAi.prompt"
-                    class="inline-ai-textarea"
-                    rows="2"
-                    :placeholder="inlineAiPromptPlaceholder"
-                  />
-                </label>
-
-                <div class="inline-ai-runner">
-                  <button type="button" class="inline-ai-run-btn" :disabled="inlineAi.loading || isAiCoolingDown('inline')" @click="runInlineAi">
-                    {{ getAiActionButtonText('inline', currentInlineAiAction?.runLabel || '开始生成', inlineAi.loading, 'AI 处理中...') }}
-                  </button>
-                  <span class="inline-ai-shortcut">Ctrl / Command + J 打开当前块 AI</span>
-                </div>
-
-                <div v-if="inlineAi.result" class="inline-ai-result-card">
-                  <div class="flex flex-wrap items-center justify-between gap-2">
-                    <span class="ai-result-badge">{{ inlineAi.result.source === 'agnes' ? 'Agnes AI' : '本地规则' }}</span>
-                    <span class="text-xs text-zinc-400">{{ currentInlineAiAction?.resultLabel || '结果' }}</span>
-                  </div>
-
-                  <template v-if="inlineAi.result.kind === 'text'">
-                    <pre class="inline-ai-result-pre">{{ inlineAi.result.text }}</pre>
-                    <div class="inline-ai-result-actions">
-                      <button type="button" class="inline-ai-apply-btn" @click="applyInlineAiTextResult('replace-selection')">
-                        {{ inlineAi.hasSelection ? '替换选中' : '替换当前块' }}
-                      </button>
-                      <button type="button" class="inline-ai-ghost-btn" @click="applyInlineAiTextResult('insert-cursor')">插入到光标处</button>
-                      <button type="button" class="inline-ai-ghost-btn" @click="applyInlineAiTextResult('append-end')">追加到末尾</button>
-                    </div>
-                  </template>
-
-                  <template v-else-if="inlineAi.result.kind === 'todo'">
-                    <div class="mt-3 space-y-2">
-                      <div v-for="(item, todoIndex) in inlineAi.result.items" :key="`${block.id}-todo-${todoIndex}`" class="ai-outline-item">
-                        <span class="ai-outline-index">{{ todoIndex + 1 }}</span>
-                        <div class="min-w-0 text-sm leading-6 text-zinc-700 dark:text-zinc-200">{{ item }}</div>
-                      </div>
-                    </div>
-                    <div class="inline-ai-result-actions">
-                      <button type="button" class="inline-ai-apply-btn" @click="applyInlineAiTodoBlocks">转为待办</button>
-                    </div>
-                  </template>
-
-                  <template v-else-if="inlineAi.result.kind === 'outline'">
-                    <p v-if="inlineAi.result.summary" class="mt-3 text-sm leading-6 text-zinc-600 dark:text-zinc-300">{{ inlineAi.result.summary }}</p>
-                    <div class="mt-3 space-y-2">
-                      <div v-for="(item, outlineIndex) in inlineAi.result.blocks" :key="`${block.id}-outline-${outlineIndex}`" class="ai-outline-item">
-                        <span class="ai-outline-index">{{ outlineIndex + 1 }}</span>
-                        <div class="min-w-0">
-                          <div class="text-sm font-medium text-zinc-800 dark:text-zinc-100">{{ getInlineAiOutlineLabel(item) }}</div>
-                          <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ getInlineAiOutlinePreview(item) }}</div>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="inline-ai-result-actions">
-                      <button type="button" class="inline-ai-apply-btn" @click="applyInlineAiOutlineResult">转为大纲</button>
-                    </div>
-                  </template>
-                </div>
-              </div>
-            </div>
-          </div>
+            </template>
+          </PlanEditorBlockRow>
 
           <button v-if="blocks.length" type="button" class="plan-new-line" @click="appendTextBlock">
             <span class="mr-2">+</span>
@@ -276,78 +122,44 @@
           </button>
         </section>
       </div>
-    </div>
-
-    <div v-if="commandMenu.show" class="slash-backdrop" @click="closeCommandMenu">
-      <div
-        class="slash-panel"
-        :style="{ top: `${commandMenu.top}px`, left: `${commandMenu.left}px` }"
-        @click.stop
-      >
-        <div class="slash-header">
-          <span>{{ commandMenu.mode === 'replace-current' ? '替换当前块' : '插入新块' }}</span>
-          <span class="text-xs text-zinc-400">/</span>
-        </div>
-        <div class="mb-2 px-1">
-          <input
-            ref="commandInputRef"
-            v-model="commandMenu.query"
-            class="slash-search"
-            type="text"
-            placeholder="搜索文本、列表、图片、数据库..."
-            @keydown="handleCommandKeydown"
-          />
-        </div>
-        <div class="slash-category-tabs">
-          <button
-            v-for="category in commandCategories"
-            :key="category.key"
-            type="button"
-            class="slash-category-chip"
-            :class="{ 'slash-category-chip-active': commandMenu.selectedCategory === category.key }"
-            @click="setCommandCategory(category.key)"
-          >
-            <span>{{ category.label }}</span>
-            <span class="slash-category-count">{{ category.count }}</span>
-          </button>
-        </div>
-        <div v-if="visibleCommandItems.length" class="mb-1 flex items-center justify-between px-2 pb-1 text-[11px] text-zinc-400">
-          <span>第 {{ currentCommandPage + 1 }} / {{ totalCommandPages }} 页</span>
-          <span>{{ pageItemRangeText }}</span>
-        </div>
-        <div v-if="visibleCommandItems.length" ref="commandListRef" class="slash-list">
-          <button
-            v-for="item in pagedCommandItems"
-            :key="item.key"
-            type="button"
-            class="slash-item"
-            :class="{ 'slash-item-active': visibleCommandItems[commandMenu.highlight]?.key === item.key }"
-            @mouseenter="commandMenu.highlight = visibleCommandItems.findIndex((candidate) => candidate.key === item.key)"
-            @click="selectCommandItem(item)"
-          >
-            <span class="slash-item-icon">{{ item.icon }}</span>
-            <span class="slash-item-text">
-              <span>{{ item.label }}</span>
-              <span>{{ item.description }}</span>
-            </span>
-            <span v-if="commandMenu.selectedCategory === 'all'" class="slash-item-badge">{{ item.category }}</span>
-          </button>
-        </div>
-        <div v-else class="px-3 py-6 text-center text-sm text-zinc-500 dark:text-zinc-400">
-          没有匹配的命令
-        </div>
-        <div v-if="visibleCommandItems.length && totalCommandPages > 1" class="slash-pagination">
-          <button type="button" class="slash-page-btn" :disabled="currentCommandPage === 0" @click="goToCommandPage(currentCommandPage - 1)">
-            上一页
-          </button>
-          <span class="slash-page-indicator">{{ currentCommandPage + 1 }} / {{ totalCommandPages }}</span>
-          <button type="button" class="slash-page-btn" :disabled="currentCommandPage >= totalCommandPages - 1" @click="goToCommandPage(currentCommandPage + 1)">
-            下一页
-          </button>
-        </div>
       </div>
+
+      <PlanEditorAiPanel
+        v-if="aiPanel.show"
+        :state="aiWorkspaceState"
+        :actions="aiPanelActions"
+        @tab-change="openAiPanel"
+      />
+      <PlanEditorInspector
+        v-else
+        :status-label="statusLabel"
+        :priority-label="priorityLabel"
+        :due-date="dueDate"
+        :unscheduled-blocks="unscheduledBlocks"
+        :schedule-blocks="scheduleBlocks"
+        :schedule-status-label="scheduleStatusLabel"
+        @open-unscheduled="showUnscheduledPanel = true"
+        @open-ai="openAiWorkspace"
+        @open-creator="router.push('/creator')"
+      />
     </div>
 
+    <PlanEditorSlashMenu
+      :command-menu="commandMenu"
+      :command-categories="commandCategories"
+      :visible-command-items="visibleCommandItems"
+      :paged-command-items="pagedCommandItems"
+      :current-page="currentCommandPage"
+      :total-pages="totalCommandPages"
+      :page-item-range-text="pageItemRangeText"
+      @close="closeCommandMenu"
+      @query="commandMenu.query = $event"
+      @keydown="handleCommandKeydown"
+      @category="setCommandCategory"
+      @highlight="commandMenu.highlight = $event"
+      @select="selectCommandItem"
+      @page="goToCommandPage"
+    />
     <input ref="fileInputRef" type="file" accept=".md,.markdown,.json,.html,.htm,.csv" class="hidden" @change="handleImport" />
 
     <Teleport to="body">
@@ -369,12 +181,12 @@
         :style="{ top: `${inlineAiToolbar.top}px`, left: `${inlineAiToolbar.left}px` }"
       >
         <button
-          v-for="action in workspaceAiToolbarActions"
-          :key="`toolbar-workspace-${action.tab}`"
+          v-for="action in [{ label: 'AI' }]"
+          :key="`toolbar-workspace-${action.label}`"
           type="button"
           class="inline-ai-toolbar-btn"
-          :class="{ 'inline-ai-toolbar-btn-active': aiPanel.show && aiPanel.tab === action.tab }"
-          @mousedown.prevent="openAiPanel(action.tab)"
+          :class="{ 'inline-ai-toolbar-btn-active': aiComposer.show }"
+          @mousedown.prevent="openAiComposer({ ...inlineAiToolbar })"
         >
           {{ action.label }}
         </button>
@@ -477,754 +289,44 @@
       />
     </Teleport>
 
-    <Teleport to="body">
-      <div
-        v-if="showUnscheduledPanel"
-        class="fixed inset-0 z-[1240] flex justify-end bg-black/35 backdrop-blur-sm"
-        @click="showUnscheduledPanel = false"
-      >
-        <aside
-          class="flex h-full w-full max-w-md flex-col border-l border-zinc-200 bg-white/95 p-6 shadow-2xl dark:border-zinc-800 dark:bg-zinc-950/95"
-          @click.stop
-        >
-          <div class="flex items-start justify-between gap-4">
-            <div>
-              <p class="text-xs font-semibold uppercase tracking-[0.24em] text-zinc-500 dark:text-zinc-400">Unscheduled</p>
-              <h3 class="mt-2 text-xl font-semibold tracking-tight text-zinc-950 dark:text-white">待安排池</h3>
-              <p class="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400">
-                这些计划块还没有安排到具体日期。先放在这里，等你决定执行时间后再进入今日工作台。
-              </p>
-            </div>
-            <button
-              type="button"
-              class="rounded-full border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-500 transition hover:border-zinc-300 hover:text-zinc-950 dark:border-zinc-700 dark:text-zinc-300 dark:hover:border-zinc-600 dark:hover:text-white"
-              @click="showUnscheduledPanel = false"
-            >
-              关闭
-            </button>
-          </div>
+    <PlanEditorSchedulePanel
+      :show-unscheduled-panel="showUnscheduledPanel"
+      :schedule-dialog="scheduleDialog"
+      :filtered-unscheduled-blocks="filteredUnscheduledBlocks"
+      :schedule-blocks-loading="scheduleBlocksLoading"
+      :unscheduled-search="unscheduledSearch"
+      :unscheduled-type-filter="unscheduledTypeFilter"
+      :unscheduled-type-options="unscheduledTypeOptions"
+      :unscheduled-empty-text="unscheduledEmptyText"
+      :get-block-text-content="getBlockTextContent"
+      :block-type-label="blockTypeLabel"
+      @close-unscheduled="showUnscheduledPanel = false"
+      @update-search="unscheduledSearch = $event"
+      @update-type="unscheduledTypeFilter = $event"
+      @schedule="openScheduleDialogFromShelf"
+      @close-dialog="closeScheduleDialog"
+      @submit="submitScheduleDialog"
+    />
 
-          <div class="mt-5 flex items-center justify-between rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm dark:border-zinc-800 dark:bg-zinc-900/70">
-            <span class="text-zinc-500 dark:text-zinc-400">当前未安排</span>
-            <strong class="text-lg font-semibold text-zinc-950 dark:text-white">{{ filteredUnscheduledBlocks.length }}</strong>
-          </div>
 
-          <div class="mt-4 grid gap-3 sm:grid-cols-2">
-            <label class="unscheduled-filter-field">
-              <span>搜索</span>
-              <input
-                v-model.trim="unscheduledSearch"
-                type="search"
-                placeholder="搜索计划块内容"
-              />
-            </label>
-            <label class="unscheduled-filter-field">
-              <span>类型</span>
-              <select v-model="unscheduledTypeFilter">
-                <option value="all">全部类型</option>
-                <option
-                  v-for="option in unscheduledTypeOptions"
-                  :key="option.value"
-                  :value="option.value"
-                >
-                  {{ option.label }}
-                </option>
-              </select>
-            </label>
-          </div>
-
-          <div class="mt-5 min-h-0 flex-1 overflow-y-auto pr-1">
-            <div v-if="scheduleBlocksLoading" class="rounded-3xl border border-dashed border-zinc-200 p-6 text-sm text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
-              正在同步日程状态...
-            </div>
-            <div v-else-if="!filteredUnscheduledBlocks.length" class="rounded-3xl border border-dashed border-zinc-200 p-6 text-sm leading-6 text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
-              {{ unscheduledEmptyText }}
-            </div>
-            <div v-else class="space-y-3">
-              <article
-                v-for="block in filteredUnscheduledBlocks"
-                :key="`unscheduled-${block.id}`"
-                class="rounded-3xl border border-zinc-200 bg-white p-4 shadow-sm transition hover:border-zinc-300 hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900/70 dark:hover:border-zinc-700"
-              >
-                <div class="flex items-start justify-between gap-3">
-                  <div class="min-w-0">
-                    <p class="line-clamp-2 text-sm font-semibold leading-6 text-zinc-950 dark:text-white">
-                      {{ getBlockTextContent(block) || '未命名计划块' }}
-                    </p>
-                    <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{{ blockTypeLabel(block.type) }}</p>
-                  </div>
-                  <button
-                    type="button"
-                    class="shrink-0 rounded-2xl bg-zinc-950 px-3 py-2 text-xs font-semibold text-white transition hover:bg-zinc-800 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-100"
-                    @click="openScheduleDialogFromShelf(block)"
-                  >
-                    安排
-                  </button>
-                </div>
-              </article>
-            </div>
-          </div>
-        </aside>
-      </div>
-    </Teleport>
-
-    <Teleport to="body">
-      <div
-        v-if="scheduleDialog.show"
-        class="fixed inset-0 z-[1250] flex items-center justify-center bg-black/45 px-4 backdrop-blur-sm"
-        @click="closeScheduleDialog"
-      >
-        <div
-          class="w-full max-w-xl rounded-[28px] border border-zinc-200 bg-white p-6 shadow-2xl dark:border-zinc-800 dark:bg-zinc-950"
-          @click.stop
-        >
-          <div class="flex items-start justify-between gap-4">
-            <div>
-              <p class="text-xs font-semibold uppercase tracking-[0.24em] text-zinc-500 dark:text-zinc-400">Schedule Block</p>
-              <h3 class="mt-2 text-xl font-semibold tracking-tight text-zinc-950 dark:text-white">安排到日程</h3>
-              <p class="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400">这只会创建一次执行安排，不会删除或改写原计划块。</p>
-            </div>
-            <button
-              type="button"
-              class="rounded-full border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-500 transition hover:border-zinc-300 hover:text-zinc-950 dark:border-zinc-700 dark:text-zinc-300 dark:hover:border-zinc-600 dark:hover:text-white"
-              @click="closeScheduleDialog"
-            >
-              关闭
-            </button>
-          </div>
-
-          <div class="mt-5 grid gap-4">
-            <label class="grid gap-2 text-sm font-medium text-zinc-700 dark:text-zinc-200">
-              <span>执行标题</span>
-              <input
-                v-model="scheduleDialog.title"
-                class="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-950 outline-none transition focus:border-zinc-950 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white dark:focus:border-white"
-                maxlength="255"
-                placeholder="这次要执行什么"
-              />
-            </label>
-
-            <div class="grid gap-4 md:grid-cols-3">
-              <label class="grid gap-2 text-sm font-medium text-zinc-700 dark:text-zinc-200">
-                <span>日期</span>
-                <input
-                  v-model="scheduleDialog.date"
-                  type="date"
-                  class="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-950 outline-none transition focus:border-zinc-950 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white dark:focus:border-white"
-                />
-              </label>
-              <label class="grid gap-2 text-sm font-medium text-zinc-700 dark:text-zinc-200">
-                <span>开始时间</span>
-                <input
-                  v-model="scheduleDialog.startTime"
-                  type="time"
-                  class="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-950 outline-none transition focus:border-zinc-950 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white dark:focus:border-white"
-                />
-              </label>
-              <label class="grid gap-2 text-sm font-medium text-zinc-700 dark:text-zinc-200">
-                <span>持续分钟</span>
-                <input
-                  v-model.number="scheduleDialog.durationMinutes"
-                  type="number"
-                  min="5"
-                  max="480"
-                  step="5"
-                  class="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-950 outline-none transition focus:border-zinc-950 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white dark:focus:border-white"
-                />
-              </label>
-            </div>
-          </div>
-
-          <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
-            <button
-              type="button"
-              class="rounded-2xl border border-zinc-200 px-5 py-3 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-900"
-              @click="closeScheduleDialog"
-            >
-              取消
-            </button>
-            <button
-              type="button"
-              class="rounded-2xl bg-zinc-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-100"
-              :disabled="scheduleDialog.isSubmitting"
-              @click="submitScheduleDialog"
-            >
-              {{ scheduleDialog.isSubmitting ? '安排中...' : '确认安排' }}
-            </button>
-          </div>
-        </div>
-      </div>
-    </Teleport>
-
-    <Teleport to="body">
-      <div v-if="aiPanel.show" class="fixed inset-0 z-[1300] bg-black/40 p-4 backdrop-blur-sm" @click="closeAiPanel">
-        <div class="ai-panel mx-auto mt-10 max-w-5xl" @click.stop>
-          <div class="ai-panel-header">
-            <div>
-              <div class="text-lg font-semibold text-zinc-950 dark:text-white">AI 工作区</div>
-              <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">这里集中放计划页的 AI 生成、润色、提问、图片和视频能力，适合做全局操作；块内 AI 更适合处理当前文本。</p>
-            </div>
-            <button type="button" class="ai-panel-close" @click="closeAiPanel">关闭</button>
-          </div>
-
-          <div class="ai-panel-tabs">
-            <button type="button" class="ai-panel-tab" :class="{ 'ai-panel-tab-active': aiPanel.tab === 'outline' }" @click="openAiPanel('outline')">AI 生成</button>
-            <button type="button" class="ai-panel-tab" :class="{ 'ai-panel-tab-active': aiPanel.tab === 'polish' }" @click="openAiPanel('polish')">AI 润色</button>
-            <button type="button" class="ai-panel-tab" :class="{ 'ai-panel-tab-active': aiPanel.tab === 'questions' }" @click="openAiPanel('questions')">AI 提问</button>
-            <button type="button" class="ai-panel-tab" :class="{ 'ai-panel-tab-active': aiPanel.tab === 'image' }" @click="openAiPanel('image')">AI 生图</button>
-            <button type="button" class="ai-panel-tab" :class="{ 'ai-panel-tab-active': aiPanel.tab === 'video' }" @click="openAiPanel('video')">AI 生视频</button>
-          </div>
-
-          <div class="mb-4 rounded-3xl border border-zinc-200/80 bg-zinc-50/90 p-4 dark:border-zinc-800 dark:bg-zinc-900/60">
-            <div class="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <div class="text-sm font-semibold text-zinc-950 dark:text-white">{{ aiTemplateScopeLabel }}模板</div>
-                <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{{ aiTemplateScopeDescription }}</p>
-              </div>
-              <div class="flex flex-wrap gap-2">
-                <button type="button" class="ai-mode-chip" :class="{ 'ai-mode-chip-active': aiTemplateMode === 'preset' }" @click="aiTemplateMode = 'preset'">预设模板</button>
-                <button type="button" class="ai-mode-chip" :class="{ 'ai-mode-chip-active': aiTemplateMode === 'custom' }" @click="aiTemplateMode = 'custom'">高级自定义</button>
-              </div>
-            </div>
-
-            <div v-if="aiTemplateMode === 'preset'" class="mt-4 flex flex-wrap gap-2">
-              <button
-                v-for="preset in aiTemplatePresets"
-                :key="preset.key"
-                type="button"
-                class="ai-mode-chip"
-                :class="{ 'ai-mode-chip-active': aiTemplatePreset === preset.key }"
-                @click="aiTemplatePreset = preset.key"
-              >
-                {{ preset.source === 'custom' ? `我的 · ${preset.label}` : preset.label }}
-              </button>
-            </div>
-
-            <div v-else class="mt-4 grid gap-3 md:grid-cols-2">
-              <label class="ai-panel-field md:col-span-2">
-                <span>角色设定</span>
-                <textarea v-model="aiTemplateCustom.role" rows="2" class="ai-panel-textarea" placeholder="告诉 AI 它是谁"></textarea>
-              </label>
-              <label class="ai-panel-field">
-                <span>任务描述</span>
-                <textarea v-model="aiTemplateCustom.task" rows="3" class="ai-panel-textarea" placeholder="写清楚要做什么"></textarea>
-              </label>
-              <label class="ai-panel-field">
-                <span>格式与风格约束</span>
-                <textarea v-model="aiTemplateCustom.constraints" rows="3" class="ai-panel-textarea" placeholder="字数、风格、结构要求"></textarea>
-              </label>
-              <label class="ai-panel-field md:col-span-2">
-                <span>禁止项</span>
-                <textarea v-model="aiTemplateCustom.prohibitions" rows="3" class="ai-panel-textarea" placeholder="不要做什么"></textarea>
-              </label>
-              <label class="ai-panel-field md:col-span-2">
-                <span>模板名称</span>
-                <input v-model="aiTemplateCustomBaseName" type="text" class="ai-panel-input" :placeholder="`例如：${aiTemplateScopeLabel}模板底座`" />
-              </label>
-              <div class="md:col-span-2 flex flex-wrap items-center justify-between gap-2">
-                <div class="text-xs text-zinc-500 dark:text-zinc-400">当前分类已保存 {{ aiTemplateCustomBaseCount }} 个模板底座</div>
-                <button type="button" class="btn-secondary px-4 py-2 text-sm" @click="saveAiTemplateBase">保存为模板底座</button>
-              </div>
-            </div>
-
-            <div class="mt-4 rounded-2xl border border-dashed border-zinc-200 bg-white/80 p-3 text-xs leading-6 text-zinc-500 dark:border-zinc-700 dark:bg-zinc-950/60 dark:text-zinc-400">
-              <div class="font-medium text-zinc-700 dark:text-zinc-200">当前模板预览</div>
-              <div class="mt-1 line-clamp-3">{{ aiTemplateSummary }}</div>
-            </div>
-          </div>
-
-          <div v-if="aiPanel.tab === 'outline'" class="ai-panel-body space-y-4">
-            <label class="ai-panel-field">
-              <span>想生成什么计划</span>
-              <textarea
-                v-model="aiOutlinePrompt"
-                rows="5"
-                class="ai-panel-textarea"
-                placeholder="例如：生成一份 7 天的内容复盘计划，包含目标、步骤、每日安排和风险提醒。"
-              />
-            </label>
-            <div class="flex flex-wrap gap-2">
-              <button type="button" class="btn-primary px-4 py-2 text-sm" :disabled="aiOutlineLoading || isAiCoolingDown('outline')" @click="generateAiOutline">
-                {{ getAiActionButtonText('outline', '生成大纲', aiOutlineLoading) }}
-              </button>
-              <button v-if="aiOutlineResult?.blocks?.length" type="button" class="btn-secondary px-4 py-2 text-sm" @click="applyAiOutline">
-                插入到当前计划
-              </button>
-            </div>
-
-            <div v-if="aiOutlineResult" class="ai-result-card">
-              <div class="flex flex-wrap items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
-                <span class="ai-result-badge">{{ aiOutlineResult.source === 'agnes' ? 'Agnes AI' : '本地规则' }}</span>
-                <span>{{ aiOutlineResult.summary }}</span>
-              </div>
-              <div class="mt-3 text-lg font-semibold text-zinc-950 dark:text-white">{{ aiOutlineResult.titleSuggestion || 'AI 计划建议' }}</div>
-              <div class="mt-4 space-y-2">
-                <div v-for="(block, index) in aiOutlineResult.blocks" :key="`outline-${index}`" class="ai-outline-item">
-                  <span class="ai-outline-index">{{ index + 1 }}</span>
-                  <div class="min-w-0">
-                    <div class="text-sm font-medium text-zinc-900 dark:text-white">{{ block.type }}</div>
-                    <div class="text-sm text-zinc-600 dark:text-zinc-300">{{ previewBlockContent(block) }}</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div v-else-if="aiPanel.tab === 'polish'" class="ai-panel-body space-y-4">
-            <div class="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300">
-              {{ activePolishHint }}
-            </div>
-            <label class="ai-panel-field">
-              <span>润色要求</span>
-              <input
-                v-model="aiPolishInstruction"
-                type="text"
-                class="ai-panel-input"
-                placeholder="例如：更简洁、更正式、更适合执行。"
-              />
-            </label>
-            <div class="flex flex-wrap gap-2">
-              <button type="button" class="btn-primary px-4 py-2 text-sm" :disabled="aiPolishLoading || isAiCoolingDown('polish')" @click="runAiPolish">
-                {{ getAiActionButtonText('polish', '开始润色', aiPolishLoading) }}
-              </button>
-              <button v-if="aiPolishResult?.text" type="button" class="btn-secondary px-4 py-2 text-sm" @click="applyAiPolish">
-                写回当前块
-              </button>
-            </div>
-
-            <div v-if="aiPolishResult" class="ai-result-card">
-              <div class="flex flex-wrap items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
-                <span class="ai-result-badge">{{ aiPolishResult.source === 'agnes' ? 'Agnes AI' : '本地规则' }}</span>
-                <span>润色结果预览</span>
-              </div>
-              <pre class="ai-result-pre">{{ aiPolishResult.text }}</pre>
-            </div>
-          </div>
-
-          <div v-else-if="aiPanel.tab === 'questions'" class="ai-panel-body space-y-4">
-            <div class="flex flex-wrap gap-2">
-              <button type="button" class="btn-primary px-4 py-2 text-sm" :disabled="aiQuestionsLoading || isAiCoolingDown('questions')" @click="generateAiQuestions">
-                {{ getAiActionButtonText('questions', '生成问题', aiQuestionsLoading) }}
-              </button>
-            </div>
-
-            <div v-if="aiQuestionsResult" class="ai-result-card">
-              <div class="flex flex-wrap items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
-                <span class="ai-result-badge">{{ aiQuestionsResult.source === 'agnes' ? 'Agnes AI' : '本地规则' }}</span>
-                <span>{{ aiQuestionsResult.summary }}</span>
-              </div>
-              <div class="mt-4 space-y-2">
-                <div v-for="(question, index) in aiQuestionsResult.questions" :key="`question-${index}`" class="ai-question-item">
-                  <span class="ai-question-index">{{ index + 1 }}</span>
-                  <p class="text-sm leading-6 text-zinc-700 dark:text-zinc-300">{{ question }}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div v-else-if="aiPanel.tab === 'image'" class="ai-panel-body space-y-4">
-            <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
-              <div class="space-y-4">
-                <div class="flex flex-wrap gap-2">
-                  <button type="button" class="ai-mode-chip" :class="{ 'ai-mode-chip-active': aiImageMode === 'text_to_image' }" @click="aiImageMode = 'text_to_image'">文生图</button>
-                  <button type="button" class="ai-mode-chip" :class="{ 'ai-mode-chip-active': aiImageMode === 'image_to_image' }" @click="aiImageMode = 'image_to_image'">图生图</button>
-                  <button type="button" class="ai-mode-chip" :class="{ 'ai-mode-chip-active': aiImageMode === 'multi_image' }" @click="aiImageMode = 'multi_image'">多图合成</button>
-                </div>
-
-                <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
-                  <label class="ai-panel-field">
-                    <span>模型</span>
-                    <input
-                      v-model.trim="aiImageModel"
-                      class="ai-panel-input"
-                      list="ai-image-model-options"
-                      placeholder="从供应商模型列表选择或手动输入"
-                      @focus="ensureAiMediaModelsLoaded"
-                    />
-                    <datalist id="ai-image-model-options">
-                      <option v-for="item in aiImageModelOptions" :key="item.value" :value="item.value">{{ item.label }}</option>
-                    </datalist>
-                    <small class="text-xs text-zinc-500 dark:text-zinc-400">{{ aiMediaModelHint }}</small>
-                  </label>
-                  <label class="ai-panel-field">
-                    <span>尺寸</span>
-                    <select v-model="aiImageSize" class="ai-panel-input">
-                      <option v-for="size in aiImageSizeOptions" :key="size" :value="size">{{ size }}</option>
-                    </select>
-                  </label>
-                </div>
-
-                <label v-if="aiImageModel === 'agnes-image-2.1-flash'" class="ai-panel-field">
-                  <span>画面比例</span>
-                  <select v-model="aiImageRatio" class="ai-panel-input">
-                    <option v-for="ratio in aiImageRatioOptions" :key="ratio" :value="ratio">{{ ratio }}</option>
-                  </select>
-                </label>
-
-                <label class="ai-panel-field">
-                  <span>图片提示词</span>
-                  <textarea v-model="aiImagePrompt" rows="4" class="ai-panel-textarea" placeholder="例如：极简黑白高质感计划页插画，玻璃拟态卡片与柔和灯光，苹果风格产品海报。" />
-                </label>
-
-                <label class="ai-panel-field">
-                  <span>负面提示词</span>
-                  <input v-model="aiImageNegativePrompt" type="text" class="ai-panel-input" placeholder="例如：模糊、低清晰度、杂乱排版、变形手部。" />
-                </label>
-
-                <label v-if="aiImageMode !== 'text_to_image'" class="ai-upload-field">
-                  <span>{{ aiImageMode === 'multi_image' ? '上传多张参考图' : '上传参考图' }}</span>
-                  <input type="file" accept="image/*" :multiple="aiImageMode === 'multi_image'" @change="handleAiImageFiles" />
-                </label>
-
-                <div v-if="aiImageSources.length" class="ai-source-grid">
-                  <div v-for="item in aiImageSources" :key="item.id" class="ai-source-card">
-                    <img :src="item.previewUrl" :alt="item.name" class="ai-source-image" />
-                    <div class="ai-source-footer">
-                      <span>{{ item.name }}</span>
-                      <button type="button" class="ai-source-remove" @click="removeAiImageSource(item.id)">移除</button>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="flex flex-wrap gap-2">
-                  <button type="button" class="btn-primary px-4 py-2 text-sm" :disabled="aiImageLoading || isAiCoolingDown('image')" @click="runAiImage">
-                    {{ getAiActionButtonText('image', '开始生图', aiImageLoading) }}
-                  </button>
-                  <button v-if="aiImageResult?.taskId" type="button" class="btn-secondary px-4 py-2 text-sm" @click="pollAiImageStatus">
-                    刷新状态
-                  </button>
-                </div>
-              </div>
-
-              <div class="space-y-4">
-                <div class="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300">
-                  支持 Agnes Image 2.0 Flash / 2.1 Flash，当前面板支持文生图、图生图和多图合成，任务会保留状态、进度和历史记录。
-                </div>
-
-                <div v-if="aiImageResult" class="ai-result-card space-y-4">
-                  <div class="flex flex-wrap items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
-                    <span class="ai-result-badge">{{ aiImageResult.source === 'agnes' ? 'Agnes AI' : '本地规则' }}</span>
-                    <span>{{ aiImageResult.model }}</span>
-                    <span>状态：{{ aiImageResult.status || 'queued' }}</span>
-                    <span v-if="aiImageResult.progress">进度：{{ aiImageResult.progress }}%</span>
-                  </div>
-
-                  <div class="grid grid-cols-1 gap-2 text-sm text-zinc-600 dark:text-zinc-300">
-                    <div>任务 ID：{{ aiImageResult.taskId || '-' }}</div>
-                    <div>创建时间：{{ formatAiVideoTimestamp(aiImageResult.createdAt) }}</div>
-                    <div>最后更新：{{ formatAiVideoTimestamp(aiImageResult.updatedAt || aiImageResult.lastCheckedAt) }}</div>
-                    <div v-if="aiImageResult.error" class="text-red-500">{{ aiImageResult.error }}</div>
-                  </div>
-
-                  <div v-if="aiImageResult.timeline?.length" class="space-y-2">
-                    <div class="text-xs font-medium uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">状态时间线</div>
-                    <div class="space-y-2">
-                      <div v-for="event in aiImageResult.timeline" :key="event.id" class="ai-timeline-item">
-                        <div class="ai-timeline-dot"></div>
-                        <div class="min-w-0 flex-1">
-                          <div class="flex flex-wrap items-center gap-2 text-sm text-zinc-800 dark:text-zinc-100">
-                            <span>{{ event.message }}</span>
-                            <span class="text-xs text-zinc-500 dark:text-zinc-400">{{ event.status }}</span>
-                            <span v-if="event.progress" class="text-xs text-zinc-500 dark:text-zinc-400">{{ event.progress }}%</span>
-                          </div>
-                          <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ formatAiVideoTimestamp(event.occurredAt) }}</div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div v-if="aiImageResult.items?.length" class="ai-generated-grid">
-                    <div v-for="item in aiImageResult.items" :key="item.id" class="ai-generated-card">
-                      <img :src="item.previewUrl" alt="AI 生成图片" class="ai-generated-image" />
-                      <button type="button" class="btn-secondary mt-3 w-full px-4 py-2 text-sm" @click="insertGeneratedImageBlock(item)">
-                        插入图片块
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="ai-result-card space-y-4">
-                  <div class="flex items-center justify-between gap-3">
-                    <div>
-                      <div class="text-sm font-medium text-zinc-900 dark:text-white">任务历史</div>
-                      <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">刷新页面后，仍可以恢复最近的生图任务。</p>
-                    </div>
-                    <button type="button" class="btn-ghost px-3 py-2 text-xs" :disabled="aiImageHistoryLoading" @click="loadAiImageHistory({ restoreActive: true })">
-                      {{ aiImageHistoryLoading ? '加载中...' : '刷新历史' }}
-                    </button>
-                  </div>
-
-                  <div v-if="aiImageHistory.length" class="space-y-3">
-                    <div
-                      v-for="item in aiImageHistory"
-                      :key="item.id"
-                      class="ai-history-card"
-                      :class="{ 'ai-history-card-active': aiImageResult?.id === item.id }"
-                    >
-                      <div class="flex items-start justify-between gap-3">
-                        <button type="button" class="min-w-0 flex-1 text-left" @click="restoreAiImageTask(item)">
-                          <div class="flex flex-wrap items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
-                            <span class="ai-result-badge">{{ item.model }}</span>
-                            <span>{{ getAiImageModeLabel(item.mode) }}</span>
-                            <span>状态：{{ item.status }}</span>
-                            <span v-if="item.progress">进度：{{ item.progress }}%</span>
-                          </div>
-                          <div class="ai-history-prompt mt-2 text-left text-sm leading-6 text-zinc-800 dark:text-zinc-100">{{ item.prompt }}</div>
-                          <div class="mt-2 flex flex-wrap items-center gap-3 text-xs text-zinc-500 dark:text-zinc-400">
-                            <span>{{ formatAiVideoTimestamp(item.createdAt) }}</span>
-                            <span v-if="item.sourceImages?.length">素材 {{ item.sourceImages.length }} 张</span>
-                            <span v-if="item.items?.length">已出图</span>
-                          </div>
-                        </button>
-                        <div class="flex shrink-0 flex-col gap-2">
-                          <button type="button" class="ai-history-action" @click="restoreAiImageTask(item)">查看</button>
-                          <button
-                            type="button"
-                            class="ai-history-delete"
-                            :disabled="aiImageDeletingTaskId === item.taskId"
-                            @click="deleteAiImageHistory(item)"
-                          >
-                            {{ aiImageDeletingTaskId === item.taskId ? '删除中...' : '删除' }}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div v-else class="text-sm text-zinc-500 dark:text-zinc-400">
-                    还没有可恢复的生图历史。
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div v-else class="ai-panel-body space-y-4">
-            <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
-              <div class="space-y-4">
-                <div class="flex flex-wrap gap-2">
-                  <button type="button" class="ai-mode-chip" :class="{ 'ai-mode-chip-active': aiVideoMode === 'text_to_video' }" @click="aiVideoMode = 'text_to_video'">文生视频</button>
-                  <button type="button" class="ai-mode-chip" :class="{ 'ai-mode-chip-active': aiVideoMode === 'image_to_video' }" @click="aiVideoMode = 'image_to_video'">图生视频</button>
-                  <button type="button" class="ai-mode-chip" :class="{ 'ai-mode-chip-active': aiVideoMode === 'keyframes' }" @click="aiVideoMode = 'keyframes'">关键帧动画</button>
-                </div>
-
-                <label class="ai-panel-field">
-                  <span>模型</span>
-                  <input
-                    v-model.trim="aiVideoModel"
-                    class="ai-panel-input"
-                    list="ai-video-model-options"
-                    placeholder="从供应商模型列表选择或手动输入"
-                    @focus="ensureAiMediaModelsLoaded"
-                  />
-                  <datalist id="ai-video-model-options">
-                    <option v-for="item in aiVideoModelOptions" :key="item.value" :value="item.value">{{ item.label }}</option>
-                  </datalist>
-                  <small class="text-xs text-zinc-500 dark:text-zinc-400">{{ aiMediaModelHint }}</small>
-                </label>
-
-                <label class="ai-panel-field">
-                  <span>视频提示词</span>
-                  <textarea v-model="aiVideoPrompt" rows="4" class="ai-panel-textarea" placeholder="例如：镜头缓慢推进，黑白极简工作台，玻璃卡片依次浮现，光影柔和克制。" />
-                </label>
-
-                <label class="ai-panel-field">
-                  <span>负面提示词</span>
-                  <input v-model="aiVideoNegativePrompt" type="text" class="ai-panel-input" placeholder="例如：闪烁、拉伸、抖动、文字错乱。" />
-                </label>
-
-                <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
-                  <label class="ai-panel-field">
-                    <span>分辨率</span>
-                    <select class="ai-panel-input" :value="`${aiVideoWidth}x${aiVideoHeight}`" @change="setAiVideoResolution($event.target.value)">
-                      <option v-for="item in aiVideoResolutionOptions" :key="item.label" :value="`${item.width}x${item.height}`">{{ item.label }}</option>
-                    </select>
-                  </label>
-                  <label class="ai-panel-field">
-                    <span>帧数</span>
-                    <input v-model="aiVideoFrames" type="number" min="9" max="441" step="8" class="ai-panel-input" />
-                  </label>
-                  <label class="ai-panel-field">
-                    <span>帧率</span>
-                    <input v-model="aiVideoFrameRate" type="number" min="12" max="30" class="ai-panel-input" />
-                  </label>
-                </div>
-
-                <label v-if="aiVideoMode !== 'text_to_video'" class="ai-panel-field">
-                  <span>{{ aiVideoMode === 'keyframes' ? '关键帧图片 URL（至少需要 2 张）' : '参考图 URL' }}</span>
-                  <div class="flex flex-col gap-2 sm:flex-row">
-                    <input
-                      v-model="aiVideoSourceUrl"
-                      type="url"
-                      class="ai-panel-input"
-                      placeholder="https://example.com/source-image.png"
-                      @keydown.enter.prevent="appendAiVideoSourceUrl"
-                    />
-                    <button type="button" class="btn-secondary shrink-0 px-4 py-2 text-sm" @click="appendAiVideoSourceUrl">
-                      添加 URL
-                    </button>
-                  </div>
-                  <p class="text-xs leading-6 text-zinc-500 dark:text-zinc-400">
-                    Agnes 视频接口需要公网可访问的图片 URL，不能直接使用本地路径或 data URL。
-                  </p>
-                </label>
-
-                <label v-if="aiVideoMode !== 'text_to_video'" class="ai-upload-field">
-                  <span>{{ aiVideoMode === 'keyframes' ? '上传并自动生成关键帧 URL' : '上传并自动生成参考图 URL' }}</span>
-                  <input type="file" accept="image/*" :multiple="aiVideoMode === 'keyframes'" @change="handleAiVideoUploadFiles" />
-                  <p class="text-xs leading-6 text-zinc-500 dark:text-zinc-400">
-                    系统会先上传图片并尝试生成可公网访问的 `publicUrl`。如果当前环境只能返回本地地址，仍会保留预览，但 Agnes 可能无法直接读取。
-                  </p>
-                  <div v-if="aiVideoSourceUploading" class="text-xs text-zinc-500 dark:text-zinc-400">
-                    正在上传参考图 {{ aiVideoSourceUploadProgress }}%
-                  </div>
-                </label>
-
-                <div v-if="aiVideoSources.length" class="ai-source-grid">
-                  <div v-for="item in aiVideoSources" :key="item.id" class="ai-source-card">
-                    <img :src="item.previewUrl" :alt="item.name" class="ai-source-image" />
-                    <div class="ai-source-footer">
-                      <span>{{ item.isPublic ? item.name : `${item.name}（仅本地预览）` }}</span>
-                      <button type="button" class="ai-source-remove" @click="removeAiVideoSource(item.id)">移除</button>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="flex flex-wrap gap-2">
-                  <button type="button" class="btn-primary px-4 py-2 text-sm" :disabled="aiVideoLoading || isAiCoolingDown('video')" @click="runAiVideo">
-                    {{ getAiActionButtonText('video', '开始生成视频', aiVideoLoading, '提交中...') }}
-                  </button>
-                  <button v-if="aiVideoResult?.videoId" type="button" class="btn-secondary px-4 py-2 text-sm" @click="pollAiVideoStatus">
-                    刷新状态
-                  </button>
-                </div>
-              </div>
-
-              <div class="space-y-4">
-                <div class="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300">
-                  支持 Agnes Video V2.0，当前可生成文生视频、图生视频和关键帧动画，异步任务会自动轮询状态并保留历史记录。
-                </div>
-
-                <div v-if="aiVideoResult" class="ai-result-card space-y-4">
-                  <div class="flex flex-wrap items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
-                    <span class="ai-result-badge">{{ aiVideoResult.source === 'agnes' ? 'Agnes AI' : '本地规则' }}</span>
-                    <span>{{ aiVideoResult.model }}</span>
-                    <span>状态：{{ aiVideoResult.status || 'queued' }}</span>
-                    <span v-if="aiVideoResult.progress">进度：{{ aiVideoResult.progress }}%</span>
-                  </div>
-
-                  <div class="rounded-2xl bg-zinc-100 p-3 dark:bg-zinc-950">
-                    <video v-if="aiVideoResult.url" :src="aiVideoResult.url" class="ai-generated-video" controls playsinline />
-                    <div v-else class="py-8 text-center text-sm text-zinc-500 dark:text-zinc-400">
-                      视频任务已提交，正在等待 Agnes 返回结果...
-                    </div>
-                  </div>
-
-                  <div class="grid grid-cols-1 gap-2 text-sm text-zinc-600 dark:text-zinc-300">
-                    <div>任务 ID：{{ aiVideoResult.taskId || '-' }}</div>
-                    <div>视频 ID：{{ aiVideoResult.videoId || '-' }}</div>
-                    <div>创建时间：{{ formatAiVideoTimestamp(aiVideoResult.createdAt) }}</div>
-                    <div>最后更新：{{ formatAiVideoTimestamp(aiVideoResult.updatedAt || aiVideoResult.lastCheckedAt) }}</div>
-                    <div v-if="aiVideoResult.error" class="text-red-500">{{ aiVideoResult.error }}</div>
-                  </div>
-
-                  <div v-if="aiVideoResult.timeline?.length" class="space-y-2">
-                    <div class="text-xs font-medium uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">状态时间线</div>
-                    <div class="space-y-2">
-                      <div v-for="event in aiVideoResult.timeline" :key="event.id" class="ai-timeline-item">
-                        <div class="ai-timeline-dot"></div>
-                        <div class="min-w-0 flex-1">
-                          <div class="flex flex-wrap items-center gap-2 text-sm text-zinc-800 dark:text-zinc-100">
-                            <span>{{ event.message }}</span>
-                            <span class="text-xs text-zinc-500 dark:text-zinc-400">{{ event.status }}</span>
-                            <span v-if="event.progress" class="text-xs text-zinc-500 dark:text-zinc-400">{{ event.progress }}%</span>
-                          </div>
-                          <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ formatAiVideoTimestamp(event.occurredAt) }}</div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="flex flex-wrap gap-2">
-                    <button v-if="aiVideoResult.url" type="button" class="btn-secondary px-4 py-2 text-sm" @click="insertGeneratedVideoBlock(aiVideoResult)">
-                      插入视频块
-                    </button>
-                    <a v-if="aiVideoResult.url" :href="aiVideoResult.url" target="_blank" rel="noreferrer" class="btn-ghost px-4 py-2 text-sm">
-                      打开原视频
-                    </a>
-                  </div>
-                </div>
-
-                <div class="ai-result-card space-y-4">
-                  <div class="flex items-center justify-between gap-3">
-                    <div>
-                      <div class="text-sm font-medium text-zinc-900 dark:text-white">任务历史</div>
-                      <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">刷新页面后，仍可以恢复最近的视频任务。</p>
-                    </div>
-                    <button type="button" class="btn-ghost px-3 py-2 text-xs" :disabled="aiVideoHistoryLoading" @click="loadAiVideoHistory({ restoreActive: true })">
-                      {{ aiVideoHistoryLoading ? '加载中...' : '刷新历史' }}
-                    </button>
-                  </div>
-
-                  <div v-if="aiVideoHistory.length" class="space-y-3">
-                    <div
-                      v-for="item in aiVideoHistory"
-                      :key="item.id"
-                      class="ai-history-card"
-                      :class="{ 'ai-history-card-active': aiVideoResult?.id === item.id }"
-                    >
-                      <div class="flex items-start justify-between gap-3">
-                        <button type="button" class="min-w-0 flex-1 text-left" @click="restoreAiVideoTask(item)">
-                          <div class="flex flex-wrap items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
-                            <span class="ai-result-badge">{{ item.model }}</span>
-                            <span>{{ getAiVideoModeLabel(item.mode) }}</span>
-                            <span>状态：{{ item.status }}</span>
-                            <span v-if="item.progress">进度：{{ item.progress }}%</span>
-                          </div>
-                          <div class="ai-history-prompt mt-2 text-left text-sm leading-6 text-zinc-800 dark:text-zinc-100">{{ item.prompt }}</div>
-                          <div class="mt-2 flex flex-wrap items-center gap-3 text-xs text-zinc-500 dark:text-zinc-400">
-                            <span>{{ formatAiVideoTimestamp(item.createdAt) }}</span>
-                            <span v-if="item.sourceImages?.length">素材 {{ item.sourceImages.length }} 张</span>
-                            <span v-if="item.url">已出片</span>
-                          </div>
-                        </button>
-                        <div class="flex shrink-0 flex-col gap-2">
-                          <button type="button" class="ai-history-action" @click="restoreAiVideoTask(item)">查看</button>
-                          <button
-                            type="button"
-                            class="ai-history-delete"
-                            :disabled="aiVideoDeletingTaskId === item.taskId"
-                            @click="deleteAiVideoHistory(item)"
-                          >
-                            {{ aiVideoDeletingTaskId === item.taskId ? '删除中...' : '删除' }}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div v-else class="text-sm text-zinc-500 dark:text-zinc-400">
-                    还没有可恢复的视频历史。
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </Teleport>
   </AppLayout>
 </template>
 
 <script setup>
-import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import AppLayout from '@/components/AppLayout.vue'
 import BlockTypeSelector from '@/components/BlockTypeSelector.vue'
+import PlanEditorOutline from '@/views/plan/PlanEditorOutline.vue'
+import PlanEditorInspector from '@/views/plan/PlanEditorInspector.vue'
+import PlanEditorTopbar from '@/views/plan/PlanEditorTopbar.vue'
+import PlanEditorBlockRow from '@/views/plan/PlanEditorBlockRow.vue'
+import PlanEditorSlashMenu from '@/views/plan/PlanEditorSlashMenu.vue'
+import PlanEditorPageTree from '@/views/plan/PlanEditorPageTree.vue'
+import PlanEditorSchedulePanel from '@/views/plan/PlanEditorSchedulePanel.vue'
+import PlanEditorAiComposer from '@/views/plan/PlanEditorAiComposer.vue'
+import PlanEditorAiPanel from '@/views/plan/PlanEditorAiPanel.vue'
 import {
-  polishPlanBlockAI,
-  generatePlanOutlineAI,
-  generatePlanQuestionsAI,
   generatePlanImageAI,
   getPlanImageStatusAI,
   listPlanImageHistoryAI,
@@ -1232,12 +334,36 @@ import {
   createPlanVideoAI,
   getPlanVideoStatusAI,
   listPlanVideoHistoryAI,
-  deletePlanVideoHistoryAI
+  deletePlanVideoHistoryAI,
+  getPlanById
 } from '@/api/plans'
+import {
+  createEditorBlock,
+  createEditorPage,
+  getEditorPageTree,
+  updateEditorBlock,
+  deleteEditorBlock,
+  reorderEditorBlocks
+} from '@/api/editor'
 import { createScheduleBlock, listScheduleBlocks } from '@/api/scheduleBlocks'
-import { listAiProviderModels, listAiProviders } from '@/api/workspace'
+import {
+  listAiProviderModels,
+  listAiProviders,
+  listAiSkills,
+  runWorkspaceAi,
+  chatWithMascotAssistant,
+  listAiConversations,
+  getAiConversation,
+  createAiConversation,
+  updateAiConversation,
+  deleteAiConversation as deleteAiConversationRequest
+} from '@/api/workspace'
 import { uploadImage } from '@/api/uploads'
 import { useImportExport } from '@/composables/useImportExport'
+import { useEditorDocument } from '@/composables/useEditorDocument'
+import { useEditorHistory } from '@/composables/useEditorHistory'
+import { useEditorPersistence } from '@/composables/useEditorPersistence'
+import { useEditorKeyboard } from '@/composables/useEditorKeyboard'
 import { useToast } from '@/composables/useToast'
 import { usePlanStore } from '@/stores/plan'
 import { useWorkspaceAiStore } from '@/stores/workspaceAi'
@@ -1247,11 +373,15 @@ const route = useRoute()
 const router = useRouter()
 const planStore = usePlanStore()
 const workspaceAiStore = useWorkspaceAiStore()
+const editorDocument = useEditorDocument()
+const editorHistory = useEditorHistory()
+const editorPersistence = useEditorPersistence()
 const { exportPlan, exportWorkspaceBackup, importPlan } = useImportExport()
 const { success: showSuccess, error: showError, info: showInfo } = useToast()
 
 const planId = computed(() => route.params.id)
 const isLoading = ref(false)
+const loadError = ref(null)
 const title = ref('')
 const status = ref('not_started')
 const priority = ref('medium')
@@ -1259,6 +389,20 @@ const planType = ref('project')
 const customTypeName = ref('')
 const dueDate = ref('')
 const blocks = ref([])
+const editorPageId = ref(null)
+const editorPageTree = ref([])
+const outlineItems = computed(() => blocks.value
+  .filter((block) => ['heading', 'page'].includes(block.type))
+  .map((block) => {
+    const content = block.content && typeof block.content === 'object' ? block.content : {}
+    const label = String(content.text || content.title || content.value || '').trim()
+    return {
+      id: block.id,
+      level: Math.min(3, Math.max(1, Number(content.level || 1))),
+      label: label || '未命名标题'
+    }
+  })
+  .filter((item) => item.label))
 const activeBlockId = ref(null)
 const hoveredBlockId = ref(null)
 const selectedBlockIds = ref(new Set())
@@ -1268,10 +412,9 @@ const pendingBlockIds = ref(new Set())
 const showExportMenu = ref(false)
 const fileInputRef = ref(null)
 const titleRef = ref(null)
-const commandInputRef = ref(null)
-const commandListRef = ref(null)
 const rowMenu = ref({ show: false, blockId: null, blockIndex: -1, top: 0, left: 0 })
 const blockTypeSelector = ref({ show: false, blockId: null, blockIndex: -1 })
+const suppressHandleClickUntil = ref(0)
 const scheduleDialog = ref({
   show: false,
   blockId: null,
@@ -1288,16 +431,23 @@ const unscheduledSearch = ref('')
 const unscheduledTypeFilter = ref('all')
 const dragState = ref({ draggingId: null, draggingIds: [], fromIndex: -1, overIndex: -1, position: 'after' })
 const commandMenu = ref({ show: false, mode: 'insert-after', index: null, top: 0, left: 0, query: '', selectedCategory: 'all', highlight: 0 })
-const aiPanel = ref({ show: false, tab: 'outline' })
-const aiOutlinePrompt = ref('')
-const aiOutlineLoading = ref(false)
-const aiOutlineResult = ref(null)
-const aiPolishInstruction = ref('')
-const aiPolishLoading = ref(false)
-const aiPolishResult = ref(null)
-const aiQuestionsLoading = ref(false)
-const aiQuestionsResult = ref(null)
-const aiPolishTarget = ref({ blockId: null, fieldKey: '', itemIndex: null })
+const aiPanel = ref({ show: false, tab: 'chat' })
+const aiChatMessages = ref([])
+const aiChatDraft = ref('')
+const aiChatLoading = ref(false)
+const aiConversations = ref([])
+const aiConversationId = ref('')
+const aiConversationLoading = ref(false)
+const aiConversationSaving = ref(false)
+const aiConversationContextExpanded = ref(false)
+const aiSelectedModel = ref(workspaceAiStore.normalizedSelectedModel || '')
+const aiSkills = ref([])
+const aiComposer = ref({
+  show: false,
+  context: null,
+  loading: false,
+  result: null
+})
 const aiImageMode = ref('text_to_image')
 const aiImageModel = ref('')
 const aiImagePrompt = ref('')
@@ -1332,300 +482,7 @@ const aiVideoPollingTimer = ref(null)
 const aiMediaModelOptions = ref([])
 const aiMediaModelsLoading = ref(false)
 const aiMediaModelError = ref('')
-const AI_TEMPLATE_STORAGE_KEY = 'habitlearner.plan.ai-template.registry.v2'
-const createAiTemplateFields = (value = {}) => ({
-  role: String(value.role || '').trim(),
-  task: String(value.task || '').trim(),
-  constraints: String(value.constraints || '').trim(),
-  prohibitions: String(value.prohibitions || '').trim()
-})
-const aiTemplateScopeLabels = {
-  text: 'AI 生成',
-  image: 'AI 绘图',
-  video: 'AI 视频'
-}
-const aiTemplateScopeDescriptions = {
-  text: '用于生成大纲、润色、提问和块内 AI。默认不选择模板，只有主动选择后才会套用。',
-  image: '用于生图、图生图和多图合成。模板为可选项。',
-  video: '用于文生视频、图生视频和关键帧动画。模板为可选项。'
-}
-const aiTemplateBuiltinPresetsByScope = {
-  text: [
-    {
-      key: 'execution_planner',
-      label: '执行型规划师',
-      role: '你是一位严谨的中文执行规划顾问。',
-      task: '整理计划内容，给出清晰、可执行的输出。',
-      constraints: '输出简体中文，结构清楚，动作具体。',
-      prohibitions: '不要空泛，不要编造事实，不要输出额外解释。'
-    },
-    {
-      key: 'editorial_writer',
-      label: '专业文案编辑',
-      role: '你是一位擅长简洁表达和结构化叙述的中文编辑。',
-      task: '将原文改写得更自然、更清楚、更有层次。',
-      constraints: '保持原意，克制表达，适合直接放入工作区。',
-      prohibitions: '不要夸张，不要加戏，不要扩展不存在的信息。'
-    }
-  ],
-  image: [
-    {
-      key: 'visual_director',
-      label: '视觉导演',
-      role: '你是一位专业视觉导演与图像提示词设计师。',
-      task: '输出适合直接提交给图像模型的高质量提示词。',
-      constraints: '描述主体、构图、光影、材质、风格和镜头感。',
-      prohibitions: '不要空泛，不要跑题，不要堆砌无关风格词。'
-    },
-    {
-      key: 'luxury_glass',
-      label: '冷调高奢感',
-      role: '你是熟悉黑白灰、玻璃拟态和高级极简风格的视觉设计师。',
-      task: '生成具有高奢冷调氛围的图像提示词。',
-      constraints: '强调黑白主色、克制留白、柔和高光和秩序感。',
-      prohibitions: '不要花哨配色，不要赛博科技蓝，不要元素过多。'
-    }
-  ],
-  video: [
-    {
-      key: 'motion_director',
-      label: '镜头导演',
-      role: '你是一位擅长视频镜头语言和节奏控制的导演。',
-      task: '生成适合直接提交给视频模型的提示词。',
-      constraints: '明确镜头推进、主体运动、转场节奏和画面氛围。',
-      prohibitions: '不要只写静态画面，不要缺少动作和节奏。'
-    },
-    {
-      key: 'product_demo',
-      label: '产品演示',
-      role: '你是一位擅长产品演示视频策划的导演。',
-      task: '把产品、工作流或计划页内容整理成流畅的视频提示词。',
-      constraints: '强调步骤感、交互感、镜头变化和信息呈现顺序。',
-      prohibitions: '不要堆满旁白，不要让镜头切换混乱。'
-    }
-  ]
-}
-const createAiTemplateState = (scope) => ({
-  mode: 'preset',
-  presetKey: '',
-  custom: createAiTemplateFields(),
-  customBaseName: '',
-  savedBases: []
-})
-const loadAiTemplateStore = () => {
-  const createStore = () => ({
-    text: createAiTemplateState('text'),
-    image: createAiTemplateState('image'),
-    video: createAiTemplateState('video')
-  })
-
-  if (typeof window === 'undefined') return createStore()
-
-  try {
-    const modernRaw = window.localStorage.getItem(AI_TEMPLATE_STORAGE_KEY)
-    if (modernRaw) {
-      const parsed = JSON.parse(modernRaw)
-      const next = createStore()
-      ;['text', 'image', 'video'].forEach((scope) => {
-        const state = parsed?.[scope]
-        if (!state) return
-        next[scope].mode = state.mode === 'custom' ? 'custom' : 'preset'
-        next[scope].presetKey = String(state.presetKey || '').trim()
-        next[scope].custom = createAiTemplateFields(state.custom)
-        next[scope].customBaseName = String(state.customBaseName || '')
-        next[scope].savedBases = Array.isArray(state.savedBases)
-          ? state.savedBases.map((item) => ({
-              id: String(item?.id || `${scope}-${Date.now()}`),
-              label: String(item?.label || '').trim(),
-              template: createAiTemplateFields(item?.template || item)
-            })).filter((item) => item.label)
-          : []
-      })
-      return next
-    }
-
-    const legacyRaw = window.localStorage.getItem('habitlearner.plan.ai-template.v1')
-    if (legacyRaw) {
-      const parsed = JSON.parse(legacyRaw)
-      const next = createStore()
-      next.text.mode = parsed?.mode === 'custom' ? 'custom' : 'preset'
-      next.text.presetKey = String(parsed?.preset || '').trim()
-      next.text.custom = createAiTemplateFields(parsed?.custom)
-      return next
-    }
-  } catch (error) {
-    console.warn('Failed to load AI template store', error)
-  }
-
-  return createStore()
-}
-const aiTemplateStore = ref(loadAiTemplateStore())
-const currentAiTemplateScope = computed(() => {
-  if (aiPanel.value.tab === 'image') return 'image'
-  if (aiPanel.value.tab === 'video') return 'video'
-  return 'text'
-})
-const ensureAiTemplateScopeState = (scope) => {
-  if (!aiTemplateStore.value[scope]) {
-    aiTemplateStore.value[scope] = createAiTemplateState(scope)
-  }
-
-  const state = aiTemplateStore.value[scope]
-  if (!state.custom || typeof state.custom !== 'object') {
-    state.custom = createAiTemplateFields()
-  }
-  if (!Array.isArray(state.savedBases)) {
-    state.savedBases = []
-  }
-  if (!['preset', 'custom'].includes(state.mode)) {
-    state.mode = 'preset'
-  }
-
-  const availableKeys = new Set((aiTemplateBuiltinPresetsByScope[scope] || []).map((item) => item.key))
-  state.savedBases.forEach((item, index) => {
-    if (!item.id) {
-      item.id = `${scope}-custom-${index + 1}`
-    }
-    item.label = String(item.label || '').trim()
-    item.template = createAiTemplateFields(item.template)
-  })
-  const allKeys = new Set([...availableKeys, ...state.savedBases.map((item) => item.id)])
-  if (state.presetKey && !allKeys.has(state.presetKey)) {
-    state.presetKey = ''
-  }
-  return state
-}
-const activeAiTemplateState = computed(() => ensureAiTemplateScopeState(currentAiTemplateScope.value))
-const aiTemplateMode = computed({
-  get: () => activeAiTemplateState.value.mode,
-  set: (value) => {
-    activeAiTemplateState.value.mode = value === 'custom' ? 'custom' : 'preset'
-  }
-})
-const aiTemplatePreset = computed({
-  get: () => activeAiTemplateState.value.presetKey,
-  set: (value) => {
-    activeAiTemplateState.value.presetKey = String(value || '').trim()
-  }
-})
-const aiTemplateCustom = computed(() => activeAiTemplateState.value.custom)
-const aiTemplateCustomBaseName = computed({
-  get: () => activeAiTemplateState.value.customBaseName,
-  set: (value) => {
-    activeAiTemplateState.value.customBaseName = String(value || '')
-  }
-})
-const aiTemplatePresets = computed(() => {
-  const scope = currentAiTemplateScope.value
-  const state = ensureAiTemplateScopeState(scope)
-  const builtins = (aiTemplateBuiltinPresetsByScope[scope] || []).map((item) => ({
-    key: item.key,
-    label: item.label,
-    source: 'builtin',
-    template: createAiTemplateFields(item)
-  }))
-  const savedBases = state.savedBases.map((item) => ({
-    key: item.id,
-    label: item.label,
-    source: 'custom',
-    template: createAiTemplateFields(item.template)
-  }))
-  return [
-    {
-      key: '',
-      label: '不使用模板',
-      source: 'none',
-      template: createAiTemplateFields()
-    },
-    ...builtins,
-    ...savedBases
-  ]
-})
-const activeAiTemplatePreset = computed(() => (
-  aiTemplatePresets.value.find((item) => item.key === aiTemplatePreset.value) || aiTemplatePresets.value[0] || null
-))
-const getResolvedAiTemplate = (scope = currentAiTemplateScope.value) => {
-  const state = ensureAiTemplateScopeState(scope)
-  if (state.mode === 'custom') {
-    const custom = createAiTemplateFields(state.custom)
-    if (!custom.role && !custom.task && !custom.constraints && !custom.prohibitions) return null
-    return {
-      presetKey: 'custom',
-      presetLabel: '高级自定义',
-      ...custom
-    }
-  }
-
-  if (!state.presetKey) return null
-
-  const preset = (
-    (aiTemplateBuiltinPresetsByScope[scope] || []).find((item) => item.key === state.presetKey) ||
-    state.savedBases.find((item) => item.id === state.presetKey) ||
-    null
-  )
-
-  if (!preset) return null
-
-  const template = preset?.template || preset || {}
-  return {
-    presetKey: preset?.key || '',
-    presetLabel: preset?.label || '',
-    ...createAiTemplateFields(template)
-  }
-}
-const resolvedAiTemplate = computed(() => getResolvedAiTemplate())
-const aiTemplateSummary = computed(() => {
-  const template = resolvedAiTemplate.value
-  if (!template) return '当前不使用模板。你可以按需选择预设模板，或填写高级自定义四段式模板。'
-  return [
-    template.role,
-    template.task,
-    template.constraints,
-    template.prohibitions
-  ].filter(Boolean).slice(0, 2).join(' ')
-})
-const aiTemplateScopeLabel = computed(() => aiTemplateScopeLabels[currentAiTemplateScope.value] || 'AI 生成')
-const aiTemplateScopeDescription = computed(() => aiTemplateScopeDescriptions[currentAiTemplateScope.value] || '用于当前 AI 工作区。')
-const aiTemplateCustomBaseCount = computed(() => activeAiTemplateState.value.savedBases.length)
-const persistAiTemplateStore = () => {
-  if (typeof window === 'undefined') return
-  try {
-    window.localStorage.setItem(AI_TEMPLATE_STORAGE_KEY, JSON.stringify(aiTemplateStore.value))
-  } catch (error) {
-    console.warn('Failed to persist AI template store', error)
-  }
-}
-const saveAiTemplateBase = () => {
-  const state = activeAiTemplateState.value
-  const template = createAiTemplateFields(state.custom)
-  if (!template.role && !template.task && !template.constraints && !template.prohibitions) {
-    showInfo('模板内容为空', { description: '先填写四段内容，再保存为模板底座。' })
-    return
-  }
-
-  const scope = currentAiTemplateScope.value
-  const label = String(state.customBaseName || '').trim() || `${aiTemplateScopeLabel.value}模板 ${state.savedBases.length + 1}`
-  const savedBase = {
-    id: `${scope}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-    label,
-    template,
-    createdAt: new Date().toISOString()
-  }
-
-  state.savedBases = [
-    ...state.savedBases.filter((item) => item.label !== label),
-    savedBase
-  ]
-  state.mode = 'preset'
-  state.presetKey = savedBase.id
-  state.customBaseName = ''
-  showSuccess('已保存为模板底座')
-}
 const aiActionCooldownUntil = ref({
-  outline: 0,
-  polish: 0,
-  questions: 0,
-  inline: 0,
   image: 0,
   video: 0
 })
@@ -1664,33 +521,53 @@ const inlineFormatToolbar = ref({
     link: false
   }
 })
-const inlineAi = ref({
-  show: false,
-  blockId: null,
-  fieldKey: '',
-  itemIndex: null,
-  action: 'continue',
-  prompt: '',
-  loading: false,
-  result: null,
-  rangeStart: 0,
-  rangeEnd: 0,
-  hasSelection: false,
-  selectedText: '',
-  sourceText: ''
-})
 let removeKeydownListener = null
 let removeClickListener = null
 let removeSelectionChangeListener = null
 let removeMouseupListener = null
+let removeMousemoveListener = null
 let removeEditorKeyupListener = null
 let removeResizeListener = null
+let removeEditorHistoryKeydown = null
 let aiCooldownTimer = null
 const commandItemsPerPage = 6
 
+const getEditorHistorySnapshot = () => ({
+  title: title.value,
+  status: status.value,
+  priority: priority.value,
+  planType: planType.value,
+  customTypeName: customTypeName.value,
+  dueDate: dueDate.value,
+  blocks: blocks.value.map((block) => ({
+    type: block.type,
+    content: cloneContent(block.content),
+    order: block.order
+  }))
+})
+
+const restoreEditorHistorySnapshot = async (snapshot) => {
+  if (!snapshot) return
+  await replaceAllBlocks(snapshot)
+}
+
+function undoEditor() {
+  return restoreEditorHistorySnapshot(editorHistory.undo())
+}
+
+function redoEditor() {
+  return restoreEditorHistorySnapshot(editorHistory.redo())
+}
+
+const editorKeyboard = useEditorKeyboard({
+  onSave: () => saveEverything(),
+  onUndo: undoEditor,
+  onRedo: redoEditor
+})
+
 const blockComponents = {
   heading: defineAsyncComponent(() => import('@/views/plan/blocks/HeadingBlock.vue')),
-  text: defineAsyncComponent(() => import('@/views/plan/blocks/TextBlock.vue')),
+  text: defineAsyncComponent(() => import('@/views/plan/blocks/RichTextBlock.vue')),
   page: defineAsyncComponent(() => import('@/views/plan/blocks/PageBlock.vue')),
   todo: defineAsyncComponent(() => import('@/views/plan/blocks/TodoBlock.vue')),
   toggle: defineAsyncComponent(() => import('@/views/plan/blocks/ToggleBlock.vue')),
@@ -1793,22 +670,6 @@ const commandItems = [
   { key: 'maps', category: '嵌入', type: 'embed', icon: 'MAP', label: 'Maps', description: '嵌入地图', tags: ['maps', 'map'], createContent: () => ({ variant: 'maps', url: '', title: 'Maps' }) }
 ]
 
-const inlineAiActions = [
-  { key: 'continue', label: '继续写', runLabel: '开始续写', resultLabel: '续写结果', fieldLabel: '续写要求' },
-  { key: 'rewrite', label: '改写', runLabel: '开始改写', resultLabel: '改写结果', fieldLabel: '改写要求' },
-  { key: 'summarize', label: '总结', runLabel: '生成总结', resultLabel: '总结结果', fieldLabel: '总结要求' },
-  { key: 'todo', label: '转待办', runLabel: '生成待办', resultLabel: '待办建议', fieldLabel: '待办要求' },
-  { key: 'outline', label: '转大纲', runLabel: '生成大纲', resultLabel: '大纲建议', fieldLabel: '大纲要求' }
-]
-
-const workspaceAiToolbarActions = [
-  { tab: 'outline', label: 'AI 生成' },
-  { tab: 'polish', label: 'AI 润色' },
-  { tab: 'questions', label: 'AI 提问' },
-  { tab: 'image', label: 'AI 生图' },
-  { tab: 'video', label: 'AI 生视频' }
-]
-
 const inlineFormatAllowedFields = ['text', 'title', 'summary', 'pageTitle', 'note', 'label', 'rootLabel', 'currentLabel']
 
 const inlineAiFieldMap = {
@@ -1868,64 +729,69 @@ const normalizeAiModelOption = (item) => {
   }
 }
 
-const aiImageModelOptions = computed(() => aiMediaModelOptions.value.filter((item) => /image|img|draw|vision|agnes/i.test(item.value)))
-const aiVideoModelOptions = computed(() => aiMediaModelOptions.value.filter((item) => /video|wan|kling|runway|sora|agnes/i.test(item.value)))
+const applyAiModelOptions = (items = []) => {
+  const options = (Array.isArray(items) ? items : [])
+    .map(normalizeAiModelOption)
+    .filter(Boolean)
+
+  aiMediaModelOptions.value = options
+  const firstImageModel = options.find((item) => /image|img|draw|vision/i.test(item.value)) || options[0]
+  const firstVideoModel = options.find((item) => /video|wan|kling|runway|sora/i.test(item.value)) || options[0]
+  if (!aiSelectedModel.value && workspaceAiStore.normalizedSelectedModel) {
+    aiSelectedModel.value = workspaceAiStore.normalizedSelectedModel
+  }
+  if (!aiSelectedModel.value && options[0]?.value) aiSelectedModel.value = options[0].value
+  if (!aiImageModel.value && firstImageModel?.value) aiImageModel.value = firstImageModel.value
+  if (!aiVideoModel.value && firstVideoModel?.value) aiVideoModel.value = firstVideoModel.value
+  if (!options.length) aiMediaModelError.value = '上游未返回模型列表。'
+  return options
+}
+
+const loadAiModelsFallback = async () => {
+  const providersResponse = await listAiProviders()
+  if (!providersResponse?.success) throw new Error(providersResponse?.error || 'AI 供应商配置读取失败')
+  const providers = Array.isArray(providersResponse.data?.providers) ? providersResponse.data.providers : []
+  const providerId = workspaceAiStore.hasExplicitSelection ? String(workspaceAiStore.normalizedSelectedProviderId) : ''
+  const provider = providerId
+    ? providers.find((item) => String(item.id) === providerId && item.status === 'active')
+    : providers.find((item) => item.is_default && item.status === 'active') || providers.find((item) => item.status === 'active')
+  if (!provider?.id) throw new Error('尚未配置 AI 供应商')
+  const response = await listAiProviderModels({ id: provider.id })
+  if (!response?.success) throw new Error(response?.error || '模型列表获取失败')
+  workspaceAiStore.setModelOptions?.(response.data?.models || [], provider.id)
+  return response.data?.models || []
+}
+
+const aiImageModelOptions = computed(() => aiMediaModelOptions.value)
+const aiVideoModelOptions = computed(() => aiMediaModelOptions.value)
+const aiModelOptions = computed(() => aiMediaModelOptions.value)
 const aiMediaModelHint = computed(() => {
   if (aiMediaModelsLoading.value) return '正在读取当前供应商模型列表...'
   if (aiMediaModelError.value) return aiMediaModelError.value
-  if (aiMediaModelOptions.value.length) return '模型来自当前 AI 供应商，也可以手动输入上游模型名。'
-  return '尚未读取到模型列表，可以手动输入供应商支持的模型名。'
+  if (aiMediaModelOptions.value.length) return '模型来自当前 AI 供应商。'
+  return '尚未读取到模型列表。'
 })
-
-const resolveCurrentAiProvider = async () => {
-  const response = await listAiProviders()
-  if (!response.success) throw new Error(response.error || 'AI 供应商配置读取失败')
-
-  const providers = Array.isArray(response.data?.providers) ? response.data.providers : []
-  const explicitId = workspaceAiStore.hasExplicitSelection ? String(workspaceAiStore.normalizedSelectedProviderId) : ''
-  const selected = explicitId
-    ? providers.find((provider) => String(provider.id) === explicitId && provider.status === 'active')
-    : null
-  const provider = selected || response.data?.defaultProvider || providers.find((item) => item.is_default && item.status === 'active') || null
-
-  if (provider?.id && !explicitId) workspaceAiStore.setSelectedProviderId(provider.id)
-  return provider
-}
 
 const ensureAiMediaModelsLoaded = async ({ force = false } = {}) => {
   if (aiMediaModelsLoading.value) return
   if (!force && aiMediaModelOptions.value.length) return
 
+  const cachedOptions = Array.isArray(workspaceAiStore.modelOptions) ? workspaceAiStore.modelOptions : []
+  if (!force && cachedOptions.length) {
+    applyAiModelOptions(cachedOptions)
+    return
+  }
+
   aiMediaModelsLoading.value = true
   aiMediaModelError.value = ''
 
   try {
-    const provider = await resolveCurrentAiProvider()
-    if (!provider) {
-      aiMediaModelError.value = '尚未配置 AI 供应商，请先到“我的 / AI 供应商配置”中添加。'
-      return
-    }
-
-    if (provider.provider !== 'agnes') {
-      aiMediaModelError.value = '当前供应商不是 Agnes 媒体供应商，生图和生视频暂不可用。'
-      return
-    }
-
-    const response = await listAiProviderModels({ id: provider.id })
-    if (!response.success) throw new Error(response.error || '模型列表获取失败')
-
-    const options = (Array.isArray(response.data?.models) ? response.data.models : [])
-      .map(normalizeAiModelOption)
-      .filter(Boolean)
-
-    aiMediaModelOptions.value = options
-    const firstImageModel = options.find((item) => /image|img|draw|agnes/i.test(item.value)) || options[0]
-    const firstVideoModel = options.find((item) => /video|wan|kling|runway|sora|agnes/i.test(item.value)) || options[0]
-    if (!aiImageModel.value && firstImageModel?.value) aiImageModel.value = firstImageModel.value
-    if (!aiVideoModel.value && firstVideoModel?.value) aiVideoModel.value = firstVideoModel.value
-    if (!options.length) aiMediaModelError.value = '上游未返回模型列表，请手动输入供应商支持的模型名。'
+    const loadedOptions = typeof workspaceAiStore.loadModelOptions === 'function'
+      ? await workspaceAiStore.loadModelOptions({ force })
+      : await loadAiModelsFallback()
+    applyAiModelOptions(loadedOptions)
   } catch (err) {
-    aiMediaModelError.value = err.message || '模型列表获取失败，请手动输入模型名。'
+    aiMediaModelError.value = err.message || '模型列表获取失败。'
   } finally {
     aiMediaModelsLoading.value = false
   }
@@ -2120,7 +986,7 @@ const readFileAsDataUrl = (file) => new Promise((resolve, reject) => {
 
 const normalizeMediaLabel = (fileName = '') => fileName || `素材-${Date.now()}`
 const isPublicHttpUrl = (value = '') => /^https?:\/\//i.test(String(value || '').trim())
-const isAgnesReachableHttpUrl = (value = '') => {
+const isProviderReachableHttpUrl = (value = '') => {
   const trimmed = String(value || '').trim()
   if (!isPublicHttpUrl(trimmed)) return false
 
@@ -2194,20 +1060,13 @@ const insertGeneratedVideoBlock = async (video) => {
   showSuccess('视频已插入当前计划')
 }
 
-const currentInlineAiAction = computed(() => inlineAiActions.find((item) => item.key === inlineAi.value.action) || inlineAiActions[0])
-
-const inlineAiPromptPlaceholder = computed(() => ({
-  continue: '补充你想继续写的方向，例如“围绕执行步骤展开，并控制在 100 字内”。',
-  rewrite: '补充你想改写的风格，例如“更简洁，更像 Notion 文档语气”。',
-  summarize: '补充你想总结的形式，例如“提炼成 3 条重点”。',
-  todo: '补充你想拆解的目标，例如“整理成可直接执行的待办清单”。',
-  outline: '补充你想要的大纲结构，例如“按目标、步骤、风险来组织”。'
-}[inlineAi.value.action] || '补充要求'))
-
-const inlineAiContextPreview = computed(() => {
-  const source = inlineAi.value.hasSelection ? inlineAi.value.selectedText : inlineAi.value.sourceText
-  return buildInlineAiPreviewText(source)
-})
+const scrollToBlock = async (blockId) => {
+  await nextTick()
+  const row = document.querySelector(`.plan-row[data-block-id="${String(blockId)}"]`)
+  if (!row) return
+  row.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  activeBlockId.value = blockId
+}
 
 const getBlockEditor = (blockId, context = {}) => {
   const row = document.querySelector(`.plan-row[data-block-id="${String(blockId)}"]`)
@@ -2310,24 +1169,6 @@ const closeInlineFormatToolbar = () => {
       highlight: false,
       link: false
     }
-  }
-}
-
-const closeInlineAi = () => {
-  inlineAi.value = {
-    show: false,
-    blockId: null,
-    fieldKey: '',
-    itemIndex: null,
-    action: 'continue',
-    prompt: '',
-    loading: false,
-    result: null,
-    rangeStart: 0,
-    rangeEnd: 0,
-    hasSelection: false,
-    selectedText: '',
-    sourceText: ''
   }
 }
 
@@ -2436,7 +1277,7 @@ const buildInlineFormatContextFromElement = (element, options = {}) => {
 }
 
 const refreshInlineAiToolbar = () => {
-  if (inlineAi.value.show) {
+  if (aiComposer.value.show) {
     closeInlineAiToolbar()
     return
   }
@@ -2457,7 +1298,7 @@ const refreshInlineAiToolbar = () => {
 }
 
 const refreshInlineFormatToolbar = () => {
-  if (inlineAi.value.show) {
+  if (aiComposer.value.show) {
     closeInlineFormatToolbar()
     return
   }
@@ -2483,71 +1324,6 @@ const handleBlockFocus = (blockId) => {
     refreshInlineAiToolbar()
     refreshInlineFormatToolbar()
   }, 0)
-}
-
-const openInlineAi = (context, action = 'continue') => {
-  if (!context?.blockId) {
-    showInfo('未定位到可编辑块', { description: '请先选中或聚焦一个文本块，再打开 AI。' })
-    return
-  }
-
-  closeCommandMenu()
-  closeRowMenu()
-  closeAiPanel()
-  closeInlineAiToolbar()
-  closeInlineFormatToolbar()
-  activeBlockId.value = context.blockId
-
-  inlineAi.value = {
-    show: true,
-    blockId: context.blockId,
-    fieldKey: context.fieldKey || '',
-    itemIndex: Number.isInteger(context.itemIndex) ? context.itemIndex : null,
-    action,
-    prompt: '',
-    loading: false,
-    result: null,
-    rangeStart: context.rangeStart || 0,
-    rangeEnd: context.rangeEnd || 0,
-    hasSelection: !!context.hasSelection,
-    selectedText: context.selectedText || '',
-    sourceText: context.sourceText || ''
-  }
-}
-
-const openInlineAiFromBlock = async (block) => {
-  if (!supportsInlineAi(block)) {
-    showInfo('当前内容不支持块内 AI', { description: '目前支持文本、标题、待办、引用、标注和代码块。' })
-    return
-  }
-
-  activeBlockId.value = block.id
-  await focusBlockById(block.id)
-  const editor = getBlockEditor(block.id)
-  const context = buildInlineAiContextFromElement(editor, { allowCollapsed: true }) || {
-    blockId: block.id,
-    fieldKey: inlineAi.value.fieldKey || inlineAiFieldMap[block.type] || 'text',
-    itemIndex: Number.isInteger(inlineAi.value.itemIndex) ? inlineAi.value.itemIndex : null,
-    sourceText: getInlineAiEditableText(block, inlineAi.value),
-    selectedText: '',
-    hasSelection: false,
-    rangeStart: getInlineAiEditableText(block, inlineAi.value).length,
-    rangeEnd: getInlineAiEditableText(block, inlineAi.value).length
-  }
-  openInlineAi(context, inlineAi.value.show && inlineAi.value.blockId === block.id ? inlineAi.value.action : 'continue')
-}
-
-const openInlineAiFromActiveBlock = async () => {
-  const block = activeBlock.value || blocks.value.find((item) => supportsInlineAi(item))
-  if (!block) {
-    showInfo('还没有可用的文本块', { description: '先新建一个文本块，再打开 AI 快捷操作。' })
-    return
-  }
-  await openInlineAiFromBlock(block)
-}
-
-const triggerInlineAiQuickAction = (action) => {
-  openInlineAi({ ...inlineAiToolbar.value }, action)
 }
 
 const applyWrappedTextFormat = async (leftToken, rightToken = leftToken) => {
@@ -2641,40 +1417,18 @@ const applyInlineFormat = async (action) => {
       await applyLinkTextFormat()
       return
     case 'ai':
-      openInlineAi({ ...inlineFormatToolbar.value }, inlineAi.value.show ? inlineAi.value.action : 'continue')
+      openAiComposer({ ...inlineFormatToolbar.value })
       return
     default:
   }
 }
 
-const switchInlineAiAction = (action) => {
-  inlineAi.value.action = action
-  inlineAi.value.result = null
-}
-
-const buildInlineAiInstruction = (action, prompt, contextText) => {
-  const suffix = prompt ? `\n补充要求：${prompt}` : ''
-  switch (action) {
-    case 'continue':
-      return `请基于当前内容继续往下写，保持原有语气和结构，不要重复已经出现的内容，只输出可以直接插入编辑器的正文。${suffix}`.trim()
-    case 'rewrite':
-      return `请在不改变原意的前提下改写这段内容，让表达更清晰、更自然，并适合放进 Notion 风格的计划文档。${suffix}`.trim()
-    case 'summarize':
-      return `请总结下面的内容，输出可以直接放进文档的简洁总结。${suffix}`.trim()
-    case 'todo':
-      return `请把下面的内容拆成可执行的待办清单，每行一条，不要解释，只输出待办项。${suffix}`.trim()
-    default:
-      return `请处理下面的内容。${suffix}`.trim()
-  }
-}
-
-const summarizeBlocksForAi = (limit = 80) => {
+const summarizeBlocksForAi = (limit = 24) => {
   return blocks.value.slice(0, limit).map((block, index) => ({
     id: block.id,
     type: block.type,
     order: block.order || index + 1,
-    summary: getBlockTextContent(block),
-    content: block.content || createBlockContent(block.type)
+    summary: getBlockTextContent(block).slice(0, 240)
   }))
 }
 
@@ -2682,6 +1436,13 @@ const activeBlock = computed(() => {
   if (!blocks.value.length) return null
   return blocks.value.find((block) => block.id === activeBlockId.value) || blocks.value[0] || null
 })
+
+const scheduleStatusLabel = (status) => ({
+  scheduled: '待开始',
+  in_progress: '进行中',
+  completed: '已完成',
+  skipped: '已跳过'
+}[status] || '待开始')
 
 const selectedBlockCount = computed(() => selectedBlockIds.value.size)
 const scheduledPlanBlockIds = computed(() => new Set(
@@ -2720,23 +1481,28 @@ const unscheduledEmptyText = computed(() => {
   return '当前计划块都已经安排好了。你可以回到编辑器继续拆解下一步，或到今日工作台查看执行项。'
 })
 
-const activePolishHint = computed(() => {
-  if (!activeBlock.value) {
-    return '当前没有可润色的块，请先在编辑区选中一个文本块。'
-  }
-
-  const preview = getBlockTextContent(activeBlock.value)
-  if (!preview) {
-    return `当前块类型为 ${activeBlock.value.type}，内容为空，先写一点再开始润色。`
-  }
-
-  return `正在润色当前块：${preview.slice(0, 100)}${preview.length > 100 ? '...' : ''}`
+const aiWorkspaceState = reactive({
+  aiPanel,
+  aiChatMessages, aiChatDraft, aiChatLoading, aiSelectedModel, aiModelOptions,
+  aiConversations, aiConversationId, aiConversationLoading, aiConversationSaving,
+  aiConversationContextExpanded,
+  aiMediaModelsLoading, aiMediaModelError,
+  aiImageMode, aiImageModel, aiImageModelOptions, aiMediaModelHint, aiImageSize, aiImageSizeOptions,
+  aiImageRatio, aiImageRatioOptions, aiImagePrompt, aiImageNegativePrompt, aiImageSources,
+  aiImageLoading, aiImageResult, aiImageHistoryLoading, aiImageHistory, aiImageDeletingTaskId,
+  aiVideoMode, aiVideoModel, aiVideoModelOptions, aiVideoPrompt, aiVideoNegativePrompt, aiVideoWidth,
+  aiVideoHeight, aiVideoResolutionOptions, aiVideoFrames, aiVideoFrameRate, aiVideoSourceUrl,
+  aiVideoSources, aiVideoSourceUploading, aiVideoSourceUploadProgress, aiVideoLoading, aiVideoResult,
+  aiVideoHistoryLoading, aiVideoHistory, aiVideoDeletingTaskId
 })
 
-const previewBlockContent = (block) => {
-  if (!block) return ''
-  return getBlockTextContent(block) || JSON.stringify(block.content || {})
-}
+const aiConversationContext = computed(() => ({
+  planTitle: title.value.trim() || '未命名计划',
+  blockCount: blocks.value.length,
+  model: aiSelectedModel.value || '未选择模型',
+  blocks: summarizeBlocksForAi(8)
+}))
+aiWorkspaceState.aiConversationContext = aiConversationContext
 
 const buildTableContentFromText = (text = '') => {
   const lines = text.split('\n').map((line) => line.trim()).filter(Boolean)
@@ -2977,6 +1743,7 @@ const setSelectedBlockRange = (anchorIndex, currentIndex, mode = 'replace') => {
 
 const beginBlockSelection = (event, index) => {
   if (event.button !== 0) return
+  event.preventDefault()
   closeRowMenu()
   closeCommandMenu()
   closeInlineAiToolbar()
@@ -2991,6 +1758,31 @@ const extendBlockSelection = (index) => {
   setSelectedBlockRange(blockSelection.value.anchorIndex, index, blockSelection.value.mode)
 }
 
+const handleBlockRowClick = (event, index, block) => {
+  if (!event.shiftKey && !event.ctrlKey && !event.metaKey) return
+  if (event.target?.closest?.('select, option, button')) return
+
+  event.preventDefault()
+
+  if (event.ctrlKey || event.metaKey) {
+    activeBlockId.value = block?.id || null
+    const nextSelected = new Set(selectedBlockIds.value)
+    if (nextSelected.has(block.id)) nextSelected.delete(block.id)
+    else nextSelected.add(block.id)
+    selectedBlockIds.value = nextSelected
+    blockSelection.value = { active: false, anchorIndex: index, lastIndex: index, mode: 'add' }
+    return
+  }
+
+  const previousActiveId = activeBlockId.value
+  const selectedAnchor = blocks.value.findIndex((item) => selectedBlockIds.value.has(item.id))
+  const activeAnchor = blocks.value.findIndex((item) => item.id === previousActiveId)
+  const anchorIndex = selectedAnchor >= 0 ? selectedAnchor : (activeAnchor >= 0 ? activeAnchor : index)
+  activeBlockId.value = block?.id || null
+  setSelectedBlockRange(anchorIndex, index, 'replace')
+  finishBlockSelection()
+}
+
 const isEditableElement = (target) => !!target?.closest?.('textarea, input, [contenteditable="true"], select')
 
 const deleteSelectedBlocks = async () => {
@@ -3000,7 +1792,7 @@ const deleteSelectedBlocks = async () => {
   clearSelectedBlocks()
   closeRowMenu()
   closeCommandMenu()
-  closeInlineAi()
+  closeAiComposer()
   closeInlineAiToolbar()
 
   const remainingBlocks = blocks.value.filter((block) => !idsToDelete.has(block.id))
@@ -3020,7 +1812,7 @@ const deleteSelectedBlocks = async () => {
   }
 
   const persistedBlocks = deletingBlocks.filter((block) => !String(block.id).startsWith('temp-'))
-  const results = await Promise.allSettled(persistedBlocks.map((block) => planStore.deleteBlock(block.id, planId.value)))
+  const results = await Promise.allSettled(persistedBlocks.map((block) => deletePersistedBlock(block)))
   if (results.some((item) => item.status === 'rejected' || !item.value?.success)) {
     saveStatus.value = 'error'
     await loadPlan()
@@ -3032,6 +1824,9 @@ const deleteSelectedBlocks = async () => {
 }
 
 const clearBlockSaveTimer = (block) => {
+  if (block?.id !== undefined && block?.id !== null) {
+    editorPersistence.clear(String(block.id))
+  }
   if (block?.__saveTimer) {
     window.clearTimeout(block.__saveTimer)
     block.__saveTimer = null
@@ -3040,6 +1835,7 @@ const clearBlockSaveTimer = (block) => {
 
 const clearAllBlockSaveTimers = () => {
   blocks.value.forEach((block) => clearBlockSaveTimer(block))
+  editorPersistence.clearAll()
 }
 
 const markDirty = () => {
@@ -3048,31 +1844,435 @@ const markDirty = () => {
 
 const buildPlanAiPayload = (scope = 'text') => ({
   providerId: workspaceAiStore.hasExplicitSelection ? workspaceAiStore.normalizedSelectedProviderId : null,
+  model: aiSelectedModel.value || null,
   title: title.value.trim() || '无标题',
   status: status.value,
   priority: priority.value,
   planType: planType.value,
   dueDate: dueDate.value || '',
-  blocks: summarizeBlocksForAi(),
-  promptTemplate: getResolvedAiTemplate(scope) || null
+  blocks: summarizeBlocksForAi()
 })
 
-const openAiPanel = (tab = 'outline') => {
+const openAiPanel = (tab = 'chat') => {
   closeCommandMenu()
   closeRowMenu()
   aiPanel.value = { show: true, tab }
+  ensureAiMediaModelsLoaded()
+  if (tab === 'chat') {
+    void loadAiConversations()
+  }
   if (tab === 'image') {
-    ensureAiMediaModelsLoaded()
     loadAiImageHistory({ restoreActive: true })
   }
   if (tab === 'video') {
-    ensureAiMediaModelsLoaded()
     loadAiVideoHistory({ restoreActive: true })
   }
 }
 
+const openAiWorkspace = () => {
+  closeAiComposer()
+  openAiPanel('chat')
+}
+
 const closeAiPanel = () => {
   aiPanel.value.show = false
+}
+
+const setChatPrompt = (prompt) => {
+  aiChatDraft.value = String(prompt || '')
+}
+
+const buildAiConversationContext = () => ({
+  planId: Number(planId.value) || null,
+  planTitle: title.value.trim(),
+  blockCount: blocks.value.length,
+  blocks: summarizeBlocksForAi(16).map((block) => ({
+    type: block.type,
+    text: block.summary
+  })),
+  model: aiSelectedModel.value || null,
+  capturedAt: new Date().toISOString()
+})
+
+const upsertAiConversationSummary = (conversation) => {
+  if (!conversation?.id) return
+  const normalized = {
+    ...conversation,
+    id: String(conversation.id)
+  }
+  aiConversations.value = [
+    normalized,
+    ...aiConversations.value.filter((item) => String(item.id) !== normalized.id)
+  ]
+}
+
+const loadAiConversations = async () => {
+  if (!planId.value || aiConversationLoading.value) return
+  aiConversationLoading.value = true
+  try {
+    const response = await listAiConversations({ planId: planId.value })
+    if (!response?.success) {
+      showInfo('对话历史暂时无法加载', { description: response?.error || '当前仍可以开始临时对话。' })
+      return
+    }
+
+    const conversations = Array.isArray(response.data?.conversations)
+      ? response.data.conversations
+      : []
+    aiConversations.value = conversations
+
+    const currentId = aiConversationId.value
+    const targetId = conversations.some((item) => String(item.id) === String(currentId))
+      ? currentId
+      : conversations[0]?.id
+
+    if (targetId) {
+      await selectAiConversation(targetId)
+    } else {
+      await startNewAiConversation()
+    }
+  } finally {
+    aiConversationLoading.value = false
+  }
+}
+
+const selectAiConversation = async (conversationId) => {
+  const id = String(conversationId || '').trim()
+  if (!id) return
+  aiConversationLoading.value = true
+  try {
+    const response = await getAiConversation(id)
+    if (!response?.success || !response.data?.conversation) {
+      showError('打开对话失败', { description: response?.error || '这条对话可能已经被删除。' })
+      aiConversations.value = aiConversations.value.filter((item) => String(item.id) !== id)
+      return
+    }
+
+    const conversation = response.data.conversation
+    aiConversationId.value = String(conversation.id)
+    aiChatMessages.value = Array.isArray(conversation.messages)
+      ? conversation.messages.map((message) => ({ ...message }))
+      : []
+    upsertAiConversationSummary(conversation)
+    aiConversationContextExpanded.value = false
+  } finally {
+    aiConversationLoading.value = false
+  }
+}
+
+const startNewAiConversation = async () => {
+  aiChatMessages.value = []
+  aiChatDraft.value = ''
+  aiConversationId.value = ''
+  aiConversationContextExpanded.value = false
+
+  if (!planId.value || aiConversationSaving.value) return
+
+  aiConversationSaving.value = true
+  try {
+    const response = await createAiConversation({
+      planId: planId.value,
+      title: '新对话',
+      context: buildAiConversationContext(),
+      providerId: workspaceAiStore.hasExplicitSelection ? workspaceAiStore.normalizedSelectedProviderId : null,
+      model: aiSelectedModel.value || null
+    })
+    if (!response?.success || !response.data?.conversation) {
+      showInfo('新对话暂未保存', { description: response?.error || '发送第一条消息时仍会尝试保存。' })
+      return
+    }
+
+    const conversation = response.data.conversation
+    aiConversationId.value = String(conversation.id)
+    upsertAiConversationSummary(conversation)
+  } finally {
+    aiConversationSaving.value = false
+  }
+}
+
+const saveAiConversation = async () => {
+  if (!aiConversationId.value || aiConversationSaving.value) return
+  aiConversationSaving.value = true
+  try {
+    const response = await updateAiConversation(aiConversationId.value, {
+      title: aiChatMessages.value.find((message) => message.role === 'user')?.content?.slice(0, 40) || '新对话',
+      messages: aiChatMessages.value,
+      context: buildAiConversationContext(),
+      providerId: workspaceAiStore.hasExplicitSelection ? workspaceAiStore.normalizedSelectedProviderId : null,
+      model: aiSelectedModel.value || null
+    })
+    if (response?.success && response.data?.conversation) {
+      upsertAiConversationSummary(response.data.conversation)
+    }
+  } finally {
+    aiConversationSaving.value = false
+  }
+}
+
+const deleteCurrentAiConversation = async () => {
+  const id = String(aiConversationId.value || '')
+  if (!id || !window.confirm('确认删除这条 AI 对话吗？')) return
+
+  const response = await deleteAiConversationRequest(id)
+  if (!response?.success) {
+    showError('删除对话失败', { description: response?.error || '请稍后重试。' })
+    return
+  }
+
+  aiConversations.value = aiConversations.value.filter((item) => String(item.id) !== id)
+  aiConversationId.value = ''
+  aiChatMessages.value = []
+  const nextConversation = aiConversations.value[0]
+  if (nextConversation) await selectAiConversation(nextConversation.id)
+  else await startNewAiConversation()
+}
+
+const resetAiWorkspaceChat = () => {
+  void startNewAiConversation()
+}
+
+const runAiWorkspaceChat = async () => {
+  const question = aiChatDraft.value.trim()
+  if (!question || aiChatLoading.value) return
+
+  if (!aiConversationId.value) {
+    await startNewAiConversation()
+  }
+
+  aiChatDraft.value = ''
+  aiChatMessages.value.push({
+    id: `user-${Date.now()}`,
+    role: 'user',
+    content: question,
+    createdAt: new Date().toISOString(),
+    model: aiSelectedModel.value || null,
+    source: 'user'
+  })
+  aiChatLoading.value = true
+
+  try {
+    const response = await chatWithMascotAssistant({
+      message: question,
+      conversationId: Number(aiConversationId.value) || null,
+      providerId: workspaceAiStore.hasExplicitSelection ? workspaceAiStore.normalizedSelectedProviderId : null,
+      model: aiSelectedModel.value || null,
+      context: {
+        planId: Number(planId.value) || null,
+        planTitle: title.value.trim(),
+        blocks: summarizeBlocksForAi(16).map((block) => ({
+          type: block.type,
+          text: block.summary
+        }))
+      }
+    })
+
+    if (!response?.success) {
+      aiChatMessages.value.push({
+        id: `assistant-error-${Date.now()}`,
+        role: 'assistant',
+        content: response?.code === 'AI_NOT_CONFIGURED'
+          ? '尚未配置 AI 能力，请先到“我的 / AI 供应商配置”中完成配置。'
+          : getAiFailureDescription(response)
+      })
+      return
+    }
+
+    const payload = response.data || {}
+      aiChatMessages.value.push({
+        id: `assistant-${Date.now()}`,
+        role: 'assistant',
+        content: payload.reply || payload.answer || 'AI 暂时没有返回可用内容。',
+        createdAt: new Date().toISOString(),
+        model: payload.model || aiSelectedModel.value || null,
+        source: payload.source || 'provider'
+      })
+      await saveAiConversation()
+    } catch (error) {
+      aiChatMessages.value.push({
+        id: `assistant-error-${Date.now()}`,
+        role: 'assistant',
+        content: error.message || 'AI 工作区暂时无法连接。',
+        createdAt: new Date().toISOString(),
+        source: 'error'
+      })
+  } finally {
+    aiChatLoading.value = false
+  }
+}
+
+const loadAiSkills = async () => {
+  const response = await listAiSkills()
+  if (!response?.success) {
+    showInfo('AI 技能暂时无法加载', { description: response?.error || '你仍然可以使用默认提示。' })
+    return
+  }
+  aiSkills.value = Array.isArray(response.data?.skills) ? response.data.skills : []
+}
+
+const closeAiComposer = () => {
+  aiComposer.value = {
+    show: false,
+    context: null,
+    loading: false,
+    result: null
+  }
+}
+
+const openAiComposer = (context = {}) => {
+  if (!context?.blockId) {
+    showInfo('未定位到可编辑块', { description: '请先聚焦一个文本块，再打开 AI。' })
+    return
+  }
+
+  const block = getBlockById(context.blockId)
+  if (!block || !supportsInlineAi(block)) {
+    showInfo('当前内容不支持文本 AI', { description: '请先选择文本、标题、待办、引用或标注块。' })
+    return
+  }
+
+  closeCommandMenu()
+  void ensureAiMediaModelsLoaded()
+  closeRowMenu()
+  closeInlineAiToolbar()
+  closeInlineFormatToolbar()
+  closeAiPanel()
+  activeBlockId.value = block.id
+  aiComposer.value = {
+    show: true,
+    context: {
+      ...context,
+      blockId: block.id,
+      fieldKey: context.fieldKey || inlineAiFieldMap[block.type] || 'text',
+      sourceText: context.sourceText || getInlineAiEditableText(block, context),
+      selectedText: context.selectedText || '',
+      rangeStart: Number(context.rangeStart || 0),
+      rangeEnd: Number(context.rangeEnd || 0),
+      hasSelection: Boolean(context.hasSelection)
+    },
+    loading: false,
+    result: null
+  }
+}
+
+const openAiComposerFromBlock = async (block) => {
+  if (!block || !supportsInlineAi(block)) {
+    showInfo('当前内容不支持文本 AI', { description: '请先选择文本、标题、待办、引用或标注块。' })
+    return
+  }
+
+  activeBlockId.value = block.id
+  await focusBlockById(block.id)
+  const editor = getBlockEditor(block.id)
+  const context = buildInlineAiContextFromElement(editor, { allowCollapsed: true }) || {
+    blockId: block.id,
+    fieldKey: inlineAiFieldMap[block.type] || 'text',
+    sourceText: getInlineAiEditableText(block),
+    selectedText: '',
+    hasSelection: false,
+    rangeStart: getInlineAiEditableText(block).length,
+    rangeEnd: getInlineAiEditableText(block).length
+  }
+  openAiComposer(context)
+}
+
+const openAiComposerFromActiveBlock = async () => {
+  const block = activeBlock.value || blocks.value.find((item) => supportsInlineAi(item))
+  if (!block) {
+    showInfo('还没有可用的文本块', { description: '先新建一个文本块，再打开 AI。' })
+    return
+  }
+  await openAiComposerFromBlock(block)
+}
+
+const runAiComposer = async ({ prompt = '', intent = 'custom', outputMode = 'text', skillIds = [] } = {}) => {
+  const context = aiComposer.value.context
+  if (!context?.blockId) return
+  const block = getBlockById(context.blockId)
+  if (!block) return
+
+  aiComposer.value.loading = true
+  aiComposer.value.result = null
+  const sourceText = getInlineAiEditableText(block, context)
+
+  try {
+    const response = await runWorkspaceAi({
+      ...buildPlanAiPayload('text'),
+      prompt,
+      intent,
+      outputMode,
+      skillIds,
+      context: {
+        scope: context.hasSelection ? 'selection' : 'block',
+        planId: Number(planId.value) || null,
+        // 新编辑器块属于 WorkspaceBlock，不传给旧 PlanBlock 归属校验。
+        blockId: null,
+        blockType: block.type,
+        selectedText: context.hasSelection ? context.selectedText : '',
+        blockText: sourceText,
+        planTitle: title.value,
+        blocks: summarizeBlocksForAi()
+      }
+    })
+
+    if (!response?.success) {
+      showError('AI 生成失败', { description: getAiFailureDescription(response) })
+      return
+    }
+
+    aiComposer.value.result = response.data || null
+  } finally {
+    aiComposer.value.loading = false
+  }
+}
+
+const applyAiComposerText = async (mode = 'replace-selection') => {
+  const context = aiComposer.value.context
+  const resultText = String(aiComposer.value.result?.text || '').trim()
+  const block = getBlockById(context?.blockId)
+  if (!context || !block || !resultText) return
+
+  const currentText = getInlineAiEditableText(block, context)
+  const selectionStart = Number(context.rangeStart || 0)
+  const selectionEnd = Number(context.rangeEnd || selectionStart)
+  let nextText = currentText
+  let focusStart = 0
+  let focusEnd = 0
+
+  if (mode === 'insert-cursor') {
+    const cursor = context.hasSelection ? selectionEnd : selectionStart
+    const joiner = currentText && cursor > 0 && !/\s$/.test(currentText.slice(0, cursor)) ? '\n' : ''
+    nextText = currentText.slice(0, cursor) + joiner + resultText + currentText.slice(cursor)
+    focusStart = cursor + joiner.length
+    focusEnd = focusStart + resultText.length
+  } else if (mode === 'append-end') {
+    const joiner = currentText && !/\s$/.test(currentText) ? '\n' : ''
+    nextText = currentText + joiner + resultText
+    focusStart = currentText.length + joiner.length
+    focusEnd = focusStart + resultText.length
+  } else {
+    const start = context.hasSelection ? selectionStart : 0
+    const end = context.hasSelection ? selectionEnd : currentText.length
+    nextText = currentText.slice(0, start) + resultText + currentText.slice(end)
+    focusStart = start
+    focusEnd = start + resultText.length
+  }
+
+  const applied = await setInlineAiEditableText(block, nextText, focusStart, focusEnd, context)
+  if (!applied) return
+  showSuccess('AI 结果已写回')
+  closeAiComposer()
+}
+
+const applyAiComposerBlocks = async () => {
+  const context = aiComposer.value.context
+  const block = getBlockById(context?.blockId)
+  const result = aiComposer.value.result
+  const index = getBlockIndexById(block?.id)
+  if (index < 0 || !Array.isArray(result?.blocks) || !result.blocks.length) return
+
+  await insertBlocksAfter(index, result.blocks)
+  showSuccess('AI 结果已插入为新块')
+  closeAiComposer()
 }
 
 
@@ -3129,84 +2329,6 @@ const applyTextToBlock = (block, text) => {
 
   updateBlockContent(block, nextContent)
   return true
-}
-
-const runAiPolish = async () => {
-  const block = activeBlock.value
-  if (!block) {
-    showInfo('没有可润色的块', { description: '请先在编辑区选中一个可编辑块。' })
-    return
-  }
-
-  if (!supportsInlineAi(block)) {
-    showInfo('当前内容不支持润色', { description: '目前支持文本、标题、待办、引用、标注以及部分可编辑块。' })
-    return
-  }
-
-  if (isAiCoolingDown('polish')) {
-    showInfo('AI 请求过于频繁', { description: '请在 ' + getAiCooldownRemaining('polish') + ' 秒后再试。' })
-    return
-  }
-
-  const sourceElement = document.activeElement?.closest?.('.plan-row')?.dataset?.blockId === String(block.id)
-    ? document.activeElement
-    : null
-  const context = sourceElement
-    ? buildInlineAiContextFromElement(sourceElement, { allowCollapsed: true })
-    : null
-  const activeContext = context || {
-    blockId: block.id,
-    fieldKey: inlineAiFieldMap[block.type] || 'text',
-    itemIndex: null,
-    sourceText: getInlineAiEditableText(block)
-  }
-  const text = getInlineAiEditableText(block, activeContext)
-
-  if (!text.trim()) {
-    showInfo('当前块内容为空', { description: '先写一点内容，再进行 AI 润色。' })
-    return
-  }
-
-  aiPolishTarget.value = {
-    blockId: block.id,
-    fieldKey: activeContext.fieldKey || inlineAiFieldMap[block.type] || 'text',
-    itemIndex: Number.isInteger(activeContext.itemIndex) ? activeContext.itemIndex : null
-  }
-
-  aiPolishLoading.value = true
-  try {
-    const res = await polishPlanBlockAI({
-      ...buildPlanAiPayload(),
-      blockType: block.type,
-      instruction: aiPolishInstruction.value.trim(),
-      text
-    })
-
-    if (!res.success) {
-      maybeStartAiCooldown('polish', res, 12)
-      showError('AI 润色失败', { description: getAiFailureDescription(res) })
-      return
-    }
-
-    aiPolishResult.value = res.data || null
-  } finally {
-    aiPolishLoading.value = false
-  }
-}
-
-const applyAiPolish = () => {
-  if (!aiPolishResult.value?.text) return
-  const block = getBlockById(aiPolishTarget.value?.blockId) || activeBlock.value
-  if (!block) return
-
-  const applied = applyTextToBlock(block, aiPolishResult.value.text)
-  if (!applied) {
-    showInfo('当前块不支持直接写回', { description: '列表、表格和媒体块请先切换为可编辑文本字段再使用。' })
-    return
-  }
-
-  showSuccess('已写回当前块')
-  closeAiPanel()
 }
 
 const getAiFailureDescription = (res) => {
@@ -3303,7 +2425,7 @@ const setAiVideoResolution = (value) => {
   }
 }
 
-const getAvailableAiVideoSources = () => aiVideoSources.value.filter((item) => isAgnesReachableHttpUrl(item.remoteUrl))
+const getAvailableAiVideoSources = () => aiVideoSources.value.filter((item) => isProviderReachableHttpUrl(item.remoteUrl))
 
 const handleAiImageFiles = async (event) => {
   const files = Array.from(event?.target?.files || [])
@@ -3359,24 +2481,24 @@ const handleAiVideoUploadFiles = async (event) => {
       const publicUrl = String(res.data?.publicUrl || '').trim()
       const absoluteUrl = String(res.data?.absoluteUrl || resolveMediaUrl(res.data?.url || '')).trim()
       const previewUrl = absoluteUrl || publicUrl
-      const canUseForAgnes = isAgnesReachableHttpUrl(publicUrl)
+      const canUseForProvider = isProviderReachableHttpUrl(publicUrl)
 
       const nextSource = createRemoteMediaSource(
-        canUseForAgnes ? publicUrl : '',
+        canUseForProvider ? publicUrl : '',
         file.name,
         {
           previewUrl,
           absoluteUrl,
-          isPublic: canUseForAgnes
+          isPublic: canUseForProvider
         }
       )
 
       aiVideoSources.value = [...aiVideoSources.value, nextSource].slice(0, 6)
       aiVideoResult.value = null
 
-      if (!canUseForAgnes) {
+      if (!canUseForProvider) {
         showInfo('图片已上传，但当前返回的不是公网 URL', {
-          description: '如果要继续用于 Agnes 图生视频，请配置后端的 PUBLIC_MEDIA_BASE_URL，或直接手动填入公网图片地址。'
+          description: '如果当前供应商要求公网图片，请配置后端的 PUBLIC_MEDIA_BASE_URL，或直接手动填入公网图片地址。'
         })
       }
     }
@@ -3393,7 +2515,7 @@ const appendAiVideoSourceUrl = () => {
     showInfo('请输入参考图 URL')
     return
   }
-  if (!isAgnesReachableHttpUrl(url)) {
+  if (!isProviderReachableHttpUrl(url)) {
     showInfo('请输入公网可访问的图片 URL', { description: '例如 https://example.com/demo.png' })
     return
   }
@@ -3475,7 +2597,7 @@ const restoreAiImageTask = (task) => {
   clearAiImagePolling()
   aiImageResult.value = { ...task }
   mergeAiImageHistoryItem(task)
-  if (task.model) aiImageModel.value = task.model
+  if (task.model) aiSelectedModel.value = task.model
   if (task.mode) aiImageMode.value = task.mode
   aiImageSources.value = Array.isArray(task.sourceImages)
     ? task.sourceImages.slice(0, 6).map((item, index) => ({
@@ -3548,12 +2670,12 @@ const restoreAiVideoTask = (task) => {
   clearAiVideoPolling()
   aiVideoResult.value = { ...task }
   mergeAiVideoHistoryItem(task)
-  if (task.model) aiVideoModel.value = task.model
+  if (task.model) aiSelectedModel.value = task.model
   if (task.mode) aiVideoMode.value = task.mode
 
   const sources = Array.isArray(task.sourceImages)
     ? task.sourceImages
-      .filter((item) => isAgnesReachableHttpUrl(item))
+      .filter((item) => isProviderReachableHttpUrl(item))
       .map((item, index) => createRemoteMediaSource(item, `参考图 ${index + 1}`, { isPublic: true }))
     : []
 
@@ -3609,10 +2731,10 @@ const runAiImage = async () => {
     return
   }
 
-  if (!aiImageModel.value.trim()) {
+  if (!aiSelectedModel.value.trim()) {
     await ensureAiMediaModelsLoaded()
-    if (!aiImageModel.value.trim()) {
-      showInfo('Select or enter an image model', { description: aiMediaModelError.value || 'Model name must match your configured provider.' })
+    if (!aiSelectedModel.value.trim()) {
+      showInfo('请选择 AI 模型', { description: aiMediaModelError.value || '当前供应商未返回可用模型。' })
       return
     }
   }
@@ -3624,12 +2746,12 @@ const runAiImage = async () => {
     const res = await generatePlanImageAI({
       ...buildPlanAiPayload('image'),
       planId: planId.value,
-      model: aiImageModel.value,
+      model: aiSelectedModel.value,
       mode: aiImageMode.value,
       prompt: aiImagePrompt.value.trim(),
       negativePrompt: aiImageNegativePrompt.value.trim(),
       size: aiImageSize.value,
-      ratio: aiImageModel.value === 'agnes-image-2.1-flash' ? aiImageRatio.value : '',
+      ratio: aiImageRatio.value,
       responseFormat: 'url',
       inputImages: aiImageMode.value === 'text_to_image'
         ? []
@@ -3716,10 +2838,10 @@ const runAiVideo = async () => {
     return
   }
 
-  if (!aiVideoModel.value.trim()) {
+  if (!aiSelectedModel.value.trim()) {
     await ensureAiMediaModelsLoaded()
-    if (!aiVideoModel.value.trim()) {
-      showInfo('Select or enter a video model', { description: aiMediaModelError.value || 'Model name must match your configured provider.' })
+    if (!aiSelectedModel.value.trim()) {
+      showInfo('请选择 AI 模型', { description: aiMediaModelError.value || '当前供应商未返回可用模型。' })
       return
     }
   }
@@ -3731,7 +2853,7 @@ const runAiVideo = async () => {
     const res = await createPlanVideoAI({
       ...buildPlanAiPayload('video'),
       planId: planId.value,
-      model: aiVideoModel.value,
+      model: aiSelectedModel.value,
       mode: aiVideoMode.value,
       prompt: aiVideoPrompt.value.trim(),
       negativePrompt: aiVideoNegativePrompt.value.trim(),
@@ -3768,234 +2890,6 @@ const runAiVideo = async () => {
   }
 }
 
-const runInlineAi = async () => {
-  if (!inlineAi.value.show || !inlineAi.value.blockId) return
-
-  const block = getBlockById(inlineAi.value.blockId)
-  if (!block || !supportsInlineAi(block)) {
-    showInfo('当前内容不支持块内 AI', { description: '目前支持文本、标题、待办、引用、标注以及部分可编辑块。' })
-    return
-  }
-
-  if (isAiCoolingDown('inline')) {
-    showInfo('AI 请求过于频繁', { description: '请在 ' + getAiCooldownRemaining('inline') + ' 秒后再试。' })
-    return
-  }
-
-  const liveText = getInlineAiEditableText(block, inlineAi.value)
-  const selectedText = inlineAi.value.hasSelection
-    ? (liveText.slice(inlineAi.value.rangeStart, inlineAi.value.rangeEnd) || inlineAi.value.selectedText)
-    : ''
-  const targetText = selectedText || liveText
-
-  if (inlineAi.value.action !== 'continue' && !targetText.trim()) {
-    showInfo('当前内容为空', { description: '先写一点内容，或选中一段文本后再调用 AI。' })
-    return
-  }
-
-  inlineAi.value.loading = true
-  inlineAi.value.result = null
-
-  try {
-    if (inlineAi.value.action === 'outline') {
-      const promptParts = [
-        '请基于下面的内容，生成适合计划编辑器直接插入的结构化大纲。',
-        inlineAi.value.prompt ? ('补充要求：' + inlineAi.value.prompt) : '',
-        targetText || liveText
-      ].filter(Boolean)
-
-      const res = await generatePlanOutlineAI({
-        ...buildPlanAiPayload(),
-        prompt: promptParts.join('\n\n')
-      })
-
-      if (!res.success) {
-        maybeStartAiCooldown('inline', res, 10)
-        showError('AI 转大纲失败', { description: getAiFailureDescription(res) })
-        return
-      }
-
-      inlineAi.value.result = {
-        kind: 'outline',
-        summary: res.data?.summary || '',
-        blocks: Array.isArray(res.data?.blocks) ? res.data.blocks : [],
-        source: res.data?.source || 'local'
-      }
-      return
-    }
-
-    const baseText = inlineAi.value.action === 'continue'
-      ? (liveText.slice(0, Math.max(inlineAi.value.rangeEnd, inlineAi.value.rangeStart)) || liveText)
-      : targetText
-
-    const res = await polishPlanBlockAI({
-      ...buildPlanAiPayload(),
-      blockType: block.type,
-      instruction: buildInlineAiInstruction(inlineAi.value.action, inlineAi.value.prompt, baseText),
-      text: baseText
-    })
-
-    if (!res.success) {
-      maybeStartAiCooldown('inline', res, 10)
-      showError('AI 生成失败', { description: getAiFailureDescription(res) })
-      return
-    }
-
-    const resultText = String(res.data?.text || '').trim()
-    if (!resultText) {
-      showInfo('AI 没有返回内容', { description: '这次没有拿到可写回的文本，请稍后再试。' })
-      return
-    }
-
-    if (inlineAi.value.action === 'todo') {
-      inlineAi.value.result = {
-        kind: 'todo',
-        items: normalizeTodoItems(resultText),
-        source: res.data?.source || 'local'
-      }
-      return
-    }
-
-    inlineAi.value.result = {
-      kind: 'text',
-      text: resultText,
-      source: res.data?.source || 'local'
-    }
-  } finally {
-    inlineAi.value.loading = false
-  }
-}
-
-const applyInlineAiTextResult = async (mode = 'replace-selection') => {
-  const block = getBlockById(inlineAi.value.blockId)
-  const resultText = String(inlineAi.value.result?.text || '').trim()
-  if (!block || !resultText) return
-
-  const currentText = getInlineAiEditableText(block, inlineAi.value)
-  const selectionStart = inlineAi.value.rangeStart
-  const selectionEnd = inlineAi.value.rangeEnd
-  let nextText = currentText
-  let focusStart = 0
-  let focusEnd = 0
-
-  if (mode === 'insert-cursor') {
-    const cursor = inlineAi.value.hasSelection ? selectionEnd : selectionStart
-    const joiner = currentText && cursor > 0 && !/\s$/.test(currentText.slice(0, cursor)) ? '\n' : ''
-    nextText = currentText.slice(0, cursor) + joiner + resultText + currentText.slice(cursor)
-    focusStart = cursor + joiner.length
-    focusEnd = focusStart + resultText.length
-  } else if (mode === 'append-end') {
-    const joiner = currentText && !/\s$/.test(currentText) ? '\n' : ''
-    nextText = currentText + joiner + resultText
-    focusStart = currentText.length + joiner.length
-    focusEnd = focusStart + resultText.length
-  } else {
-    const start = inlineAi.value.hasSelection ? selectionStart : 0
-    const end = inlineAi.value.hasSelection ? selectionEnd : currentText.length
-    nextText = currentText.slice(0, start) + resultText + currentText.slice(end)
-    focusStart = start
-    focusEnd = start + resultText.length
-  }
-
-  const applied = await setInlineAiEditableText(block, nextText, focusStart, focusEnd, inlineAi.value)
-  if (!applied) return
-
-  showSuccess('AI 已写回文本')
-  closeInlineAi()
-}
-
-const applyInlineAiTodoBlocks = async () => {
-  const blockIndex = getBlockIndexById(inlineAi.value.blockId)
-  const items = inlineAi.value.result?.items || []
-  if (blockIndex === -1 || !items.length) return
-
-  await insertBlocksAfter(blockIndex, items.map((item) => ({
-    type: 'todo',
-    content: { text: item, done: false }
-  })))
-
-  showSuccess('待办已插入')
-  closeInlineAi()
-}
-
-const applyInlineAiOutlineResult = async () => {
-  const blockIndex = getBlockIndexById(inlineAi.value.blockId)
-  const payloadBlocks = inlineAi.value.result?.blocks || []
-  if (blockIndex === -1 || !payloadBlocks.length) return
-
-  await insertBlocksAfter(blockIndex, payloadBlocks)
-  showSuccess('大纲已插入')
-  closeInlineAi()
-}
-
-const generateAiQuestions = async () => {
-  if (isAiCoolingDown('questions')) {
-    showInfo('AI 请求过于频繁', { description: '请在 ' + getAiCooldownRemaining('questions') + ' 秒后再试。' })
-    return
-  }
-
-  aiQuestionsLoading.value = true
-  try {
-    const res = await generatePlanQuestionsAI(buildPlanAiPayload())
-    if (!res.success) {
-      maybeStartAiCooldown('questions', res, 12)
-      showError('AI 提问失败', { description: getAiFailureDescription(res) })
-      return
-    }
-    aiQuestionsResult.value = res.data || null
-  } finally {
-    aiQuestionsLoading.value = false
-  }
-}
-
-const generateAiOutline = async () => {
-  if (isAiCoolingDown('outline')) {
-    showInfo('AI 请求过于频繁', { description: '请在 ' + getAiCooldownRemaining('outline') + ' 秒后再试。' })
-    return
-  }
-
-  if (!aiOutlinePrompt.value.trim()) {
-    showInfo('请输入计划生成需求')
-    return
-  }
-
-  aiOutlineLoading.value = true
-  try {
-    const res = await generatePlanOutlineAI({
-      ...buildPlanAiPayload(),
-      prompt: aiOutlinePrompt.value.trim()
-    })
-
-    if (!res.success) {
-      maybeStartAiCooldown('outline', res, 12)
-      showError('AI 大纲生成失败', { description: getAiFailureDescription(res) })
-      return
-    }
-
-    aiOutlineResult.value = res.data || null
-  } finally {
-    aiOutlineLoading.value = false
-  }
-}
-
-const applyAiOutline = async () => {
-  const result = aiOutlineResult.value
-  if (!result?.blocks?.length) return
-
-  if (!title.value.trim() && result.titleSuggestion) {
-    title.value = result.titleSuggestion
-    nextTick(() => resizeTitle())
-  }
-
-  const anchorIndex = activeBlock.value
-    ? blocks.value.findIndex((block) => block.id === activeBlock.value.id)
-    : blocks.value.length - 1
-
-  await insertBlocksAfter(anchorIndex, result.blocks)
-  showSuccess('AI 大纲已插入当前计划')
-  closeAiPanel()
-}
-
 const focusBlockById = async (blockId) => {
   await nextTick()
   const row = document.querySelector(`.plan-row[data-block-id="${String(blockId)}"]`)
@@ -4020,6 +2914,57 @@ const clearActiveBlock = (blockId) => {
   }, 120)
 }
 
+const isEditorDocument = computed(() => Boolean(editorPageId.value))
+
+const updatePersistedBlock = async (block, payload) => {
+  if (!block) return { success: false, error: '块不存在' }
+
+  if (!isEditorDocument.value) {
+    return planStore.updateBlock(block.id, payload, planId.value)
+  }
+
+  const nextPayload = { ...payload }
+  if (nextPayload.order !== undefined && nextPayload.position === undefined) {
+    nextPayload.position = nextPayload.order
+    delete nextPayload.order
+  }
+  const response = await updateEditorBlock(block.id, nextPayload)
+  if (response.success && response.data) {
+    Object.assign(block, response.data, {
+      order: response.data.position || block.order
+    })
+  }
+  return response
+}
+
+const createPersistedBlock = async (type, content, index) => {
+  if (!isEditorDocument.value) {
+    return planStore.addBlock(planId.value, type, content)
+  }
+
+  return createEditorBlock(editorPageId.value, {
+    type,
+    content,
+    position: index + 1
+  })
+}
+
+const deletePersistedBlock = async (block) => {
+  if (!block) return { success: false, error: '块不存在' }
+  if (!isEditorDocument.value) {
+    return planStore.deleteBlock(block.id, planId.value)
+  }
+  return deleteEditorBlock(block.id)
+}
+
+const reorderPersistedBlocks = async () => {
+  if (!planId.value || !blocks.value.length) return { success: true }
+  if (!isEditorDocument.value) {
+    return planStore.reorder(planId.value, blocks.value.map((item) => item.id))
+  }
+  return reorderEditorBlocks(editorPageId.value, blocks.value.map((item) => item.id))
+}
+
 const syncPlan = async () => {
   if (!planId.value) return true
   if (planType.value === 'custom' && !customTypeName.value.trim()) {
@@ -4039,7 +2984,7 @@ const syncPlan = async () => {
 
 const persistCurrentOrder = async () => {
   if (!planId.value || !blocks.value.length) return true
-  const res = await planStore.reorder(planId.value, blocks.value.map((item) => item.id))
+  const res = await reorderPersistedBlocks()
   return !!res.success
 }
 
@@ -4061,8 +3006,60 @@ const loadPlanScheduleBlocks = async () => {
   scheduleBlocks.value = []
 }
 
+const loadEditorPageTree = async () => {
+  const response = await getEditorPageTree()
+  if (response.success) editorPageTree.value = Array.isArray(response.data) ? response.data : []
+}
+
+const openEditorPage = (page) => {
+  if (!page?.id) return
+  if (page.source_plan_id) {
+    router.push(`/plan/${page.source_plan_id}`)
+    return
+  }
+  router.push(`/workspace/pages/${page.id}`)
+}
+
+const createEditorChildPage = async (parentId = null) => {
+  const response = await createEditorPage({
+    parent_id: parentId || null,
+    title: '无标题页面',
+    icon: 'P'
+  })
+  if (!response.success || !response.data?.page?.id) {
+    showError('页面创建失败', { description: response.error || '请稍后重试' })
+    return
+  }
+  await loadEditorPageTree()
+  router.push(`/workspace/pages/${response.data.page.id}`)
+}
+
+const normalizePlanForEditor = (plan = {}) => ({
+  ...plan,
+  status: plan.status === 'done' ? 'completed' : (plan.status || 'not_started'),
+  priority: plan.priority || 'medium',
+  type: plan.type === 'note' ? 'goal' : (plan.type || 'project'),
+  custom_type_name: String(plan.custom_type_name || plan.customTypeName || '').trim()
+})
+
+const loadCurrentPlanRecord = async () => {
+  const id = String(planId.value || '')
+  if (!id) return null
+
+  const cached = planStore.plans.find((item) => String(item.id) === id)
+  if (cached) return normalizePlanForEditor(cached)
+
+  const response = await getPlanById(id)
+  if (!response.success || !response.data) return null
+
+  const plan = normalizePlanForEditor(response.data)
+  planStore.plans = [plan, ...planStore.plans.filter((item) => String(item.id) !== id)]
+  return plan
+}
+
 const loadPlan = async () => {
   isLoading.value = true
+  loadError.value = null
   try {
     clearAllBlockSaveTimers()
     finishBlockSelection()
@@ -4077,22 +3074,13 @@ const loadPlan = async () => {
       await planStore.loadPlans()
     }
 
-    const plan = planStore.plans.find((item) => String(item.id) === String(planId.value))
+    const plan = await loadCurrentPlanRecord()
 
     if (!plan) {
-      title.value = ''
-      status.value = 'not_started'
-      priority.value = 'medium'
-      planType.value = 'project'
-      customTypeName.value = ''
-      dueDate.value = ''
-      blocks.value = []
-      scheduleBlocks.value = []
-      showUnscheduledPanel.value = false
-      pendingBlockIds.value = new Set()
-      saveStatus.value = 'saved'
-      aiImageSources.value = []
-      aiVideoSources.value = []
+      loadError.value = {
+        title: '计划不存在',
+        message: `没有找到计划 ${planId.value || ''}，可能已被删除或当前账号无权访问。`
+      }
       return
     }
 
@@ -4103,21 +3091,51 @@ const loadPlan = async () => {
     customTypeName.value = plan.custom_type_name || ''
     dueDate.value = plan.due_date || ''
 
-    const res = await planStore.loadBlocks(planId.value)
-    blocks.value = res.success
-      ? (planStore.getBlocks(planId.value) || []).map((block, index) => ({
-          ...block,
-          order: block.order || index + 1,
-          content: block.content || createBlockContent(block.type)
-        }))
-      : []
+    const editorResponse = await editorDocument.loadForPlan(
+      planId.value,
+      route.query.editorPageId || null
+    )
+    if (editorResponse.success && editorResponse.data?.page) {
+      editorPageId.value = editorResponse.data.page.id
+      blocks.value = (editorResponse.data.blocks || []).map((block, index) => ({
+        ...block,
+        order: block.position || index + 1,
+        content: block.content || createBlockContent(block.type)
+      }))
+    } else {
+      loadError.value = {
+        title: editorResponse.code === 'EDITOR_PAGE_NOT_FOUND' ? '编辑器页面不存在' : '编辑器加载失败',
+        message: editorResponse.error || '计划已找到，但正文页面没有成功加载。请重试；如果仍失败，请检查后端是否已重启并完成数据库同步。'
+      }
+      return
+    }
 
-    await loadPlanScheduleBlocks()
+    const scheduleResponse = await listScheduleBlocks({ planId: planId.value, limit: 200 })
+    if (!scheduleResponse.success) {
+      loadError.value = {
+        title: '日程加载失败',
+        message: scheduleResponse.error || '计划正文已加载，但日程数据没有成功返回。'
+      }
+      return
+    }
+    scheduleBlocks.value = Array.isArray(scheduleResponse.data) ? scheduleResponse.data : []
     pendingBlockIds.value = new Set()
     saveStatus.value = 'saved'
-    await loadAiImageHistory({ restoreActive: true })
-    await loadAiVideoHistory({ restoreActive: true })
+    editorHistory.reset(getEditorHistorySnapshot())
+    void Promise.allSettled([
+      loadAiImageHistory({ restoreActive: true }),
+      loadAiVideoHistory({ restoreActive: true })
+    ]).then((results) => {
+      if (results.some((item) => item.status === 'rejected')) {
+        showInfo('计划已打开，AI 历史稍后再加载', { description: '这不会影响正文编辑。' })
+      }
+    })
     nextTick(() => resizeTitle())
+  } catch (error) {
+    loadError.value = {
+      title: '计划加载失败',
+      message: error?.message || '页面初始化时发生错误，请重试。'
+    }
   } finally {
     isLoading.value = false
   }
@@ -4132,7 +3150,7 @@ const savePendingBlocks = async () => {
     if (!block) return true
     clearBlockSaveTimer(block)
     const payload = block.__pendingPayload || { content: block.content }
-    const res = await planStore.updateBlock(block.id, payload, planId.value)
+    const res = await updatePersistedBlock(block, payload)
     if (!res.success) throw new Error(res.error || '保存失败')
     block.__pendingPayload = null
     pendingBlockIds.value.delete(blockId)
@@ -4150,6 +3168,7 @@ const savePendingBlocks = async () => {
 
 const saveEverything = async () => {
   saveStatus.value = 'saving'
+  clearAllBlockSaveTimers()
   const blocksSaved = await savePendingBlocks()
   const planSaved = await syncPlan()
   const orderSaved = await persistCurrentOrder()
@@ -4166,13 +3185,14 @@ const updateBlockContent = (block, value, extraPayload = {}) => {
   }
   pendingBlockIds.value.add(block.id)
   saveStatus.value = 'unsaved'
+  editorHistory.record(getEditorHistorySnapshot())
   clearBlockSaveTimer(block)
-  block.__saveTimer = window.setTimeout(async () => {
+  editorPersistence.schedule(String(block.id), async () => {
     if (!planId.value) return
     saveStatus.value = 'saving'
     try {
       const payload = block.__pendingPayload || { content: block.content }
-      const res = await planStore.updateBlock(block.id, payload, planId.value)
+      const res = await updatePersistedBlock(block, payload)
       if (res.success) {
         block.__pendingPayload = null
         pendingBlockIds.value.delete(block.id)
@@ -4183,7 +3203,7 @@ const updateBlockContent = (block, value, extraPayload = {}) => {
     } catch {
       saveStatus.value = 'error'
     }
-  }, 350)
+  })
 }
 
 const addBlock = async (type, index = blocks.value.length, content = null, options = {}) => {
@@ -4203,7 +3223,7 @@ const addBlock = async (type, index = blocks.value.length, content = null, optio
     return tempBlock
   }
 
-  const res = await planStore.addBlock(planId.value, type, nextContent)
+  const res = await createPersistedBlock(type, nextContent, index)
   if (!res.success) {
     blocks.value.splice(index, 0, tempBlock)
     markDirty()
@@ -4213,6 +3233,7 @@ const addBlock = async (type, index = blocks.value.length, content = null, optio
 
   const serverBlock = {
     ...res.data,
+    order: res.data.position || res.data.order || index + 1,
     content: res.data.content || nextContent
   }
   blocks.value.splice(index, 0, serverBlock)
@@ -4249,7 +3270,11 @@ const replaceAllBlocks = async (payload) => {
   }
 
   saveStatus.value = 'saving'
-  await Promise.allSettled(blocks.value.filter((block) => !String(block.id).startsWith('temp-')).map((block) => planStore.deleteBlock(block.id, planId.value)))
+  await Promise.allSettled(
+    blocks.value
+      .filter((block) => !String(block.id).startsWith('temp-'))
+      .map((block) => deletePersistedBlock(block))
+  )
   blocks.value = []
   pendingBlockIds.value = new Set()
 
@@ -4315,13 +3340,13 @@ const openCommandMenu = (event, index, mode = 'insert-after') => {
     selectedCategory: commandItems[0]?.category || 'all',
     highlight: 0
   }
-  nextTick(() => commandInputRef.value?.focus())
+  nextTick(() => document.querySelector('.slash-search')?.focus())
 }
 
 const setCommandCategory = (categoryKey) => {
   commandMenu.value.selectedCategory = categoryKey
   commandMenu.value.highlight = 0
-  nextTick(() => commandInputRef.value?.focus())
+  nextTick(() => document.querySelector('.slash-search')?.focus())
 }
 
 const goToCommandPage = (page) => {
@@ -4404,11 +3429,18 @@ const openRowMenu = (event, index, block) => {
 
 const openBlockTypeSelector = (block, index) => {
   if (!block) return
+  closeRowMenu()
+  closeCommandMenu()
   blockTypeSelector.value = {
     show: true,
     blockId: block.id,
     blockIndex: index
   }
+}
+
+const openHandleTypeSelector = (index, block) => {
+  if (Date.now() < suppressHandleClickUntil.value) return
+  openBlockTypeSelector(block, index)
 }
 
 const closeBlockTypeSelector = () => {
@@ -4471,7 +3503,7 @@ const removeBlock = async (block) => {
     return
   }
 
-  const res = await planStore.deleteBlock(block.id, planId.value)
+  const res = await deletePersistedBlock(block)
   if (res.success) {
     await persistCurrentOrder()
     saveStatus.value = 'saved'
@@ -4497,6 +3529,54 @@ const moveBlock = async (fromIndex, toIndex) => {
   const saved = await persistCurrentOrder()
   saveStatus.value = saved ? 'saved' : 'error'
   if (saved && block?.id) focusBlockById(block.id)
+}
+
+const getActionBlockIds = () => {
+  if (selectedBlockIds.value.size) return [...selectedBlockIds.value]
+  return activeBlockId.value ? [activeBlockId.value] : []
+}
+
+const duplicateActionBlocks = async () => {
+  const ids = getActionBlockIds()
+  if (!ids.length) return
+  const sourceBlocks = blocks.value.filter((block) => ids.includes(block.id))
+  const lastIndex = Math.max(...sourceBlocks.map((block) => blocks.value.findIndex((item) => item.id === block.id)))
+  let insertIndex = lastIndex + 1
+  const insertedIds = []
+  for (const block of sourceBlocks) {
+    const inserted = await addBlock(block.type, insertIndex, block.content, { focus: false, reorder: false })
+    insertedIds.push(inserted.id)
+    insertIndex += 1
+  }
+  selectedBlockIds.value = new Set(insertedIds)
+  activeBlockId.value = insertedIds[0] || null
+  await persistCurrentOrder()
+  if (activeBlockId.value) await focusBlockById(activeBlockId.value)
+}
+
+const moveActionBlocks = async (direction) => {
+  const ids = new Set(getActionBlockIds())
+  if (!ids.size) return
+  const indexes = blocks.value
+    .map((block, index) => (ids.has(block.id) ? index : -1))
+    .filter((index) => index >= 0)
+
+  if (!indexes.length) return
+  if (direction < 0 && indexes[0] === 0) return
+  if (direction > 0 && indexes[indexes.length - 1] === blocks.value.length - 1) return
+
+  const nextBlocks = [...blocks.value]
+  const orderedIndexes = direction < 0 ? indexes : [...indexes].reverse()
+  orderedIndexes.forEach((index) => {
+    const targetIndex = index + direction
+    const current = nextBlocks[index]
+    nextBlocks[index] = nextBlocks[targetIndex]
+    nextBlocks[targetIndex] = current
+  })
+  blocks.value = nextBlocks
+  selectedBlockIds.value = ids
+  const saved = await persistCurrentOrder()
+  saveStatus.value = saved ? 'saved' : 'error'
 }
 
 const getTodayDateKey = () => new Intl.DateTimeFormat('en-CA', {
@@ -4599,7 +3679,8 @@ const handleRowMenuAction = async (action) => {
     return
   }
 
-  const anchor = document.querySelector(`.plan-row[data-block-id="${String(block.id)}"] .plan-row-handle`)
+  const anchor = document.querySelector(`.plan-row[data-block-id="${String(block.id)}"] .plan-row-select`)
+    || document.querySelector(`.plan-row[data-block-id="${String(block.id)}"] .plan-row-handle`)
 
   switch (action) {
     case 'add-above':
@@ -4653,17 +3734,113 @@ const onHandleDragStart = (event, index, block) => {
     position: 'after'
   }
   event.dataTransfer.effectAllowed = 'move'
-  event.dataTransfer.setData('text/plain', JSON.stringify(draggingIds))
+  event.dataTransfer.setData('application/x-habitlearner-blocks', JSON.stringify(draggingIds))
+  event.dataTransfer.setData('text/plain', '')
+}
+
+const mergeableBlockTypes = new Set(['text', 'heading', 'quote', 'callout'])
+
+const escapeHtml = (value = '') => String(value)
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;')
+  .replace(/'/g, '&#39;')
+
+const getTextDocumentContent = (block) => {
+  const document = block?.content?.document
+  if (block?.type === 'text' && document?.type === 'doc' && Array.isArray(document.content)) {
+    return cloneContent(document.content)
+  }
+
+  const text = getBlockTextContent(block).trim()
+  return text
+    ? [{ type: 'paragraph', content: [{ type: 'text', text }] }]
+    : [{ type: 'paragraph' }]
+}
+
+const getTextHtmlContent = (block) => {
+  if (block?.type === 'text' && block.content?.html) {
+    return String(block.content.html)
+  }
+  return `<p>${escapeHtml(getBlockTextContent(block).trim())}</p>`
+}
+
+const buildMergedBlockContent = (targetBlock, sourceBlocks) => {
+  const text = [targetBlock, ...sourceBlocks]
+    .map((block) => getBlockTextContent(block).trim())
+    .filter(Boolean)
+    .join('\n')
+  const nextContent = cloneContent(targetBlock.content) || {}
+
+  nextContent.text = text
+  if (targetBlock.type === 'text') {
+    nextContent.document = {
+      type: 'doc',
+      content: [targetBlock, ...sourceBlocks].flatMap(getTextDocumentContent)
+    }
+    nextContent.html = [targetBlock, ...sourceBlocks]
+      .map(getTextHtmlContent)
+      .join('')
+  }
+  return nextContent
+}
+
+const mergeBlocksInto = async (targetBlock, draggingIds) => {
+  const sourceBlocks = blocks.value.filter((block) => (
+    draggingIds.includes(block.id)
+    && block.id !== targetBlock.id
+    && !String(block.id).startsWith('temp-')
+  ))
+  if (
+    !sourceBlocks.length
+    || String(targetBlock.id).startsWith('temp-')
+    || !mergeableBlockTypes.has(targetBlock.type)
+    || sourceBlocks.some((block) => !mergeableBlockTypes.has(block.type))
+  ) {
+    return false
+  }
+
+  const mergedContent = buildMergedBlockContent(targetBlock, sourceBlocks)
+  editorHistory.record(getEditorHistorySnapshot())
+  targetBlock.content = mergedContent
+  targetBlock.__pendingPayload = null
+  pendingBlockIds.value.delete(targetBlock.id)
+
+  const targetResponse = await updatePersistedBlock(targetBlock, { content: mergedContent })
+  if (!targetResponse.success) {
+    saveStatus.value = 'error'
+    return true
+  }
+
+  for (const sourceBlock of sourceBlocks) {
+    const response = await deletePersistedBlock(sourceBlock)
+    if (!response.success) {
+      saveStatus.value = 'error'
+      await loadPlan()
+      return true
+    }
+  }
+
+  const sourceIds = new Set(sourceBlocks.map((block) => block.id))
+  blocks.value = blocks.value.filter((block) => !sourceIds.has(block.id))
+  selectedBlockIds.value = new Set()
+  await persistCurrentOrder()
+  saveStatus.value = 'saved'
+  return true
 }
 
 const onRowDragOver = (event, index) => {
   if (!dragState.value.draggingId) return
   const rect = event.currentTarget.getBoundingClientRect()
-  const position = event.clientY < rect.top + rect.height / 2 ? 'before' : 'after'
+  const ratio = (event.clientY - rect.top) / Math.max(rect.height, 1)
+  const position = event.altKey
+    ? (ratio < 0.5 ? 'before' : 'after')
+    : (ratio < 0.25 ? 'before' : ratio > 0.75 ? 'after' : 'merge')
   dragState.value = { ...dragState.value, overIndex: index, position }
 }
 
-const onRowDrop = async (index) => {
+const onRowDrop = async (index, event = null) => {
   if (!dragState.value.draggingId) return
   const { draggingIds, draggingId, position } = dragState.value
   const targetBlock = blocks.value[index]
@@ -4677,7 +3854,21 @@ const onRowDrop = async (index) => {
     return
   }
 
-  const movingBlocks = blocks.value.filter((block) => draggingIds.includes(block.id))
+  if (position === 'merge') {
+    const merged = await mergeBlocksInto(targetBlock, draggingIds)
+    if (merged) {
+      activeBlockId.value = targetBlock.id
+      clearDragState()
+      return
+    }
+  }
+
+  const movingBlocks = blocks.value
+    .filter((block) => draggingIds.includes(block.id))
+    .map((block) => ({
+      ...block,
+      content: cloneContent(block.content)
+    }))
   const nextBlocks = blocks.value.filter((block) => !draggingIds.includes(block.id))
   const targetIndex = nextBlocks.findIndex((block) => block.id === targetBlock.id)
   const insertionIndex = targetIndex === -1
@@ -4699,6 +3890,7 @@ const onRowDrop = async (index) => {
 }
 
 const onHandleDragEnd = () => {
+  suppressHandleClickUntil.value = Date.now() + 180
   clearDragState()
 }
 
@@ -4790,6 +3982,17 @@ const deleteCurrentPlan = async () => {
   if (res.success) router.push('/plan')
 }
 
+const aiPanelActions = {
+  closeAiPanel, openAiPanel,
+  runAiWorkspaceChat, resetAiWorkspaceChat, setChatPrompt,
+  loadAiConversations, selectAiConversation, startNewAiConversation, deleteCurrentAiConversation,
+  ensureAiMediaModelsLoaded, handleAiImageFiles, removeAiImageSource, runAiImage,
+  pollAiImageStatus, formatAiVideoTimestamp, insertGeneratedImageBlock, loadAiImageHistory,
+  restoreAiImageTask, deleteAiImageHistory, getAiImageModeLabel, handleAiVideoUploadFiles,
+  appendAiVideoSourceUrl, removeAiVideoSource, setAiVideoResolution, runAiVideo,
+  pollAiVideoStatus, insertGeneratedVideoBlock, loadAiVideoHistory, restoreAiVideoTask,
+  deleteAiVideoHistory, getAiVideoModeLabel, isAiCoolingDown, getAiActionButtonText
+}
 const confirmLeaveIfNeeded = async () => {
   if (!hasUnsavedChanges.value) return true
   const saved = await saveEverything()
@@ -4802,7 +4005,7 @@ const handleBack = async () => {
   router.push('/plan')
 }
 
-watch(() => route.params.id, loadPlan, { immediate: true })
+watch(() => `${route.params.id}:${route.query.editorPageId || ''}`, loadPlan, { immediate: true })
 watch(() => commandMenu.value.query, () => {
   commandMenu.value.highlight = 0
   if (!commandMenu.value.query.trim() && commandMenu.value.show) {
@@ -4818,6 +4021,12 @@ watch(() => visibleCommandItems.value.length, (length) => {
     commandMenu.value.highlight = length - 1
   }
 })
+watch(aiSelectedModel, (model) => {
+  if (!model) return
+  workspaceAiStore.setSelectedModel?.(model)
+  aiImageModel.value = model
+  aiVideoModel.value = model
+})
 watch(unscheduledTypeOptions, (options) => {
   if (unscheduledTypeFilter.value === 'all') return
   if (!options.some((option) => option.value === unscheduledTypeFilter.value)) {
@@ -4825,19 +4034,10 @@ watch(unscheduledTypeOptions, (options) => {
   }
 })
 watch(
-  () => [commandMenu.value.highlight, currentCommandPage.value, commandMenu.value.selectedCategory, commandMenu.value.show],
-  async () => {
-    if (!commandMenu.value.show) return
-    await nextTick()
-    const activeItem = commandListRef.value?.querySelector('.slash-item-active')
-    activeItem?.scrollIntoView({ block: 'nearest' })
-  }
-)
-watch(
   () => blocks.value.map((block) => String(block.id)).join(','),
   () => {
-    if (inlineAi.value.blockId && !getBlockById(inlineAi.value.blockId)) {
-      closeInlineAi()
+    if (aiComposer.value.context?.blockId && !getBlockById(aiComposer.value.context.blockId)) {
+      closeAiComposer()
     }
     if (inlineAiToolbar.value.blockId && !getBlockById(inlineAiToolbar.value.blockId)) {
       closeInlineAiToolbar()
@@ -4847,12 +4047,6 @@ watch(
     }
   }
 )
-watch(
-  aiTemplateStore,
-  persistAiTemplateStore,
-  { deep: true }
-)
-
 onBeforeRouteLeave(async () => {
   const canLeave = await confirmLeaveIfNeeded()
   if (!canLeave) return false
@@ -4863,6 +4057,8 @@ onBeforeRouteLeave(async () => {
 })
 
 onMounted(() => {
+  loadEditorPageTree()
+  loadAiSkills()
   aiCooldownTimer = window.setInterval(() => {
     aiCooldownTick.value = Date.now()
   }, 1000)
@@ -4920,8 +4116,12 @@ onMounted(() => {
         clearSelectedBlocks()
       }
       finishBlockSelection()
-      if (inlineAi.value.show) {
-        closeInlineAi()
+      if (blockTypeSelector.value.show) {
+        closeBlockTypeSelector()
+        return
+      }
+      if (aiComposer.value.show) {
+        closeAiComposer()
         return
       }
       if (aiPanel.value.show) {
@@ -4936,13 +4136,37 @@ onMounted(() => {
       return
     }
 
+    if ((event.ctrlKey || event.metaKey) && !event.altKey && !isEditableElement(event.target)) {
+      const key = event.key.toLowerCase()
+      if (key === 'a') {
+        event.preventDefault()
+        selectedBlockIds.value = new Set(blocks.value.map((block) => block.id))
+        return
+      }
+      if (key === 'd') {
+        event.preventDefault()
+        await duplicateActionBlocks()
+        return
+      }
+      if (event.shiftKey && event.key === 'ArrowUp') {
+        event.preventDefault()
+        await moveActionBlocks(-1)
+        return
+      }
+      if (event.shiftKey && event.key === 'ArrowDown') {
+        event.preventDefault()
+        await moveActionBlocks(1)
+        return
+      }
+    }
+
     if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === 'k') {
       event.preventDefault()
       if (aiPanel.value.show) {
         closeAiPanel()
         return
       }
-      openAiPanel('outline')
+      openAiComposerFromActiveBlock()
       return
     }
 
@@ -4950,7 +4174,7 @@ onMounted(() => {
       const context = buildInlineAiContextFromElement(document.activeElement, { allowCollapsed: true })
       if (context) {
         event.preventDefault()
-        openInlineAi(context, inlineAi.value.show ? inlineAi.value.action : 'continue')
+        openAiComposer(context)
       }
       return
     }
@@ -4963,7 +4187,7 @@ onMounted(() => {
 
   const onWindowClick = (event) => {
     const target = event.target
-    if (rowMenu.value.show && !target.closest('.plan-row-handle') && !target.closest('.row-menu-item')) {
+    if (rowMenu.value.show && !target.closest('.plan-row-select') && !target.closest('.row-menu-item')) {
       closeRowMenu()
     }
     if (commandMenu.value.show && !target.closest('.slash-panel')) {
@@ -4973,13 +4197,19 @@ onMounted(() => {
       inlineAiToolbar.value.show &&
       !target.closest('.inline-ai-toolbar') &&
       !target.closest('.inline-format-toolbar') &&
-      !target.closest('.plan-row') &&
-      !target.closest('.inline-ai-card')
+      !target.closest('.plan-row')
     ) {
       closeInlineAiToolbar()
       closeInlineFormatToolbar()
     }
-    if (selectedBlockIds.value.size && !blockSelection.value.active && !target.closest('.plan-row-select')) {
+    if (
+      selectedBlockIds.value.size
+      && !blockSelection.value.active
+      && !event.ctrlKey
+      && !event.metaKey
+      && !event.shiftKey
+      && !target.closest('.plan-row-select')
+    ) {
       if (!target.closest('.plan-row-selected') && !target.closest('.plan-row-handle')) {
         clearSelectedBlocks()
       }
@@ -4989,6 +4219,14 @@ onMounted(() => {
   const onSelectionChange = () => {
     refreshInlineAiToolbar()
     refreshInlineFormatToolbar()
+  }
+
+  const onEditorMousemove = (event) => {
+    if (!blockSelection.value.active) return
+    const row = document.elementFromPoint(event.clientX, event.clientY)?.closest?.('.plan-row')
+    if (!row) return
+    const index = blocks.value.findIndex((block) => String(block.id) === row.dataset.blockId)
+    if (index >= 0) extendBlockSelection(index)
   }
 
   const onEditorMouseup = () => {
@@ -5011,14 +4249,18 @@ onMounted(() => {
 
   document.addEventListener('keydown', onKeydown)
   document.addEventListener('selectionchange', onSelectionChange)
+  document.addEventListener('mousemove', onEditorMousemove)
   document.addEventListener('mouseup', onEditorMouseup)
   document.addEventListener('keyup', onEditorKeyup)
+  document.addEventListener('keydown', editorKeyboard.handleKeydown)
   window.addEventListener('resize', onResize)
   window.addEventListener('click', onWindowClick)
   removeKeydownListener = () => document.removeEventListener('keydown', onKeydown)
   removeSelectionChangeListener = () => document.removeEventListener('selectionchange', onSelectionChange)
+  removeMousemoveListener = () => document.removeEventListener('mousemove', onEditorMousemove)
   removeMouseupListener = () => document.removeEventListener('mouseup', onEditorMouseup)
   removeEditorKeyupListener = () => document.removeEventListener('keyup', onEditorKeyup)
+  removeEditorHistoryKeydown = () => document.removeEventListener('keydown', editorKeyboard.handleKeydown)
   removeResizeListener = () => window.removeEventListener('resize', onResize)
   removeClickListener = () => window.removeEventListener('click', onWindowClick)
   nextTick(() => resizeTitle())
@@ -5031,14 +4273,241 @@ onBeforeUnmount(() => {
   if (aiCooldownTimer) window.clearInterval(aiCooldownTimer)
   if (removeKeydownListener) removeKeydownListener()
   if (removeSelectionChangeListener) removeSelectionChangeListener()
+  if (removeMousemoveListener) removeMousemoveListener()
   if (removeMouseupListener) removeMouseupListener()
   if (removeEditorKeyupListener) removeEditorKeyupListener()
+  if (removeEditorHistoryKeydown) removeEditorHistoryKeydown()
   if (removeResizeListener) removeResizeListener()
   if (removeClickListener) removeClickListener()
 })
 </script>
 
 <style scoped>
+.plan-editor-workbench {
+  display: grid;
+  grid-template-columns: minmax(170px, 0.18fr) minmax(0, 1fr) minmax(220px, 0.24fr);
+  align-items: start;
+  gap: 1rem;
+  width: 100%;
+  min-width: 0;
+}
+
+.plan-editor-workbench-ai-open {
+  grid-template-columns: minmax(150px, 0.16fr) minmax(520px, 1fr) minmax(420px, 0.42fr);
+}
+
+.plan-editor-left-rail {
+  display: grid;
+  align-content: start;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.plan-editor-rail {
+  position: sticky;
+  top: 6.3rem;
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+  border: 1px solid rgba(228, 228, 231, 0.86);
+  border-radius: 1.35rem;
+  background: rgba(255, 255, 255, 0.66);
+  padding: 1rem;
+}
+
+.dark .plan-editor-rail {
+  border-color: rgba(63, 63, 70, 0.86);
+  background: rgba(18, 18, 20, 0.66);
+}
+
+.plan-rail-heading {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.plan-rail-heading strong {
+  color: rgb(24 24 27);
+  font-size: 1rem;
+  letter-spacing: -0.03em;
+}
+
+.dark .plan-rail-heading strong {
+  color: white;
+}
+
+.plan-rail-eyebrow,
+.plan-inspector-label {
+  color: rgb(113 113 122);
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.plan-outline-list {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.plan-outline-item {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.5rem;
+  border: 0;
+  border-radius: 0.7rem;
+  background: transparent;
+  color: rgb(82 82 91);
+  padding: 0.52rem 0.45rem;
+  text-align: left;
+  font-size: 0.75rem;
+  transition: background 150ms ease, color 150ms ease;
+}
+
+.plan-outline-item:hover {
+  background: rgba(228, 228, 231, 0.72);
+  color: rgb(24 24 27);
+}
+
+.plan-outline-level-2 {
+  padding-left: 0.85rem;
+}
+
+.plan-outline-level-3 {
+  padding-left: 1.3rem;
+}
+
+.plan-outline-dot {
+  width: 0.32rem;
+  height: 0.32rem;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: rgb(161 161 170);
+}
+
+.plan-rail-empty {
+  color: rgb(161 161 170);
+  font-size: 0.73rem;
+  line-height: 1.65;
+}
+
+.plan-inspector-section {
+  display: grid;
+  gap: 0.38rem;
+  border-bottom: 1px solid rgba(228, 228, 231, 0.72);
+  padding-bottom: 0.8rem;
+}
+
+.dark .plan-inspector-section {
+  border-color: rgba(63, 63, 70, 0.72);
+}
+
+.plan-inspector-value {
+  overflow: hidden;
+  color: rgb(39 39 42);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dark .plan-inspector-value {
+  color: rgb(244 244 245);
+}
+
+.plan-inspector-divider {
+  height: 1px;
+  background: rgba(228, 228, 231, 0.72);
+}
+
+.dark .plan-inspector-divider {
+  background: rgba(63, 63, 70, 0.72);
+}
+
+.plan-inspector-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  border: 0;
+  border-radius: 0.9rem;
+  background: transparent;
+  color: rgb(39 39 42);
+  padding: 0.7rem 0.5rem;
+  text-align: left;
+  transition: background 150ms ease;
+}
+
+.plan-inspector-action:hover {
+  background: rgba(228, 228, 231, 0.6);
+}
+
+.plan-inspector-action strong,
+.plan-inspector-action small {
+  display: block;
+}
+
+.plan-inspector-action strong {
+  font-size: 0.78rem;
+}
+
+.plan-inspector-action small {
+  margin-top: 0.25rem;
+  color: rgb(113 113 122);
+  font-size: 0.68rem;
+  line-height: 1.45;
+}
+
+.plan-inspector-timeline {
+  min-width: 0;
+}
+
+.plan-inspector-timeline-item {
+  display: grid;
+  grid-template-columns: 2.8rem minmax(0, 1fr);
+  gap: 0.55rem;
+  border-bottom: 1px solid rgba(228, 228, 231, 0.72);
+  padding: 0.55rem 0;
+}
+
+.plan-inspector-timeline-item > span {
+  color: rgb(113 113 122);
+  font-size: 0.65rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.plan-inspector-timeline-item strong,
+.plan-inspector-timeline-item small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plan-inspector-timeline-item strong {
+  color: rgb(39 39 42);
+  font-size: 0.7rem;
+  font-weight: 750;
+}
+
+.plan-inspector-timeline-item small {
+  margin-top: 0.18rem;
+  color: rgb(161 161 170);
+  font-size: 0.62rem;
+}
+
+.dark .plan-inspector-timeline-item {
+  border-color: rgba(63, 63, 70, 0.72);
+}
+
+.dark .plan-inspector-timeline-item strong {
+  color: rgb(244 244 245);
+}
+
+.dark .plan-inspector-action {
+  color: rgb(244 244 245);
+}
+
 .plan-editor-shell {
   min-height: calc(100vh - 7rem);
 }
@@ -5049,6 +4518,15 @@ onBeforeUnmount(() => {
   background: rgba(255, 255, 255, 0.96);
   box-shadow: 0 30px 80px rgba(15, 23, 42, 0.08);
   padding: 2rem 2rem 3rem;
+}
+
+.plan-load-error {
+  display: grid;
+  min-height: 360px;
+  place-items: center;
+  align-content: center;
+  padding: 3rem 1.5rem;
+  text-align: center;
 }
 
 .dark .plan-editor-surface {
@@ -5148,6 +4626,27 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 1023px) {
+  .plan-editor-workbench {
+    display: block;
+  }
+
+  .plan-editor-shell {
+    min-height: auto;
+    padding-inline: 0 !important;
+    padding-top: 0.35rem !important;
+    padding-bottom: calc(8rem + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  .plan-editor-rail {
+    position: static;
+    margin: 0.75rem 0;
+  }
+
+  .plan-editor-outline-rail,
+  .plan-editor-inspector-rail {
+    display: none;
+  }
+
   .plan-meta-type-row-custom {
     flex-direction: column;
     align-items: stretch;
@@ -5156,6 +4655,16 @@ onBeforeUnmount(() => {
 
   .plan-meta-type-row-custom select {
     flex-basis: auto;
+  }
+}
+
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .plan-editor-workbench-ai-open {
+    grid-template-columns: minmax(0, 1fr) minmax(400px, 0.48fr);
+  }
+
+  .plan-editor-workbench-ai-open .plan-editor-left-rail {
+    display: none;
   }
 }
 
@@ -5463,197 +4972,6 @@ onBeforeUnmount(() => {
   color: white;
 }
 
-.inline-ai-card {
-  margin-top: 0.9rem;
-  border: 1px solid rgba(228, 228, 231, 0.92);
-  border-radius: 24px;
-  background: rgba(255, 255, 255, 0.78);
-  box-shadow: 0 20px 54px rgba(15, 23, 42, 0.08);
-  backdrop-filter: blur(20px);
-  padding: 1rem;
-}
-
-.dark .inline-ai-card {
-  border-color: rgba(63, 63, 70, 0.92);
-  background: rgba(9, 9, 11, 0.74);
-  box-shadow: 0 20px 54px rgba(0, 0, 0, 0.28);
-}
-
-.inline-ai-header,
-.inline-ai-runner,
-.inline-ai-result-actions {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-}
-
-.inline-ai-chip-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.inline-ai-chip {
-  background: rgba(244, 244, 245, 0.95);
-  color: rgb(82 82 91);
-  padding: 0.45rem 0.8rem;
-}
-
-.inline-ai-chip-active {
-  background: rgb(24 24 27);
-  color: white;
-}
-
-.dark .inline-ai-chip {
-  background: rgba(39, 39, 42, 0.96);
-  color: rgb(228 228 231);
-}
-
-.dark .inline-ai-chip-active {
-  background: rgba(255, 255, 255, 0.14);
-  color: white;
-}
-
-.inline-ai-close {
-  background: rgba(244, 244, 245, 0.96);
-  color: rgb(63 63 70);
-  padding: 0.45rem 0.78rem;
-}
-
-.dark .inline-ai-close {
-  background: rgba(39, 39, 42, 0.96);
-  color: rgb(244 244 245);
-}
-
-.inline-ai-context {
-  margin-top: 0.95rem;
-  border-radius: 18px;
-  background: rgba(244, 244, 245, 0.75);
-  padding: 0.8rem 0.95rem;
-}
-
-.dark .inline-ai-context {
-  background: rgba(24, 24, 27, 0.84);
-}
-
-.inline-ai-context-label {
-  display: inline-flex;
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: rgb(113 113 122);
-}
-
-.inline-ai-context p {
-  margin-top: 0.35rem;
-  font-size: 0.86rem;
-  line-height: 1.65;
-  color: rgb(63 63 70);
-}
-
-.dark .inline-ai-context p {
-  color: rgb(228 228 231);
-}
-
-.inline-ai-field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  margin-top: 0.9rem;
-}
-
-.inline-ai-field span,
-.inline-ai-shortcut {
-  font-size: 0.76rem;
-  color: rgb(113 113 122);
-}
-
-.inline-ai-textarea {
-  width: 100%;
-  resize: vertical;
-  min-height: 88px;
-  border: 1px solid rgba(228, 228, 231, 0.94);
-  border-radius: 18px;
-  background: rgba(250, 250, 250, 0.92);
-  color: rgb(24 24 27);
-  outline: none;
-  padding: 0.9rem 1rem;
-}
-
-.dark .inline-ai-textarea {
-  border-color: rgba(63, 63, 70, 0.92);
-  background: rgba(24, 24, 27, 0.92);
-  color: white;
-}
-
-.inline-ai-runner {
-  margin-top: 0.95rem;
-}
-
-.inline-ai-run-btn,
-.inline-ai-apply-btn {
-  background: rgb(24 24 27);
-  color: white;
-  padding: 0.68rem 1rem;
-}
-
-.inline-ai-run-btn:disabled {
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-
-.dark .inline-ai-run-btn,
-.dark .inline-ai-apply-btn {
-  background: white;
-  color: rgb(24 24 27);
-}
-
-.inline-ai-result-card {
-  margin-top: 1rem;
-  border: 1px solid rgba(228, 228, 231, 0.92);
-  border-radius: 22px;
-  background: rgba(250, 250, 250, 0.88);
-  padding: 1rem;
-}
-
-.dark .inline-ai-result-card {
-  border-color: rgba(63, 63, 70, 0.92);
-  background: rgba(24, 24, 27, 0.9);
-}
-
-.inline-ai-result-pre {
-  white-space: pre-wrap;
-  margin-top: 0.85rem;
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.92);
-  color: rgb(39 39 42);
-  font-size: 0.9rem;
-  line-height: 1.72;
-  padding: 1rem;
-}
-
-.dark .inline-ai-result-pre {
-  background: rgba(9, 9, 11, 0.94);
-  color: rgb(244 244 245);
-}
-
-.inline-ai-result-actions {
-  flex-wrap: wrap;
-  justify-content: flex-start;
-  margin-top: 0.9rem;
-}
-
-.inline-ai-ghost-btn {
-  background: rgba(244, 244, 245, 0.95);
-  color: rgb(63 63 70);
-  padding: 0.68rem 0.95rem;
-}
-
-.dark .inline-ai-ghost-btn {
-  background: rgba(39, 39, 42, 0.96);
-  color: rgb(244 244 245);
-}
-
 .plan-new-line {
   display: inline-flex;
   align-items: center;
@@ -5937,421 +5255,6 @@ onBeforeUnmount(() => {
   color: rgb(161 161 170);
 }
 
-.ai-panel {
-  display: flex;
-  flex-direction: column;
-  max-height: min(88vh, 960px);
-  overflow: hidden;
-  border: 1px solid rgba(228, 228, 231, 0.95);
-  border-radius: 30px;
-  background: rgba(255, 255, 255, 0.98);
-  box-shadow: 0 32px 80px rgba(15, 23, 42, 0.2);
-  padding: 1.25rem;
-}
-
-.dark .ai-panel {
-  border-color: rgba(39, 39, 42, 0.95);
-  background: rgba(9, 9, 11, 0.98);
-  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.5);
-}
-
-.ai-panel-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-  flex-shrink: 0;
-}
-
-.ai-panel-close {
-  border: 0;
-  border-radius: 9999px;
-  background: rgba(244, 244, 245, 1);
-  color: rgb(39 39 42);
-  font-size: 0.82rem;
-  padding: 0.55rem 0.9rem;
-}
-
-.dark .ai-panel-close {
-  background: rgba(39, 39, 42, 1);
-  color: rgb(244 244 245);
-}
-
-.ai-panel-tabs {
-  display: flex;
-  gap: 0.5rem;
-  margin-top: 1rem;
-  margin-bottom: 1rem;
-  overflow-x: auto;
-  flex-shrink: 0;
-}
-
-.ai-panel-tab {
-  border: 1px solid rgba(228, 228, 231, 0.95);
-  border-radius: 9999px;
-  background: rgba(250, 250, 250, 0.96);
-  color: rgb(82 82 91);
-  font-size: 0.78rem;
-  padding: 0.5rem 0.85rem;
-  white-space: nowrap;
-}
-
-.ai-panel-tab-active {
-  background: rgb(24 24 27);
-  border-color: rgba(24, 24, 27, 0.12);
-  color: white;
-}
-
-.dark .ai-panel-tab {
-  border-color: rgba(39, 39, 42, 0.95);
-  background: rgba(24, 24, 27, 0.96);
-  color: rgb(212 212 216);
-}
-
-.dark .ai-panel-tab-active {
-  border-color: rgba(255, 255, 255, 0.1);
-  background: rgba(244, 244, 245, 0.12);
-  color: white;
-}
-
-.ai-panel-body {
-  padding-top: 0.25rem;
-  overflow-y: auto;
-  padding-right: 0.2rem;
-}
-
-.ai-mode-chip {
-  border: 1px solid rgba(228, 228, 231, 0.95);
-  border-radius: 9999px;
-  background: rgba(250, 250, 250, 0.96);
-  color: rgb(82 82 91);
-  font-size: 0.8rem;
-  padding: 0.55rem 0.9rem;
-}
-
-.ai-mode-chip-active {
-  background: rgb(24 24 27);
-  border-color: rgba(24, 24, 27, 0.14);
-  color: white;
-}
-
-.dark .ai-mode-chip {
-  border-color: rgba(39, 39, 42, 0.95);
-  background: rgba(24, 24, 27, 0.96);
-  color: rgb(212 212 216);
-}
-
-.dark .ai-mode-chip-active {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.08);
-  color: white;
-}
-
-.ai-panel-field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.ai-panel-field span {
-  font-size: 0.8rem;
-  color: rgb(113 113 122);
-}
-
-.ai-panel-input,
-.ai-panel-textarea {
-  width: 100%;
-  border: 1px solid rgba(228, 228, 231, 0.95);
-  border-radius: 18px;
-  background: rgba(250, 250, 250, 0.9);
-  color: rgb(24 24 27);
-  font-size: 0.92rem;
-  outline: none;
-  padding: 0.9rem 1rem;
-}
-
-.dark .ai-panel-input,
-.dark .ai-panel-textarea {
-  border-color: rgba(39, 39, 42, 0.95);
-  background: rgba(24, 24, 27, 0.95);
-  color: white;
-}
-
-.ai-panel-textarea {
-  resize: vertical;
-  min-height: 128px;
-}
-
-.ai-upload-field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.55rem;
-}
-
-.ai-upload-field span {
-  font-size: 0.8rem;
-  color: rgb(113 113 122);
-}
-
-.ai-upload-field input[type="file"] {
-  border: 1px dashed rgba(212, 212, 216, 0.95);
-  border-radius: 18px;
-  background: rgba(250, 250, 250, 0.92);
-  color: rgb(63 63 70);
-  padding: 0.85rem 1rem;
-}
-
-.dark .ai-upload-field input[type="file"] {
-  border-color: rgba(63, 63, 70, 0.92);
-  background: rgba(24, 24, 27, 0.96);
-  color: rgb(228 228 231);
-}
-
-.ai-result-card {
-  border: 1px solid rgba(228, 228, 231, 0.95);
-  border-radius: 24px;
-  background: rgba(250, 250, 250, 0.92);
-  padding: 1rem;
-}
-
-.dark .ai-result-card {
-  border-color: rgba(39, 39, 42, 0.95);
-  background: rgba(24, 24, 27, 0.92);
-}
-
-.ai-result-badge {
-  display: inline-flex;
-  align-items: center;
-  border-radius: 9999px;
-  background: rgb(24 24 27);
-  color: white;
-  padding: 0.28rem 0.6rem;
-}
-
-.dark .ai-result-badge {
-  background: rgba(244, 244, 245, 0.12);
-}
-
-.ai-outline-item,
-.ai-question-item {
-  display: flex;
-  gap: 0.75rem;
-  align-items: flex-start;
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.95);
-  padding: 0.85rem 0.9rem;
-}
-
-.dark .ai-outline-item,
-.dark .ai-question-item {
-  background: rgba(9, 9, 11, 0.9);
-}
-
-.ai-outline-index,
-.ai-question-index {
-  display: inline-flex;
-  height: 1.75rem;
-  width: 1.75rem;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  border-radius: 9999px;
-  background: rgb(24 24 27);
-  color: white;
-  font-size: 0.78rem;
-  font-weight: 700;
-}
-
-.dark .ai-outline-index,
-.dark .ai-question-index {
-  background: white;
-  color: rgb(24 24 27);
-}
-
-.ai-result-pre {
-  white-space: pre-wrap;
-  margin-top: 0.85rem;
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.95);
-  color: rgb(39 39 42);
-  font-size: 0.92rem;
-  line-height: 1.75;
-  padding: 1rem;
-}
-
-.dark .ai-result-pre {
-  background: rgba(9, 9, 11, 0.9);
-  color: rgb(244 244 245);
-}
-
-.ai-source-grid,
-.ai-generated-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-  gap: 0.9rem;
-}
-
-.ai-source-card,
-.ai-generated-card {
-  overflow: hidden;
-  border: 1px solid rgba(228, 228, 231, 0.95);
-  border-radius: 22px;
-  background: rgba(255, 255, 255, 0.94);
-  padding: 0.75rem;
-}
-
-.dark .ai-source-card,
-.dark .ai-generated-card {
-  border-color: rgba(39, 39, 42, 0.95);
-  background: rgba(24, 24, 27, 0.94);
-}
-
-.ai-source-image,
-.ai-generated-image {
-  display: block;
-  width: 100%;
-  aspect-ratio: 1 / 1;
-  object-fit: cover;
-  border-radius: 16px;
-  background: rgba(244, 244, 245, 0.9);
-}
-
-.ai-source-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  margin-top: 0.7rem;
-  font-size: 0.78rem;
-  color: rgb(82 82 91);
-}
-
-.dark .ai-source-footer {
-  color: rgb(212 212 216);
-}
-
-.ai-source-remove {
-  border: 0;
-  border-radius: 9999px;
-  background: rgba(244, 244, 245, 0.96);
-  color: rgb(82 82 91);
-  padding: 0.36rem 0.66rem;
-}
-
-.dark .ai-source-remove {
-  background: rgba(39, 39, 42, 0.96);
-  color: rgb(244 244 245);
-}
-
-.ai-generated-video {
-  display: block;
-  width: 100%;
-  max-height: 420px;
-  border-radius: 16px;
-  background: black;
-  object-fit: contain;
-}
-
-.ai-timeline-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
-}
-
-.ai-timeline-dot {
-  width: 0.6rem;
-  height: 0.6rem;
-  margin-top: 0.45rem;
-  border-radius: 9999px;
-  background: rgb(24 24 27);
-  flex-shrink: 0;
-}
-
-.dark .ai-timeline-dot {
-  background: white;
-}
-
-.ai-history-card {
-  width: 100%;
-  border: 1px solid rgba(228, 228, 231, 0.95);
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.92);
-  padding: 0.9rem 1rem;
-  text-align: left;
-  transition: border-color 0.18s ease, background-color 0.18s ease, transform 0.18s ease;
-}
-
-.ai-history-card:hover,
-.ai-history-card-active {
-  border-color: rgba(24, 24, 27, 0.18);
-  background: rgba(244, 244, 245, 0.96);
-  transform: translateY(-1px);
-}
-
-.dark .ai-history-card {
-  border-color: rgba(39, 39, 42, 0.95);
-  background: rgba(24, 24, 27, 0.94);
-}
-
-.dark .ai-history-card:hover,
-.dark .ai-history-card-active {
-  border-color: rgba(255, 255, 255, 0.12);
-  background: rgba(39, 39, 42, 0.98);
-}
-
-.ai-history-prompt {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.ai-history-action,
-.ai-history-delete {
-  border: 1px solid rgba(228, 228, 231, 0.95);
-  border-radius: 9999px;
-  background: rgba(250, 250, 250, 0.96);
-  color: rgb(63 63 70);
-  font-size: 0.72rem;
-  font-weight: 600;
-  padding: 0.45rem 0.7rem;
-  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease, opacity 0.18s ease;
-}
-
-.ai-history-action:hover,
-.ai-history-delete:hover {
-  background: rgba(244, 244, 245, 1);
-  border-color: rgba(161, 161, 170, 0.5);
-  color: rgb(24 24 27);
-}
-
-.ai-history-delete {
-  color: rgb(220 38 38);
-}
-
-.ai-history-delete:disabled {
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-
-.dark .ai-history-action,
-.dark .ai-history-delete {
-  border-color: rgba(39, 39, 42, 0.95);
-  background: rgba(24, 24, 27, 0.96);
-  color: rgb(228 228 231);
-}
-
-.dark .ai-history-action:hover,
-.dark .ai-history-delete:hover {
-  background: rgba(39, 39, 42, 0.98);
-  border-color: rgba(255, 255, 255, 0.14);
-  color: white;
-}
-
-.dark .ai-history-delete {
-  color: rgb(252 165 165);
-}
-
 .unscheduled-filter-field {
   display: grid;
   gap: 0.42rem;
@@ -6400,36 +5303,65 @@ onBeforeUnmount(() => {
 
 @media (max-width: 768px) {
   .plan-editor-surface {
-    padding: 1.25rem 1rem 2rem;
-    border-radius: 24px;
+    border-radius: 1.25rem;
+    padding: 1rem 0.7rem 2.5rem;
+    box-shadow: 0 14px 42px rgba(24, 24, 27, 0.06);
   }
 
   .plan-row {
-    grid-template-columns: 52px minmax(0, 1fr);
+    grid-template-columns: 42px minmax(0, 1fr);
+    gap: 0.25rem;
+    padding-block: 0.2rem;
   }
 
   .plan-row::before,
   .plan-row::after {
-    left: 50px;
+    left: 42px;
   }
 
   .plan-row-gutter {
-    grid-template-columns: repeat(2, 22px);
-    grid-template-rows: 28px;
+    grid-template-columns: repeat(2, 19px);
+    grid-template-rows: 30px;
+    opacity: 0.78;
+  }
+
+  .plan-document {
+    min-height: 50dvh;
+  }
+
+  .plan-empty-state {
+    border-radius: 1.15rem;
+    padding: 3.25rem 1rem;
+  }
+
+  .plan-new-line {
+    margin-left: 2.65rem;
+    margin-bottom: 1.5rem;
   }
 
   .slash-panel {
     width: min(320px, calc(100vw - 24px));
   }
 
-  .ai-panel {
-    margin-top: 0;
-    border-radius: 24px;
-    padding: 1rem;
+}
+
+@media (max-width: 420px) {
+  .plan-editor-surface {
+    margin-inline: -0.15rem;
+    padding-inline: 0.45rem;
   }
 
-  .ai-panel-header {
-    flex-direction: column;
+  .plan-row {
+    grid-template-columns: 36px minmax(0, 1fr);
+  }
+
+  .plan-row::before,
+  .plan-row::after {
+    left: 36px;
+  }
+
+  .plan-row-gutter {
+    grid-template-columns: repeat(2, 17px);
   }
 }
 </style>

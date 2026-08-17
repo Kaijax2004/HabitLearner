@@ -153,7 +153,7 @@
                         <button class="capture-secondary-button" type="button" @click="closeConversionPanel">收起</button>
                       </div>
 
-                      <div class="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
+                      <div class="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-6">
                         <button
                           v-for="option in conversionOptions"
                           :key="option.value"
@@ -201,6 +201,16 @@
 
                       <div v-if="conversionType === 'review_question'" class="mt-4 rounded-2xl border border-zinc-200/80 bg-zinc-50/80 p-4 text-sm leading-6 text-zinc-600 dark:border-zinc-800 dark:bg-white/5 dark:text-zinc-300">
                         会追加到今天复盘的“今天卡住了什么”里。转换后你可以进入复盘页继续整理成明天第一步。
+                      </div>
+
+                      <div v-if="conversionType === 'creator_item'" class="mt-4 rounded-2xl border border-zinc-200/80 bg-zinc-50/80 p-4 dark:border-zinc-800 dark:bg-white/5">
+                        <label class="capture-label">内容类型</label>
+                        <select v-model="creatorType" class="capture-field mt-2">
+                          <option value="trend">热点</option>
+                          <option value="topic">选题</option>
+                          <option value="draft">草稿</option>
+                        </select>
+                        <p class="mt-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">收集内容会进入内容创作轨道的收件箱，不会直接发布。</p>
                       </div>
 
                       <div class="mt-4 flex flex-wrap gap-2">
@@ -268,6 +278,7 @@ const conversionType = ref('plan')
 const selectedPlanId = ref('')
 const selectedCourseId = ref('')
 const selectedHabitId = ref('')
+const creatorType = ref('topic')
 const draft = reactive({
   type: 'idea',
   content: ''
@@ -284,6 +295,7 @@ const conversionOptions = [
   { label: '转计划块', value: 'plan_block' },
   { label: '转学习笔记', value: 'learning_note' },
   { label: '转习惯备注', value: 'habit_comment' },
+  { label: '转内容创作', value: 'creator_item' },
   { label: '转复盘草稿', value: 'review_question' }
 ]
 
@@ -302,6 +314,7 @@ const conversionSubmitLabel = computed(() => ({
   plan_block: '追加到计划块',
   learning_note: '转为学习笔记',
   habit_comment: '转为习惯备注',
+  creator_item: '转为内容条目',
   review_question: '转入复盘'
 })[conversionType.value] || '确认转换')
 
@@ -324,6 +337,7 @@ const targetTypeLabel = (type) => ({
   plan_block: '计划块',
   learning_note: '学习笔记',
   habit_comment: '习惯备注',
+  creator_item: '内容创作',
   review_question: '复盘草稿',
   track_note: '轨道沉淀'
 })[type] || '目标'
@@ -487,6 +501,7 @@ const openConversionPanel = async (capture) => {
   selectedPlanId.value = ''
   selectedCourseId.value = ''
   selectedHabitId.value = ''
+  creatorType.value = 'topic'
   await loadConversionTargets()
 }
 
@@ -523,6 +538,10 @@ const submitConversion = async (capture) => {
       return
     }
     payload.habitId = Number(selectedHabitId.value)
+  }
+
+  if (conversionType.value === 'creator_item') {
+    payload.creatorType = creatorType.value
   }
 
   isConverting.value = true

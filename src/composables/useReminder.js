@@ -3,7 +3,7 @@ import { useHabitStore } from '@/stores/habit'
 import { useAuthStore } from '@/stores/auth'
 import { resolveMediaUrl, isRenderableMediaUrl } from '@/utils/media.js'
 import { formatLocalDateKey } from '@/utils/date.js'
-import audioManager from '@/utils/audioManager.js'
+import { useWorkbenchSound } from '@/composables/useWorkbenchSound.js'
 import {
   NOTIFICATION_SETTINGS_UPDATED_EVENT,
   readNotificationSettings,
@@ -98,6 +98,7 @@ const createReminderPayload = (habit, options = {}) => ({
 export function useReminder() {
   const habitStore = useHabitStore()
   const authStore = useAuthStore()
+  const { playWorkbenchSound } = useWorkbenchSound()
 
   const getCurrentSettings = () => readNotificationSettings(authStore.user?.id)
 
@@ -126,7 +127,7 @@ export function useReminder() {
 
   const getNotificationIcon = (icon) => {
     if (isRenderableMediaUrl(icon)) return resolveMediaUrl(icon)
-    return '/favicon.ico'
+    return '/favicon.png'
   }
 
   const showBrowserNotification = async (payload) => {
@@ -161,7 +162,7 @@ export function useReminder() {
   const openReminder = (payload) => {
     activeReminder.value = payload
     isReminderActive.value = true
-    audioManager.playNotificationSound()
+    void playWorkbenchSound('notification')
     void showBrowserNotification(payload)
   }
 
@@ -215,7 +216,7 @@ export function useReminder() {
       return
     }
 
-    audioManager.playSuccessSound()
+    void playWorkbenchSound('complete')
 
     try {
       await habitStore.completeHabit(currentHabit.id, payload.comment || null)
@@ -232,7 +233,7 @@ export function useReminder() {
       return
     }
 
-    audioManager.playSnoozeSound()
+    void playWorkbenchSound('snooze', { ignoreQuietHours: true })
 
     const reminderSlot = payload.reminderSlot || payload.reminderTime || 'default'
     const reminderKey = getReminderKey(payload.habit.id, reminderSlot)
@@ -256,7 +257,7 @@ export function useReminder() {
   }
 
   const handleReminderDismiss = () => {
-    audioManager.playDismissSound()
+    void playWorkbenchSound('dismiss', { ignoreQuietHours: true })
     finishCurrentReminder()
   }
 

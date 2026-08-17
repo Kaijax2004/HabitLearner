@@ -1,0 +1,18 @@
+import api from './index.js'
+
+export const listEditorPages = (params = {}) => api.get('/editor/pages', params)
+export const getEditorPageTree = (params = {}) => api.get('/editor/pages/tree', params)
+export const getEditorPage = (id) => api.get(`/editor/pages/${id}`)
+export const createEditorPage = (payload = {}) => api.post('/editor/pages', payload)
+export const updateEditorPage = (id, payload = {}) => api.put(`/editor/pages/${id}`, payload)
+export const deleteEditorPage = (id) => api.delete(`/editor/pages/${id}`)
+export const reorderEditorPages = (parentId, ids) => api.post(`/editor/pages/${parentId || 'root'}/reorder`, { parent_id: parentId || null, ids })
+export const listEditorBlocks = (pageId) => api.get(`/editor/pages/${pageId}/blocks`)
+export const createEditorBlock = (pageId, payload = {}) => api.post(`/editor/pages/${pageId}/blocks`, payload)
+export const updateEditorBlock = (id, payload = {}) => api.put(`/editor/blocks/${id}`, payload)
+export const deleteEditorBlock = (id) => api.delete(`/editor/blocks/${id}`)
+export const reorderEditorBlocks = (pageId, ids) => api.post(`/editor/blocks/${pageId}/reorder`, { ids })
+export const updateEditorProperties = (pageId, properties) => api.put(`/editor/pages/${pageId}/properties`, { properties })
+export const listDatabaseViews = (pageId) => api.get(`/editor/pages/${pageId}/database-views`)
+export const createDatabaseView = (payload = {}) => api.post('/editor/database-views', payload)
+export const updateDatabaseView = (id, payload = {}) => api.put(`/editor/database-views/${id}`, payload)
