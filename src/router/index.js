@@ -1,5 +1,6 @@
-﻿import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { finishRouteLoading, startRouteLoading } from '@/composables/useRouteLoading'
 
 const routes = [
   { path: '/', redirect: '/dashboard' },
@@ -7,6 +8,7 @@ const routes = [
   { path: '/plan/:id', name: 'PlanEditor', component: () => import('@/views/PlanEditorView.vue'), meta: { requiresAuth: true } },
   { path: '/workspace/pages/:id', name: 'WorkspacePage', component: () => import('@/views/WorkspacePageView.vue'), meta: { requiresAuth: true } },
   { path: '/auth', name: 'Auth', component: () => import('@/views/AuthView.vue'), meta: { requiresGuest: true } },
+  { path: '/auth/social/callback', name: 'AuthSocialCallback', component: () => import('@/views/AuthSocialCallbackView.vue') },
   { path: '/dashboard', name: 'Dashboard', component: () => import('@/views/DashboardView.vue'), meta: { requiresAuth: true } },
   { path: '/focus', name: 'Focus', component: () => import('@/views/FocusView.vue'), meta: { requiresAuth: true } },
   { path: '/captures', name: 'Captures', component: () => import('@/views/CapturesView.vue'), meta: { requiresAuth: true } },
@@ -39,7 +41,11 @@ const router = createRouter({
   }
 })
 
-router.beforeEach(async (to) => {
+router.beforeEach(async (to, from) => {
+  if (to.fullPath !== from.fullPath) {
+    startRouteLoading(to.meta.loadingText || '正在切换工作台')
+  }
+
   const authStore = useAuthStore()
 
   if (!authStore.bootstrapComplete) {
@@ -61,4 +67,13 @@ router.beforeEach(async (to) => {
   return true
 })
 
+router.afterEach(() => {
+  finishRouteLoading()
+})
+
+router.onError(() => {
+  finishRouteLoading()
+})
+
 export default router
+

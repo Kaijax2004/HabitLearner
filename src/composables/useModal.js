@@ -1,4 +1,5 @@
 import { ref } from 'vue'
+import { alertDialog, confirmDialog } from '@/composables/useGlobalDialog'
 
 export function useModal() {
   const showModal = ref(false)
@@ -70,11 +71,7 @@ export function useModal() {
 // 全局弹窗方法，用于替换原生confirm和prompt
 export const globalModal = {
   confirm: (message, title = '确认操作') => {
-    return new Promise((resolve) => {
-      // 这里可以集成全局弹窗组件
-      const result = window.confirm(`${title}\n\n${message}`)
-      resolve(result)
-    })
+    return confirmDialog({ message, title })
   },
   
   prompt: (message, defaultValue = '', title = '输入信息') => {
@@ -83,5 +80,9 @@ export const globalModal = {
       const result = window.prompt(`${title}\n\n${message}`, defaultValue)
       resolve(result)
     })
+  },
+
+  alert: (message, title = '提示') => {
+    return alertDialog({ message, title })
   }
 }

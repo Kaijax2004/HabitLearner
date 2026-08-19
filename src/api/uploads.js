@@ -11,6 +11,7 @@ const uploadWithProgress = async (endpoint, file, progressCallback) => {
       const url = `${API_BASE_URL}${endpoint}`
 
       xhr.open('POST', url)
+      xhr.timeout = 300000
 
       const token = localStorage.getItem('token')
       if (token) {
@@ -24,18 +25,26 @@ const uploadWithProgress = async (endpoint, file, progressCallback) => {
       }
 
       xhr.onload = () => {
+        let payload = null
+        try {
+          payload = xhr.responseText ? JSON.parse(xhr.responseText) : null
+        } catch {
+          payload = null
+        }
+
         if (xhr.status >= 200 && xhr.status < 300) {
-          try {
-            resolve(JSON.parse(xhr.responseText))
-          } catch {
-            reject(new Error('无法解析响应'))
-          }
+          resolve(payload || { success: true })
         } else {
-          reject(new Error(`上传失败: ${xhr.status}`))
+          resolve({
+            success: false,
+            error: payload?.error || payload?.message || `上传失败: ${xhr.status}`,
+            code: payload?.code || xhr.status
+          })
         }
       }
 
       xhr.onerror = () => reject(new Error('网络错误'))
+      xhr.ontimeout = () => reject(new Error('上传超时，请检查网络或压缩文件后重试'))
       xhr.send(formData)
     })
   } catch (error) {

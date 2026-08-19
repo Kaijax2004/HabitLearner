@@ -133,6 +133,7 @@ export function useReminder() {
   const showBrowserNotification = async (payload) => {
     const settings = getCurrentSettings()
     if (!settings.pushNotifications) return
+    if (!settings.browserNotifications) return
     if (typeof window === 'undefined' || !('Notification' in window)) return
     if (isWithinQuietHours(settings)) return
 

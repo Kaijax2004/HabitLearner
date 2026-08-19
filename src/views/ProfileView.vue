@@ -171,7 +171,7 @@
 
           <div class="profile-tool-grid">
             <BaseCard v-for="item in settingItems" :key="item.title" padding="none">
-              <button type="button" class="profile-tool-button" @click="item.action">
+              <button type="button" class="profile-tool-button" @click="item.action()">
                 <div :class="['profile-tool-icon', item.iconClass]">
                   <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="item.icon" />
@@ -335,10 +335,11 @@
           <div class="notification-console__head">
             <span>Reminder</span>
             <h4>提醒渠道</h4>
-            <p>控制浏览器提醒、邮件提醒和默认提醒时间。</p>
+            <p>控制应用内提醒、系统通知、邮件提醒和默认提醒时间。</p>
           </div>
           <div class="notification-toggle-grid">
-            <ToggleRow v-model="notificationSettings.pushNotifications" title="推送通知" description="允许浏览器和应用内提醒弹窗" />
+            <ToggleRow v-model="notificationSettings.pushNotifications" title="应用内提醒" description="使用习知自己的提醒卡片，不打断当前工作流" />
+            <ToggleRow v-model="notificationSettings.browserNotifications" title="浏览器系统通知" description="需要系统级提醒时再开启，默认关闭以保持界面克制" />
             <ToggleRow v-model="notificationSettings.emailNotifications" title="邮件通知" description="接收邮件提醒和状态通知" />
             <ToggleRow v-model="notificationSettings.habitReminders" title="习惯提醒" description="根据习惯提醒时间触发应用内提醒" />
             <ToggleRow v-model="notificationSettings.planReminders" title="计划提醒" description="保留计划提醒开关，兼容后端设置字段" />
@@ -866,7 +867,7 @@
 </template>
 
 <script setup>
-import { computed, defineComponent, h, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, defineComponent, h, onBeforeUnmount, onMounted, ref, Teleport, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useHabitStore } from '@/stores/habit'
@@ -884,6 +885,7 @@ import {
 import { uploadFile, uploadImage } from '@/api/uploads.js'
 import { resolveMediaUrl } from '@/utils/media.js'
 import { useToast } from '@/composables/useToast'
+import { confirmDialog } from '@/composables/useGlobalDialog'
 import { useWorkspaceAiStore } from '@/stores/workspaceAi.js'
 import {
   cacheNotificationSettings,
@@ -935,22 +937,30 @@ const SettingsModal = defineComponent({
   },
   emits: ['close', 'save'],
   setup(props, { emit, slots }) {
-    return () => h('div', {
-      class: 'fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4 backdrop-blur-sm'
-    }, [
+    return () => h(Teleport, { to: 'body' }, [
       h('div', {
-        class: 'w-full max-w-3xl overflow-hidden rounded-[28px] border border-zinc-200 bg-white shadow-apple-lg dark:border-zinc-800 dark:bg-zinc-950'
+        class: 'profile-settings-overlay',
+        onClick: (event) => {
+          if (event.target === event.currentTarget) emit('close')
+        }
       }, [
-        h(ModalHeader, { title: props.title, onClose: () => emit('close') }),
-        h('div', { class: 'space-y-4 p-6' }, slots.default?.()),
         h('div', {
-          class: 'border-t border-zinc-200 bg-white/90 px-6 py-4 backdrop-blur-apple dark:border-zinc-800 dark:bg-zinc-950/90'
+          class: 'profile-settings-modal',
+          role: 'dialog',
+          'aria-modal': 'true',
+          'aria-label': props.title
         }, [
-          h('button', {
-            class: 'btn-primary w-full',
-            disabled: props.saving,
-            onClick: () => emit('save')
-          }, props.saving ? '保存中...' : '保存设置')
+          h(ModalHeader, { title: props.title, onClose: () => emit('close') }),
+          h('div', { class: 'profile-settings-body' }, slots.default?.()),
+          h('div', {
+            class: 'profile-settings-footer'
+          }, [
+            h('button', {
+              class: 'btn-primary w-full',
+              disabled: props.saving,
+              onClick: () => emit('save')
+            }, props.saving ? '保存中...' : '保存设置')
+          ])
         ])
       ])
     ])
@@ -1003,6 +1013,7 @@ const DEFAULT_UI_NOTIFICATION_SETTINGS = {
 const normalizeUiNotificationSettings = (settings = {}) => ({
   ...DEFAULT_UI_NOTIFICATION_SETTINGS,
   ...normalizeNotificationSettings(settings),
+  browserNotifications: settings.browserNotifications ?? DEFAULT_UI_NOTIFICATION_SETTINGS.browserNotifications,
   habitReminders: settings.habitReminders ?? settings.habitsReminder ?? DEFAULT_UI_NOTIFICATION_SETTINGS.habitReminders,
   planReminders: settings.planReminders ?? settings.plansReminder ?? DEFAULT_UI_NOTIFICATION_SETTINGS.planReminders,
   reminderTime: settings.reminderTime || DEFAULT_UI_NOTIFICATION_SETTINGS.reminderTime,
@@ -1013,6 +1024,7 @@ const normalizeUiNotificationSettings = (settings = {}) => ({
 
 const mapNotificationSettingsToApi = (settings) => ({
   pushNotifications: settings.pushNotifications,
+  browserNotifications: settings.browserNotifications,
   emailNotifications: settings.emailNotifications,
   habitsReminder: settings.habitReminders,
   plansReminder: settings.planReminders,
@@ -1236,7 +1248,7 @@ const withAvatarCacheBust = (url) => {
     return `${url}${separator}v=${avatarVersion.value}`
   }
 }
-const displayAvatar = computed(() => withAvatarCacheBust(resolveMediaUrl(user.value?.avatar || '')))
+const displayAvatar = computed(() => withAvatarCacheBust(resolveMediaUrl(user.value?.avatarUrl || user.value?.avatar || '')))
 const adminMailAssetTotalBytes = computed(() => (
   [...adminMailForm.value.inlineImages, ...adminMailForm.value.attachments]
     .reduce((sum, item) => sum + Number(item.size || 0), 0)
@@ -1590,7 +1602,7 @@ const testAiProviderConfig = async (providerId) => {
 }
 
 const disableAiProvider = async (provider) => {
-  if (!provider?.id || !window.confirm(`确定停用“${provider.name || '该供应商'}”吗？`)) return
+  if (!provider?.id || !(await confirmDialog(`确定停用“${provider.name || '该供应商'}”吗？`))) return
 
   try {
     const response = await deleteAiProvider(provider.id)
@@ -1649,7 +1661,7 @@ const initUserData = () => {
     username: user.value?.username || user.value?.name || '',
     avatar: user.value?.avatar || ''
   }
-  avatarPreview.value = resolveMediaUrl(user.value?.avatar || '')
+    avatarPreview.value = resolveMediaUrl(user.value?.avatarUrl || user.value?.avatar || '')
 }
 
 const openEditProfile = () => {
@@ -1660,7 +1672,7 @@ const openEditProfile = () => {
 const closeEditModal = () => {
   showEditModal.value = false
   avatarFile.value = null
-  avatarPreview.value = resolveMediaUrl(user.value?.avatar || '')
+  avatarPreview.value = resolveMediaUrl(user.value?.avatarUrl || user.value?.avatar || '')
 }
 
 const closeVerifyModal = () => {
@@ -1781,7 +1793,7 @@ const openPasswordChange = () => {
 }
 
 const handleLogout = async () => {
-  if (!window.confirm('确定要退出登录吗？')) return
+  if (!(await confirmDialog('确定要退出登录吗？'))) return
   await authStore.logout()
   router.push('/auth')
 }
@@ -2081,7 +2093,7 @@ const saveNotificationSettings = async () => {
       return
     }
 
-    if (notificationSettings.value.pushNotifications) {
+    if (notificationSettings.value.browserNotifications) {
       await requestNotificationPermission()
     }
 
@@ -2159,14 +2171,16 @@ const loadStats = async () => {
 }
 
 const loadNotificationSettings = async () => {
-  notificationSettings.value = normalizeUiNotificationSettings(
-    readNotificationSettings(authStore.user?.id)
-  )
+  const cachedSettings = readNotificationSettings(authStore.user?.id)
+  notificationSettings.value = normalizeUiNotificationSettings(cachedSettings)
 
   try {
     const response = await settingsAPI.getNotificationSettings()
     if (response.success && response.data) {
-      notificationSettings.value = normalizeUiNotificationSettings(response.data)
+      notificationSettings.value = normalizeUiNotificationSettings({
+        ...response.data,
+        browserNotifications: cachedSettings.browserNotifications
+      })
       cacheNotificationSettings(authStore.user?.id, notificationSettings.value)
     }
   } catch (err) {
@@ -2214,7 +2228,7 @@ onMounted(async () => {
 })
 
 watch(() => route.query.panel, syncProfilePanelFromRoute)
-watch(() => user.value?.avatar, () => {
+watch(() => [user.value?.avatar, user.value?.avatarUrl], () => {
   avatarVersion.value = Date.now()
   avatarLoadFailed.value = false
 })
@@ -3179,6 +3193,58 @@ onBeforeUnmount(() => {
   background: rgba(9, 9, 11, 0.92);
 }
 
+:global(.profile-settings-overlay) {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  background: rgba(24, 24, 27, 0.48);
+  padding: clamp(12px, 2vw, 24px);
+  backdrop-filter: blur(14px);
+  overflow: hidden;
+}
+
+:global(.profile-settings-modal) {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  width: min(92vw, 880px);
+  max-height: calc(100dvh - 48px);
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid rgba(228, 228, 231, 0.92);
+  border-radius: 30px;
+  background: rgba(255, 255, 255, 0.97);
+  box-shadow: 0 32px 90px rgba(15, 23, 42, 0.24);
+}
+
+:global(.dark .profile-settings-modal) {
+  border-color: rgba(63, 63, 70, 0.95);
+  background: rgba(9, 9, 11, 0.98);
+  box-shadow: 0 32px 90px rgba(0, 0, 0, 0.42);
+}
+
+:global(.profile-settings-body) {
+  min-height: 0;
+  max-height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 20px;
+  overscroll-behavior: contain;
+}
+
+:global(.profile-settings-footer) {
+  border-top: 1px solid rgba(228, 228, 231, 0.9);
+  background: rgba(255, 255, 255, 0.9);
+  padding: 14px 20px calc(14px + env(safe-area-inset-bottom, 0px));
+  backdrop-filter: blur(16px);
+}
+
+:global(.dark .profile-settings-footer) {
+  border-top-color: rgba(63, 63, 70, 0.95);
+  background: rgba(9, 9, 11, 0.92);
+}
+
 .option-row {
   display: flex;
   align-items: center;
@@ -3548,6 +3614,25 @@ onBeforeUnmount(() => {
   .modal-footer {
     flex-direction: column;
     padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+  }
+
+  :global(.profile-settings-overlay) {
+    align-items: end;
+    padding: 8px;
+  }
+
+  :global(.profile-settings-modal) {
+    width: 100%;
+    max-height: calc(100dvh - 16px);
+    border-radius: 26px 26px 18px 18px;
+  }
+
+  :global(.profile-settings-body) {
+    padding: 16px;
+  }
+
+  :global(.profile-settings-footer) {
+    padding: 12px 16px calc(16px + env(safe-area-inset-bottom, 0px));
   }
 }
 </style>

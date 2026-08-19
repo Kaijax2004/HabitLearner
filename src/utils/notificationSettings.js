@@ -2,6 +2,7 @@ export const NOTIFICATION_SETTINGS_UPDATED_EVENT = 'habit-notification-settings-
 
 export const DEFAULT_NOTIFICATION_SETTINGS = {
   pushNotifications: true,
+  browserNotifications: false,
   emailNotifications: false,
   habitReminders: true,
   planReminders: true,
@@ -72,6 +73,7 @@ export const normalizeNotificationSettings = (settings = {}) => ({
   ...DEFAULT_NOTIFICATION_SETTINGS,
   ...settings,
   pushNotifications: settings.pushNotifications ?? DEFAULT_NOTIFICATION_SETTINGS.pushNotifications,
+  browserNotifications: settings.browserNotifications ?? DEFAULT_NOTIFICATION_SETTINGS.browserNotifications,
   emailNotifications: settings.emailNotifications ?? DEFAULT_NOTIFICATION_SETTINGS.emailNotifications,
   habitReminders: settings.habitReminders ?? settings.habitsReminder ?? DEFAULT_NOTIFICATION_SETTINGS.habitReminders,
   planReminders: settings.planReminders ?? settings.plansReminder ?? DEFAULT_NOTIFICATION_SETTINGS.planReminders,

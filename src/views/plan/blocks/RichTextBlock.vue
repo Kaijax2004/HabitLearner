@@ -36,7 +36,8 @@ import Highlight from '@tiptap/extension-highlight'
 
 const props = defineProps({
   modelValue: { type: Object, default: () => ({ text: '', html: '', document: null }) },
-  placeholder: { type: String, default: "输入 '/' 打开命令菜单..." }
+  placeholder: { type: String, default: "输入 '/' 打开命令菜单..." },
+  autoFocus: { type: Boolean, default: false }
 })
 
 const emit = defineEmits([
@@ -70,7 +71,8 @@ const editor = useEditor({
   extensions: [
     StarterKit.configure({
       heading: { levels: [1, 2, 3, 4, 5, 6] },
-      history: { depth: 100 }
+      history: { depth: 100 },
+      link: false
     }),
     Link.configure({
       openOnClick: false,
@@ -177,6 +179,10 @@ watch(
 
 onBeforeUnmount(() => {
   editor.value?.destroy()
+})
+
+nextTick(() => {
+  if (props.autoFocus) editor.value?.commands.focus('end')
 })
 </script>
 

@@ -104,29 +104,6 @@
             <p class="mt-3 text-[0.95rem] leading-6 text-zinc-600 dark:text-zinc-300">{{ authMeta.description }}</p>
           </div>
 
-          <div v-if="authMode !== 'reset'" class="auth-mode-switch grid grid-cols-2 rounded-2xl border border-zinc-200 bg-zinc-100/80 p-1 dark:border-zinc-800 dark:bg-zinc-900/70">
-            <button
-              type="button"
-              class="rounded-xl px-4 py-2.5 text-sm font-semibold transition"
-              :class="authMode === 'login'
-                ? 'bg-white text-zinc-950 shadow-sm dark:bg-zinc-950 dark:text-white'
-                : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white'"
-              @click="switchAuthMode('login')"
-            >
-              登录
-            </button>
-            <button
-              type="button"
-              class="rounded-xl px-4 py-2.5 text-sm font-semibold transition"
-              :class="authMode === 'register'
-                ? 'bg-white text-zinc-950 shadow-sm dark:bg-zinc-950 dark:text-white'
-                : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white'"
-              @click="switchAuthMode('register')"
-            >
-              注册
-            </button>
-          </div>
-
           <div v-if="authMode === 'login'" class="auth-login-panel mt-7">
             <div class="auth-method-tabs grid grid-cols-2 border-b border-zinc-200 dark:border-zinc-800">
               <button
@@ -467,6 +444,20 @@
               {{ authMode === 'login' ? '立即注册' : '去登录' }}
             </button>
           </div>
+
+          <div v-if="authMode === 'login'" class="auth-social-section" aria-label="第三方快捷登录">
+            <button
+              v-for="provider in socialProviders"
+              :key="provider.key"
+              type="button"
+              class="auth-social-button"
+              :title="provider.label"
+              :aria-label="provider.label"
+              @click="startSocialLogin(provider.key)"
+            >
+              <img :src="provider.icon" :alt="provider.label" class="auth-social-icon">
+            </button>
+          </div>
         </div>
       </section>
     </main>
@@ -552,6 +543,11 @@ const resetForm = ref({
   newPassword: '',
   confirmPassword: ''
 })
+
+const socialProviders = [
+  { key: 'wechat', label: '微信登录', icon: '/auth-providers/wechat.png' },
+  { key: 'qq', label: 'QQ 登录', icon: '/auth-providers/qq.png' }
+]
 
 const authMeta = computed(() => {
   if (authMode.value === 'register') {
@@ -676,6 +672,15 @@ const getErrorMessage = (message = '', code) => {
   }
 
   return text || '发生未知错误，请稍后重试。'
+}
+
+const startSocialLogin = (provider) => {
+  const url = authAPI.getSocialLoginUrl(provider, router.currentRoute.value.query.redirect || '/dashboard')
+  if (!url) {
+    error('快捷登录不可用', { description: '暂不支持该登录方式。' })
+    return
+  }
+  window.location.assign(url)
 }
 
 const sendCode = async (scene) => {
@@ -1468,32 +1473,74 @@ onBeforeUnmount(() => {
 }
 
 
-.auth-mode-switch {
-  padding: 0.32rem;
-  border-color: rgba(24, 24, 27, 0.08) !important;
-  border-radius: 999px !important;
-  background: rgba(255, 255, 255, 0.54) !important;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.7),
-    0 10px 24px rgba(24, 24, 27, 0.045);
-}
-
-.auth-mode-switch button {
-  min-height: 3rem;
-  border-radius: 999px !important;
-  font-size: 0.9rem !important;
-  letter-spacing: 0.03em;
-}
-
-.dark .auth-mode-switch {
-  border-color: rgba(255, 255, 255, 0.08) !important;
-  background: rgba(24, 24, 27, 0.62) !important;
-}
-
 .auth-login-panel {
-  margin-top: 1.95rem !important;
+  margin-top: 0 !important;
 }
 
+.auth-social-section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.9rem;
+  margin-top: 1.15rem;
+}
+
+.auth-social-button {
+  display: inline-flex;
+  width: 3.25rem;
+  height: 3.25rem;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 1px solid rgba(24, 24, 27, 0.12);
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 35% 20%, rgba(255, 255, 255, 0.9), transparent 42%),
+    rgba(255, 255, 255, 0.78);
+  box-shadow:
+    0 14px 28px rgba(24, 24, 27, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.75);
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease, opacity 160ms ease;
+}
+
+.auth-social-button:hover:not(:disabled) {
+  transform: translateY(-3px);
+  border-color: rgba(24, 24, 27, 0.26);
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.auth-social-button:active:not(:disabled) {
+  transform: translateY(0) scale(0.96);
+}
+
+.auth-social-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+
+.auth-social-icon {
+  width: 1.7rem;
+  height: 1.7rem;
+  object-fit: contain;
+}
+
+.auth-social-button[aria-label="QQ 登录"] .auth-social-icon {
+  width: 1.95rem;
+  height: 1.95rem;
+}
+
+.dark .auth-social-button {
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(24, 24, 27, 0.68);
+  box-shadow:
+    0 10px 22px rgba(0, 0, 0, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.dark .auth-social-button:hover:not(:disabled) {
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(39, 39, 42, 0.86);
+}
 .auth-method-tabs {
   padding: 0.28rem;
   border: 1px solid rgba(24, 24, 27, 0.08);
@@ -1894,3 +1941,4 @@ onBeforeUnmount(() => {
     inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 </style>
+

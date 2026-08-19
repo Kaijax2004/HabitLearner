@@ -165,6 +165,20 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  const acceptSocialToken = async (nextToken) => {
+    if (!nextToken) {
+      return { success: false, error: '快捷登录凭证为空' }
+    }
+
+    writeStoredToken(nextToken)
+    token.value = nextToken
+    bootstrapComplete.value = false
+    const hydrated = await hydrateProfile()
+    return hydrated
+      ? { success: true, user: user.value }
+      : { success: false, error: '快捷登录成功，但用户资料加载失败' }
+  }
+
   const updateProfile = async (profileData) => {
     isLoading.value = true
     try {
@@ -197,6 +211,7 @@ export const useAuthStore = defineStore('auth', () => {
     login,
     loginWithCode,
     register,
+    acceptSocialToken,
     logout,
     checkAuth,
     updateProfile,

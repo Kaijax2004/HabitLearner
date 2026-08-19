@@ -1,6 +1,27 @@
 ﻿import api from './index.js'
 
 export const normalizePlanStatus = (status) => status === 'done' ? 'completed' : (status || 'not_started')
+const VALID_PLAN_TYPES = new Set(['project', 'task', 'goal', 'custom'])
+
+const normalizePlanPayload = (payload = {}) => {
+  const nextPayload = { ...payload }
+  if (nextPayload.status) nextPayload.status = normalizePlanStatus(nextPayload.status)
+  if (nextPayload.type === 'note') nextPayload.type = 'goal'
+
+  const rawType = String(nextPayload.type || 'project').trim()
+  if (VALID_PLAN_TYPES.has(rawType)) {
+    nextPayload.type = rawType
+  } else {
+    nextPayload.type = 'custom'
+    nextPayload.custom_type_name = String(nextPayload.custom_type_name || rawType).slice(0, 50)
+  }
+
+  if (nextPayload.type !== 'custom') {
+    nextPayload.custom_type_name = null
+  }
+
+  return nextPayload
+}
 
 export const listPlans = () => api.get('/plans')
 export const getPlanById = (id) => api.get(`/plans/${id}`)
@@ -8,21 +29,17 @@ export const createPlan = (payload) => {
   if (!payload?.title?.trim()) {
     return Promise.resolve({ success: false, error: '计划标题不能为空' })
   }
-  return api.post('/plans', {
+  return api.post('/plans', normalizePlanPayload({
     title: payload.title.trim(),
     status: normalizePlanStatus(payload.status),
     priority: payload.priority || 'medium',
     type: payload.type || 'project',
     custom_type_name: payload.custom_type_name || null,
     due_date: payload.due_date || null
-  })
+  }))
 }
 export const updatePlan = (id, payload) => {
-  const nextPayload = { ...payload }
-  if (nextPayload.status) nextPayload.status = normalizePlanStatus(nextPayload.status)
-  if (nextPayload.type === 'note') nextPayload.type = 'goal'
-  if (nextPayload.type !== 'custom' && nextPayload.custom_type_name === undefined) nextPayload.custom_type_name = null
-  return api.put(`/plans/${id}`, nextPayload)
+  return api.put(`/plans/${id}`, normalizePlanPayload(payload))
 }
 export const deletePlan = (id) => api.delete(`/plans/${id}`)
 export const archivePlan = (id, category = 'default') => api.post(`/plans/${id}/archive`, { category })

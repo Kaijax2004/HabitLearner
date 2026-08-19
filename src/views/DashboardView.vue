@@ -87,6 +87,7 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useHabitStore } from '@/stores/habit'
 import { useToast } from '@/composables/useToast'
+import { confirmDialog } from '@/composables/useGlobalDialog'
 import { useWorkspaceAiStore } from '@/stores/workspaceAi'
 import AppLayout from '@/components/AppLayout.vue'
 import DashboardHero from '@/views/dashboard/DashboardHero.vue'
@@ -422,7 +423,7 @@ const toggleSelectAllHabits = () => {
 const deleteSelectedHabits = async () => {
   if (!selectedHabitIds.value.length || deletingSelectedHabits.value) return
   const count = selectedHabitIds.value.length
-  if (!confirm(`确定删除选中的 ${count} 个习惯吗？此操作不可撤销。`)) return
+  if (!(await confirmDialog(`确定删除选中的 ${count} 个习惯吗？此操作不可撤销。`))) return
 
   deletingSelectedHabits.value = true
   const response = await habitStore.deleteHabits(selectedHabitIds.value)

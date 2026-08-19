@@ -43,7 +43,16 @@
           @export="toggleExportMenu"
           @delete="deleteCurrentPlan"
         />
-        <div v-if="isLoading" class="py-24 text-center text-zinc-500 dark:text-zinc-400">正在加载计划...</div>
+        <div v-if="isLoading" class="plan-editor-loading" aria-live="polite">
+          <div class="plan-loading-title"></div>
+          <div class="plan-loading-line w-11/12"></div>
+          <div class="plan-loading-line w-4/5"></div>
+          <div class="plan-loading-line w-10/12"></div>
+          <div class="plan-loading-gap"></div>
+          <div class="plan-loading-line w-2/3"></div>
+          <div class="plan-loading-line w-5/6"></div>
+          <span>正在整理计划正文...</span>
+        </div>
         <div v-else-if="loadError" class="plan-load-error">
           <div class="text-lg font-semibold text-zinc-900 dark:text-white">{{ loadError.title }}</div>
           <p class="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400">{{ loadError.message }}</p>
@@ -365,6 +374,7 @@ import { useEditorHistory } from '@/composables/useEditorHistory'
 import { useEditorPersistence } from '@/composables/useEditorPersistence'
 import { useEditorKeyboard } from '@/composables/useEditorKeyboard'
 import { useToast } from '@/composables/useToast'
+import { alertDialog, confirmDialog } from '@/composables/useGlobalDialog'
 import { usePlanStore } from '@/stores/plan'
 import { useWorkspaceAiStore } from '@/stores/workspaceAi'
 import { resolveMediaUrl } from '@/utils/media'
@@ -487,6 +497,9 @@ const aiActionCooldownUntil = ref({
   video: 0
 })
 const aiCooldownTick = ref(Date.now())
+let planLoadSeq = 0
+let editorPageTreeRequest = null
+let aiSkillsRequest = null
 const inlineAiToolbar = ref({
   show: false,
   blockId: null,
@@ -567,7 +580,7 @@ const editorKeyboard = useEditorKeyboard({
 
 const blockComponents = {
   heading: defineAsyncComponent(() => import('@/views/plan/blocks/HeadingBlock.vue')),
-  text: defineAsyncComponent(() => import('@/views/plan/blocks/RichTextBlock.vue')),
+  text: defineAsyncComponent(() => import('@/views/plan/blocks/LazyRichTextBlock.vue')),
   page: defineAsyncComponent(() => import('@/views/plan/blocks/PageBlock.vue')),
   todo: defineAsyncComponent(() => import('@/views/plan/blocks/TodoBlock.vue')),
   toggle: defineAsyncComponent(() => import('@/views/plan/blocks/ToggleBlock.vue')),
@@ -771,6 +784,21 @@ const aiMediaModelHint = computed(() => {
   if (aiMediaModelOptions.value.length) return '模型来自当前 AI 供应商。'
   return '尚未读取到模型列表。'
 })
+
+const runWhenIdle = (task, delay = 0) => {
+  if (typeof window === 'undefined') {
+    void task()
+    return
+  }
+
+  window.setTimeout(() => {
+    if (typeof window.requestIdleCallback === 'function') {
+      window.requestIdleCallback(() => void task(), { timeout: 1800 })
+      return
+    }
+    void task()
+  }, delay)
+}
 
 const ensureAiMediaModelsLoaded = async ({ force = false } = {}) => {
   if (aiMediaModelsLoading.value) return
@@ -2011,7 +2039,7 @@ const saveAiConversation = async () => {
 
 const deleteCurrentAiConversation = async () => {
   const id = String(aiConversationId.value || '')
-  if (!id || !window.confirm('确认删除这条 AI 对话吗？')) return
+  if (!id || !(await confirmDialog('确认删除这条 AI 对话吗？'))) return
 
   const response = await deleteAiConversationRequest(id)
   if (!response?.success) {
@@ -2100,13 +2128,27 @@ const runAiWorkspaceChat = async () => {
   }
 }
 
-const loadAiSkills = async () => {
-  const response = await listAiSkills()
-  if (!response?.success) {
-    showInfo('AI 技能暂时无法加载', { description: response?.error || '你仍然可以使用默认提示。' })
-    return
+const loadAiSkills = async ({ force = false, silent = false } = {}) => {
+  if (!force && aiSkills.value.length) return { success: true, data: { skills: aiSkills.value } }
+  if (aiSkillsRequest) return aiSkillsRequest
+
+  aiSkillsRequest = (async () => {
+    const response = await listAiSkills()
+    if (!response?.success) {
+      if (!silent) {
+        showInfo('AI 技能暂时无法加载', { description: response?.error || '你仍然可以使用默认提示。' })
+      }
+      return response
+    }
+    aiSkills.value = Array.isArray(response.data?.skills) ? response.data.skills : []
+    return response
+  })()
+
+  try {
+    return await aiSkillsRequest
+  } finally {
+    aiSkillsRequest = null
   }
-  aiSkills.value = Array.isArray(response.data?.skills) ? response.data.skills : []
 }
 
 const closeAiComposer = () => {
@@ -2988,27 +3030,51 @@ const persistCurrentOrder = async () => {
   return !!res.success
 }
 
-const loadPlanScheduleBlocks = async () => {
-  if (!planId.value) {
+const loadPlanScheduleBlocks = async (targetPlanId = planId.value, { silent = false } = {}) => {
+  if (!targetPlanId) {
     scheduleBlocks.value = []
     return
   }
 
   scheduleBlocksLoading.value = true
-  const response = await listScheduleBlocks({ planId: planId.value, limit: 200 })
-  scheduleBlocksLoading.value = false
+  try {
+    const response = await listScheduleBlocks({ planId: targetPlanId, limit: 200 })
+    if (String(targetPlanId) !== String(planId.value)) return
 
-  if (response.success) {
-    scheduleBlocks.value = Array.isArray(response.data) ? response.data : []
-    return
+    if (response.success) {
+      scheduleBlocks.value = Array.isArray(response.data) ? response.data : []
+      return
+    }
+
+    scheduleBlocks.value = []
+    if (!silent) showInfo('日程暂时无法加载', { description: response.error || '这不会影响正文编辑。' })
+  } catch (error) {
+    if (String(targetPlanId) === String(planId.value)) {
+      scheduleBlocks.value = []
+      if (!silent) showInfo('日程暂时无法加载', { description: error?.message || '这不会影响正文编辑。' })
+    }
+  } finally {
+    if (String(targetPlanId) === String(planId.value)) {
+      scheduleBlocksLoading.value = false
+    }
   }
-
-  scheduleBlocks.value = []
 }
 
-const loadEditorPageTree = async () => {
-  const response = await getEditorPageTree()
-  if (response.success) editorPageTree.value = Array.isArray(response.data) ? response.data : []
+const loadEditorPageTree = async ({ force = false } = {}) => {
+  if (!force && editorPageTree.value.length) return { success: true, data: editorPageTree.value }
+  if (editorPageTreeRequest) return editorPageTreeRequest
+
+  editorPageTreeRequest = (async () => {
+    const response = await getEditorPageTree()
+    if (response.success) editorPageTree.value = Array.isArray(response.data) ? response.data : []
+    return response
+  })()
+
+  try {
+    return await editorPageTreeRequest
+  } finally {
+    editorPageTreeRequest = null
+  }
 }
 
 const openEditorPage = (page) => {
@@ -3058,6 +3124,7 @@ const loadCurrentPlanRecord = async () => {
 }
 
 const loadPlan = async () => {
+  const currentLoadSeq = ++planLoadSeq
   isLoading.value = true
   loadError.value = null
   try {
@@ -3070,11 +3137,16 @@ const loadPlan = async () => {
     aiImageHistory.value = []
     aiVideoResult.value = null
     aiVideoHistory.value = []
-    if (!planStore.plans.length) {
-      await planStore.loadPlans()
-    }
 
-    const plan = await loadCurrentPlanRecord()
+    scheduleBlocks.value = []
+    scheduleBlocksLoading.value = false
+
+    const [plan, editorResponse] = await Promise.all([
+      loadCurrentPlanRecord(),
+      editorDocument.loadForPlan(planId.value, route.query.editorPageId || null)
+    ])
+
+    if (currentLoadSeq !== planLoadSeq) return
 
     if (!plan) {
       loadError.value = {
@@ -3091,10 +3163,6 @@ const loadPlan = async () => {
     customTypeName.value = plan.custom_type_name || ''
     dueDate.value = plan.due_date || ''
 
-    const editorResponse = await editorDocument.loadForPlan(
-      planId.value,
-      route.query.editorPageId || null
-    )
     if (editorResponse.success && editorResponse.data?.page) {
       editorPageId.value = editorResponse.data.page.id
       blocks.value = (editorResponse.data.blocks || []).map((block, index) => ({
@@ -3110,34 +3178,28 @@ const loadPlan = async () => {
       return
     }
 
-    const scheduleResponse = await listScheduleBlocks({ planId: planId.value, limit: 200 })
-    if (!scheduleResponse.success) {
-      loadError.value = {
-        title: '日程加载失败',
-        message: scheduleResponse.error || '计划正文已加载，但日程数据没有成功返回。'
-      }
-      return
-    }
-    scheduleBlocks.value = Array.isArray(scheduleResponse.data) ? scheduleResponse.data : []
     pendingBlockIds.value = new Set()
     saveStatus.value = 'saved'
     editorHistory.reset(getEditorHistorySnapshot())
-    void Promise.allSettled([
-      loadAiImageHistory({ restoreActive: true }),
-      loadAiVideoHistory({ restoreActive: true })
-    ]).then((results) => {
-      if (results.some((item) => item.status === 'rejected')) {
-        showInfo('计划已打开，AI 历史稍后再加载', { description: '这不会影响正文编辑。' })
-      }
+    runWhenIdle(() => {
+      if (currentLoadSeq !== planLoadSeq) return
+      void Promise.allSettled([
+        loadPlanScheduleBlocks(planId.value, { silent: true }),
+        loadEditorPageTree(),
+        loadAiSkills({ silent: true })
+      ])
     })
     nextTick(() => resizeTitle())
   } catch (error) {
+    if (currentLoadSeq !== planLoadSeq) return
     loadError.value = {
       title: '计划加载失败',
       message: error?.message || '页面初始化时发生错误，请重试。'
     }
   } finally {
-    isLoading.value = false
+    if (currentLoadSeq === planLoadSeq) {
+      isLoading.value = false
+    }
   }
 }
 
@@ -3953,7 +4015,7 @@ const triggerImport = () => {
 const handleImport = async (event) => {
   const file = event.target.files?.[0]
   if (!file) return
-  if (blocks.value.length && !window.confirm('导入会替换当前页面中的块内容，是否继续？')) {
+  if (blocks.value.length && !(await confirmDialog('导入会替换当前页面中的块内容，是否继续？'))) {
     event.target.value = ''
     return
   }
@@ -3970,14 +4032,14 @@ const handleImport = async (event) => {
       blocks: res.blocks
     })
   } else {
-    window.alert(res.error || '导入失败，请检查文件格式')
+    await alertDialog(res.error || '导入失败，请检查文件格式', '导入失败')
   }
   event.target.value = ''
 }
 
 const deleteCurrentPlan = async () => {
   if (!planId.value) return
-  if (!window.confirm(`确认要删除计划“${title.value || '无标题'}”吗？`)) return
+  if (!(await confirmDialog(`确认要删除计划“${title.value || '无标题'}”吗？`))) return
   const res = await planStore.deletePlan(planId.value)
   if (res.success) router.push('/plan')
 }
@@ -3997,7 +4059,7 @@ const confirmLeaveIfNeeded = async () => {
   if (!hasUnsavedChanges.value) return true
   const saved = await saveEverything()
   if (saved) return true
-  return window.confirm('自动保存失败，离开页面可能会丢失修改，仍然要离开吗？')
+  return confirmDialog('自动保存失败，离开页面可能会丢失修改，仍然要离开吗？')
 }
 
 const handleBack = async () => {
@@ -4057,8 +4119,12 @@ onBeforeRouteLeave(async () => {
 })
 
 onMounted(() => {
-  loadEditorPageTree()
-  loadAiSkills()
+  runWhenIdle(() => {
+    void Promise.allSettled([
+      loadEditorPageTree(),
+      loadAiSkills({ silent: true })
+    ])
+  }, 300)
   aiCooldownTimer = window.setInterval(() => {
     aiCooldownTick.value = Date.now()
   }, 1000)
@@ -4527,6 +4593,59 @@ onBeforeUnmount(() => {
   align-content: center;
   padding: 3rem 1.5rem;
   text-align: center;
+}
+
+.plan-editor-loading {
+  display: grid;
+  gap: 0.85rem;
+  min-height: 360px;
+  align-content: center;
+  padding: 3rem clamp(1rem, 5vw, 5rem);
+  color: var(--workbench-text-muted, #71717a);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.plan-loading-title,
+.plan-loading-line {
+  position: relative;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(228, 228, 231, 0.72);
+}
+
+.plan-loading-title {
+  width: min(440px, 80%);
+  height: 2.6rem;
+  margin-bottom: 0.65rem;
+}
+
+.plan-loading-line {
+  height: 0.82rem;
+}
+
+.plan-loading-gap {
+  height: 1.25rem;
+}
+
+.plan-loading-title::after,
+.plan-loading-line::after {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.72), transparent);
+  content: '';
+  transform: translateX(-100%);
+  animation: plan-loading-sheen 1.25s ease-in-out infinite;
+}
+
+.dark .plan-loading-title,
+.dark .plan-loading-line {
+  background: rgba(63, 63, 70, 0.62);
+}
+
+.dark .plan-loading-title::after,
+.dark .plan-loading-line::after {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.12), transparent);
 }
 
 .dark .plan-editor-surface {
@@ -5362,6 +5481,20 @@ onBeforeUnmount(() => {
 
   .plan-row-gutter {
     grid-template-columns: repeat(2, 17px);
+  }
+}
+</style>
+
+<style scoped>
+@keyframes plan-loading-sheen {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plan-loading-title::after,
+  .plan-loading-line::after {
+    animation: none;
   }
 }
 </style>

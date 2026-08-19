@@ -353,6 +353,7 @@ import AppLayout from '@/components/AppLayout.vue'
 import BaseCard from '@/components/BaseCard.vue'
 import { usePlanStore } from '@/stores/plan'
 import { useToast } from '@/composables/useToast'
+import { confirmDialog } from '@/composables/useGlobalDialog'
 import { listScheduleBlocks, updateScheduleBlock } from '@/api/scheduleBlocks'
 import { formatLocalDateKey } from '@/utils/date'
 
@@ -646,7 +647,7 @@ const onBoardDrop = async (status) => {
 }
 
 const deletePlan = async (plan) => {
-  if (!confirm(`确定要删除计划“${plan.title}”吗？此操作不可撤销。`)) return
+  if (!(await confirmDialog(`确定要删除计划“${plan.title}”吗？此操作不可撤销。`))) return
   const res = await planStore.deletePlan(plan.id)
   if (res.success) {
     selectedPlans.value = selectedPlans.value.filter((id) => id !== plan.id)
@@ -670,7 +671,7 @@ const restorePlan = async (plan) => {
 }
 
 const batchDelete = async () => {
-  if (!selectedPlans.value.length || !confirm(`确定要删除选中的 ${selectedPlans.value.length} 个计划吗？`)) return
+  if (!selectedPlans.value.length || !(await confirmDialog(`确定要删除选中的 ${selectedPlans.value.length} 个计划吗？`))) return
   const results = await Promise.all(selectedPlans.value.map((id) => planStore.deletePlan(id)))
   const failed = results.filter((item) => !item.success)
   selectedPlans.value = []

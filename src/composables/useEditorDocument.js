@@ -1,5 +1,5 @@
 import { ref } from 'vue'
-import { getEditorPage, listEditorPages } from '@/api/editor'
+import { getEditorPage, getEditorPlanDocument, listEditorPages } from '@/api/editor'
 
 const normalizeBlock = (block, index = 0) => ({
   ...block,
@@ -76,13 +76,31 @@ export function useEditorDocument() {
       if (response.success) return { ...response, data: { ...response.data, id: explicitPageId } }
     }
 
+    const documentResponse = await getEditorPlanDocument(planId)
+    if (documentResponse.success && documentResponse.data?.page) {
+      page.value = documentResponse.data.page
+      blocks.value = (documentResponse.data.blocks || []).map(normalizeBlock)
+      properties.value = documentResponse.data.properties || []
+      databaseViews.value = documentResponse.data.databaseViews || []
+      return {
+        success: true,
+        data: {
+          page: page.value,
+          blocks: blocks.value,
+          properties: properties.value,
+          databaseViews: databaseViews.value,
+          id: page.value.id
+        }
+      }
+    }
+
     const pagesResponse = await listEditorPages({ source_plan_id: planId })
     if (!pagesResponse.success) {
       reset()
       return {
         success: false,
-        error: pagesResponse.error || '编辑器页面列表加载失败',
-        code: pagesResponse.code || 'EDITOR_PAGES_LOAD_FAILED'
+        error: documentResponse.error || pagesResponse.error || '编辑器页面列表加载失败',
+        code: documentResponse.code || pagesResponse.code || 'EDITOR_PAGES_LOAD_FAILED'
       }
     }
 
