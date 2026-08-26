@@ -40,11 +40,14 @@
             <span class="summary-badge summary-badge-success">已登录</span>
           </div>
 
-          <div class="profile-hero-copy">
+            <div class="profile-hero-copy">
             <p>把身份、安全、提醒、AI 能力和数据出口集中到一个清爽的控制台里。默认不启用 AI，需要你主动配置供应商后才会请求模型。</p>
             <div class="profile-action-row">
               <button type="button" class="profile-primary-action" @click="openEditProfile">编辑资料</button>
               <button type="button" class="profile-ghost-action" @click="openPasswordChange">修改密码</button>
+              <button v-if="user?.accountStatus === 'deletion_pending'" type="button" class="profile-ghost-action" @click="cancelDeletion">
+                撤销注销
+              </button>
               <button type="button" class="profile-ghost-action" @click="showDataExportModal = true">导出数据</button>
             </div>
           </div>
@@ -78,6 +81,19 @@
                 <span :class="item.badgeClass">{{ item.value }}</span>
               </div>
             </div>
+            <div class="profile-email-panel">
+              <div>
+                <p class="profile-kicker">Email Binding</p>
+                <h4>{{ user?.emailBound ? '已绑定邮箱' : '暂未绑定邮箱' }}</h4>
+                <p>{{ user?.emailBound ? user.email : '不显示占位邮箱，你可以稍后绑定真实邮箱。' }}</p>
+              </div>
+              <button v-if="user?.emailBound" type="button" class="profile-mini-button" @click="openEmailUnbind">
+                解绑邮箱
+              </button>
+              <button v-else type="button" class="profile-mini-button" @click="openEmailBind">
+                绑定邮箱
+              </button>
+            </div>
             <div class="profile-linked-social">
               <div class="profile-linked-social-head">
                 <div>
@@ -93,17 +109,27 @@
                   type="button"
                   class="profile-social-bind-card"
                   :class="{ 'is-bound': provider.bound, 'is-busy': bindingSocialProvider === provider.key }"
-                  :disabled="provider.bound || Boolean(bindingSocialProvider)"
-                  @click="startSocialBind(provider.key)"
+                  :disabled="Boolean(bindingSocialProvider)"
+                  @click="provider.bound ? startSocialUnlink(provider.key) : startSocialBind(provider.key)"
                 >
                   <img :src="provider.icon" :alt="provider.label" class="profile-social-icon" />
                   <div class="profile-social-copy">
                     <strong>{{ provider.label }}</strong>
                     <p>{{ provider.description }}</p>
                   </div>
-                  <span class="profile-social-state">{{ provider.bound ? '已绑定' : '去绑定' }}</span>
+                  <span class="profile-social-state">{{ provider.bound ? '验证解绑' : '去绑定' }}</span>
                 </button>
               </div>
+            </div>
+            <div class="profile-danger-panel">
+              <div>
+                <p class="profile-kicker">Danger Zone</p>
+                <h4>注销账户</h4>
+                <p>申请后进入 15 天冷静期，期间可以撤销。冷静期结束后再执行清理。</p>
+              </div>
+              <button type="button" class="profile-danger-button" @click="openDeletionModal">
+                申请注销
+              </button>
             </div>
           </BaseCard>
 
@@ -258,12 +284,24 @@
           </div>
 
           <div>
-            <label class="mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-200">用户名</label>
+            <label class="mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-200">用户名铭牌</label>
             <input
-              v-model.trim="editForm.username"
+              :value="user?.username || '未设置'"
               type="text"
               class="input-apple"
-              placeholder="请输入用户名"
+              readonly
+            />
+            <p class="mt-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">用户名是唯一身份铭牌，注册完成后不可修改。</p>
+          </div>
+
+          <div>
+            <label class="mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-200">昵称</label>
+            <input
+              v-model.trim="editForm.nickname"
+              type="text"
+              maxlength="120"
+              class="input-apple"
+              placeholder="请输入昵称"
             />
           </div>
         </div>
@@ -349,6 +387,117 @@
           </button>
           <button type="button" class="btn-primary flex-1" :disabled="isChangingPassword" @click="changePassword">
             {{ isChangingPassword ? '提交中...' : '确认修改' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="showEmailBindModal" class="modal-overlay" @click.self="closeEmailBindModal">
+      <div class="modal-card max-w-md">
+        <ModalHeader title="绑定邮箱" @close="closeEmailBindModal" />
+        <div class="space-y-5 p-6">
+          <div>
+            <label class="mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-200">邮箱地址</label>
+            <input v-model.trim="emailBindForm.email" type="email" class="input-apple" placeholder="请输入真实邮箱" />
+          </div>
+          <div>
+            <div class="mb-2 flex items-center justify-between gap-3">
+              <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-200">验证码</label>
+              <button
+                type="button"
+                class="text-sm font-medium text-zinc-700 hover:text-zinc-950 disabled:opacity-50 dark:text-zinc-300 dark:hover:text-white"
+                :disabled="isSendingEmailBindCode || emailBindCountdown > 0 || !emailBindForm.email"
+                @click="sendEmailBindCode"
+              >
+                {{ isSendingEmailBindCode ? '发送中...' : emailBindCountdown > 0 ? `${emailBindCountdown}s 后重发` : '发送验证码' }}
+              </button>
+            </div>
+            <input v-model.trim="emailBindForm.code" type="text" maxlength="6" inputmode="numeric" class="input-apple" placeholder="请输入 6 位验证码" />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary flex-1" :disabled="isSavingEmailBinding" @click="closeEmailBindModal">取消</button>
+          <button type="button" class="btn-primary flex-1" :disabled="isSavingEmailBinding" @click="bindEmail">
+            {{ isSavingEmailBinding ? '绑定中...' : '确认绑定' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="showEmailUnbindModal" class="modal-overlay" @click.self="closeEmailUnbindModal">
+      <div class="modal-card max-w-md">
+        <ModalHeader title="解绑邮箱" @close="closeEmailUnbindModal" />
+        <div class="space-y-5 p-6">
+          <p class="text-sm leading-6 text-zinc-600 dark:text-zinc-300">
+            解绑邮箱需要验证当前邮箱：{{ user?.email || '未绑定' }}。解绑后将不能使用邮箱验证码登录。
+          </p>
+          <div>
+            <div class="mb-2 flex items-center justify-between gap-3">
+              <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-200">验证码</label>
+              <button
+                type="button"
+                class="text-sm font-medium text-zinc-700 hover:text-zinc-950 disabled:opacity-50 dark:text-zinc-300 dark:hover:text-white"
+                :disabled="isSendingEmailUnbindCode || emailUnbindCountdown > 0"
+                @click="sendEmailUnbindCode"
+              >
+                {{ isSendingEmailUnbindCode ? '发送中...' : emailUnbindCountdown > 0 ? `${emailUnbindCountdown}s 后重发` : '发送验证码' }}
+              </button>
+            </div>
+            <input v-model.trim="emailUnbindForm.code" type="text" maxlength="6" inputmode="numeric" class="input-apple" placeholder="请输入 6 位验证码" />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary flex-1" :disabled="isSavingEmailBinding" @click="closeEmailUnbindModal">取消</button>
+          <button type="button" class="btn-primary flex-1" :disabled="isSavingEmailBinding" @click="unbindEmail">
+            {{ isSavingEmailBinding ? '解绑中...' : '确认解绑' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="showDeleteAccountModal" class="modal-overlay" @click.self="closeDeletionModal">
+      <div class="modal-card max-w-md">
+        <ModalHeader title="注销账户" @close="closeDeletionModal" />
+        <div class="space-y-5 p-6">
+          <p class="text-sm leading-6 text-zinc-600 dark:text-zinc-300">
+            注销后账户进入 15 天冷静期。期间可以撤销；冷静期结束后再清理账号数据。
+          </p>
+          <div>
+            <label class="mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-200">验证方式</label>
+            <select v-model="deleteForm.method" class="input-apple">
+              <option v-if="user?.authMethods?.hasPassword" value="password">密码验证</option>
+              <option v-if="user?.emailBound" value="email">邮箱验证码</option>
+              <option v-for="provider in linkedSocialProviders" :key="provider.provider" :value="`social:${provider.provider}`">
+                {{ providerLabel(provider.provider) }}重登验证
+              </option>
+            </select>
+          </div>
+          <div v-if="deleteForm.method === 'password'">
+            <label class="mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-200">登录密码</label>
+            <input v-model="deleteForm.password" type="password" class="input-apple" placeholder="请输入当前密码" />
+          </div>
+          <div v-else-if="deleteForm.method === 'email'">
+            <div class="mb-2 flex items-center justify-between gap-3">
+              <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-200">邮箱验证码</label>
+              <button
+                type="button"
+                class="text-sm font-medium text-zinc-700 hover:text-zinc-950 disabled:opacity-50 dark:text-zinc-300 dark:hover:text-white"
+                :disabled="isSendingDeletionCode || deletionCountdown > 0"
+                @click="sendDeletionCode"
+              >
+                {{ isSendingDeletionCode ? '发送中...' : deletionCountdown > 0 ? `${deletionCountdown}s 后重发` : '发送验证码' }}
+              </button>
+            </div>
+            <input v-model.trim="deleteForm.emailCode" type="text" maxlength="6" inputmode="numeric" class="input-apple" placeholder="请输入 6 位验证码" />
+          </div>
+          <p class="rounded-2xl border border-red-200 bg-red-50 p-3 text-xs leading-5 text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200">
+            这是高风险操作，请确认你真的要注销当前账户。
+          </p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary flex-1" :disabled="isRequestingDeletion" @click="closeDeletionModal">取消</button>
+          <button type="button" class="profile-danger-button flex-1" :disabled="isRequestingDeletion" @click="requestDeletion">
+            {{ isRequestingDeletion ? '提交中...' : '申请注销' }}
           </button>
         </div>
       </div>
@@ -1090,6 +1239,9 @@ const showHelpModal = ref(false)
 const showAboutModal = ref(false)
 const showAdminMailModal = ref(false)
 const showAiProviderModal = ref(false)
+const showEmailBindModal = ref(false)
+const showEmailUnbindModal = ref(false)
+const showDeleteAccountModal = ref(false)
 
 const syncProfilePanelFromRoute = () => {
   if (route.query.panel === 'notifications') {
@@ -1102,7 +1254,7 @@ const syncProfilePanelFromRoute = () => {
 }
 
 const editForm = ref({
-  username: '',
+  nickname: '',
   avatar: ''
 })
 
@@ -1114,6 +1266,21 @@ const passwordForm = ref({
 const verifyForm = ref({
   email: '',
   code: ''
+})
+
+const emailBindForm = ref({
+  email: '',
+  code: ''
+})
+
+const emailUnbindForm = ref({
+  code: ''
+})
+
+const deleteForm = ref({
+  method: 'password',
+  password: '',
+  emailCode: ''
 })
 
 const avatarFile = ref(null)
@@ -1136,6 +1303,14 @@ const isLoadingAiProviders = ref(false)
 const isSavingAiProvider = ref(false)
 const isTestingAiProvider = ref(false)
 const isLoadingAiModels = ref(false)
+const isSendingEmailBindCode = ref(false)
+const isSendingEmailUnbindCode = ref(false)
+const isSavingEmailBinding = ref(false)
+const isSendingDeletionCode = ref(false)
+const isRequestingDeletion = ref(false)
+const emailBindCountdown = ref(0)
+const emailUnbindCountdown = ref(0)
+const deletionCountdown = ref(0)
 
 const notificationSettings = ref(normalizeUiNotificationSettings())
 
@@ -1343,9 +1518,15 @@ const securitySummaryItems = computed(() => {
   return [
     {
       label: '邮箱账户',
-      description: user.value?.email || '当前账号未绑定邮箱',
-      value: user.value?.email ? '已绑定' : '未绑定',
-      badgeClass: user.value?.email ? 'summary-badge summary-badge-success' : 'summary-badge summary-badge-muted'
+      description: user.value?.emailBound ? user.value.email : '当前账号未绑定邮箱',
+      value: user.value?.emailBound ? '已绑定' : '未绑定',
+      badgeClass: user.value?.emailBound ? 'summary-badge summary-badge-success' : 'summary-badge summary-badge-muted'
+    },
+    {
+      label: '账户状态',
+      description: user.value?.accountStatus === 'deletion_pending' ? '注销冷静期中，可在到期前撤销' : '账户可以正常使用',
+      value: user.value?.accountStatus === 'deletion_pending' ? '冷静期' : '正常',
+      badgeClass: user.value?.accountStatus === 'deletion_pending' ? 'summary-badge summary-badge-warn' : 'summary-badge summary-badge-success'
     },
     {
       label: '登录保持',
@@ -1445,6 +1626,9 @@ const aiProviderModelHint = computed(() => {
 })
 
 let verifyCodeTimer = null
+let emailBindTimer = null
+let emailUnbindTimer = null
+let deletionTimer = null
 
 const getProtocolLabel = (protocol) => {
   if (protocol === 'openai_responses') return 'Responses API'
@@ -1717,6 +1901,25 @@ const clearVerifyCodeTimer = () => {
   }
 }
 
+const clearTimerRef = (timerRef) => {
+  if (timerRef.current) {
+    window.clearInterval(timerRef.current)
+    timerRef.current = null
+  }
+}
+
+const startCountdownRef = (counter, timerRef) => {
+  counter.value = 60
+  clearTimerRef(timerRef)
+  timerRef.current = window.setInterval(() => {
+    counter.value -= 1
+    if (counter.value <= 0) {
+      counter.value = 0
+      clearTimerRef(timerRef)
+    }
+  }, 1000)
+}
+
 const startVerifyCodeCountdown = () => {
   verifyCodeCountdown.value = 60
   clearVerifyCodeTimer()
@@ -1731,7 +1934,7 @@ const startVerifyCodeCountdown = () => {
 
 const initUserData = () => {
   editForm.value = {
-    username: user.value?.username || user.value?.name || '',
+    nickname: user.value?.nickname || user.value?.name || '',
     avatar: user.value?.avatar || ''
   }
     avatarPreview.value = resolveMediaUrl(user.value?.avatarUrl || user.value?.avatar || '')
@@ -1761,6 +1964,64 @@ const closeChangePasswordModal = () => {
     newPassword: '',
     confirmPassword: ''
   }
+}
+
+const openEmailBind = () => {
+  emailBindForm.value = { email: '', code: '' }
+  emailBindCountdown.value = 0
+  showEmailBindModal.value = true
+}
+
+const closeEmailBindModal = () => {
+  showEmailBindModal.value = false
+  emailBindForm.value = { email: '', code: '' }
+  emailBindCountdown.value = 0
+  clearTimerRef({ get current() { return emailBindTimer }, set current(value) { emailBindTimer = value } })
+}
+
+const openEmailUnbind = () => {
+  emailUnbindForm.value = { code: '' }
+  emailUnbindCountdown.value = 0
+  showEmailUnbindModal.value = true
+}
+
+const closeEmailUnbindModal = () => {
+  showEmailUnbindModal.value = false
+  emailUnbindForm.value = { code: '' }
+  emailUnbindCountdown.value = 0
+  clearTimerRef({ get current() { return emailUnbindTimer }, set current(value) { emailUnbindTimer = value } })
+}
+
+const providerLabel = (provider) => ({
+  wx: '微信',
+  wechat: '微信',
+  qq: 'QQ',
+  google: 'Google',
+  github: 'GitHub'
+}[provider] || '第三方账号')
+
+const pickDefaultDeletionMethod = () => {
+  if (user.value?.authMethods?.hasPassword) return 'password'
+  if (user.value?.emailBound) return 'email'
+  const firstSocial = linkedSocialProviders.value[0]?.provider
+  return firstSocial ? `social:${firstSocial}` : 'password'
+}
+
+const openDeletionModal = () => {
+  deleteForm.value = {
+    method: pickDefaultDeletionMethod(),
+    password: '',
+    emailCode: ''
+  }
+  deletionCountdown.value = 0
+  showDeleteAccountModal.value = true
+}
+
+const closeDeletionModal = () => {
+  showDeleteAccountModal.value = false
+  deleteForm.value = { method: pickDefaultDeletionMethod(), password: '', emailCode: '' }
+  deletionCountdown.value = 0
+  clearTimerRef({ get current() { return deletionTimer }, set current(value) { deletionTimer = value } })
 }
 
 const openReminderTest = () => {
@@ -1795,6 +2056,194 @@ const startSocialBind = async (providerKey) => {
       description: err.error || err.message || '请稍后重试。'
     })
     bindingSocialProvider.value = ''
+  }
+}
+
+const startSocialUnlink = async (providerKey) => {
+  if (!providerKey || bindingSocialProvider.value) return
+
+  const selected = socialProviderOptions.value.find((item) => item.key === providerKey)
+  if (!selected || !selected.bound) return
+
+  if (!(await confirmDialog(`解绑 ${selected.label} 前需要重新完成该账号验证，是否继续？`))) return
+
+  bindingSocialProvider.value = providerKey
+  try {
+    const url = await authAPI.getSocialUnlinkUrl(providerKey, '/profile')
+    if (!url) {
+      throw new Error('未获取到解绑验证地址')
+    }
+
+    window.location.href = url
+  } catch (err) {
+    showError('解绑失败', {
+      description: err.error || err.message || '请稍后重试。'
+    })
+    bindingSocialProvider.value = ''
+  }
+}
+
+const sendEmailBindCode = async () => {
+  if (!emailBindForm.value.email) {
+    warning('请先输入邮箱')
+    return
+  }
+
+  isSendingEmailBindCode.value = true
+  try {
+    const response = await authAPI.sendEmailBindCode(emailBindForm.value.email)
+    if (!response.success) {
+      throw new Error(response.error || response.message || '发送失败')
+    }
+    startCountdownRef(emailBindCountdown, { get current() { return emailBindTimer }, set current(value) { emailBindTimer = value } })
+    success('验证码已发送', { description: '请检查邮箱收件箱。' })
+  } catch (err) {
+    showError('发送失败', {
+      description: err.error || err.message || '请稍后重试。'
+    })
+  } finally {
+    isSendingEmailBindCode.value = false
+  }
+}
+
+const bindEmail = async () => {
+  if (!emailBindForm.value.email || emailBindForm.value.code.length !== 6) {
+    warning('请填写邮箱和 6 位验证码')
+    return
+  }
+
+  isSavingEmailBinding.value = true
+  try {
+    const response = await authAPI.bindEmail(emailBindForm.value)
+    if (!response.success || !response.data) {
+      throw new Error(response.error || response.message || '绑定失败')
+    }
+    authStore.updateUser(response.data)
+    success('邮箱已绑定')
+    closeEmailBindModal()
+  } catch (err) {
+    showError('绑定失败', {
+      description: err.error || err.message || '请稍后重试。'
+    })
+  } finally {
+    isSavingEmailBinding.value = false
+  }
+}
+
+const sendEmailUnbindCode = async () => {
+  isSendingEmailUnbindCode.value = true
+  try {
+    const response = await authAPI.sendEmailUnbindCode()
+    if (!response.success) {
+      throw new Error(response.error || response.message || '发送失败')
+    }
+    startCountdownRef(emailUnbindCountdown, { get current() { return emailUnbindTimer }, set current(value) { emailUnbindTimer = value } })
+    success('验证码已发送', { description: '请检查当前绑定邮箱。' })
+  } catch (err) {
+    showError('发送失败', {
+      description: err.error || err.message || '请稍后重试。'
+    })
+  } finally {
+    isSendingEmailUnbindCode.value = false
+  }
+}
+
+const unbindEmail = async () => {
+  if (emailUnbindForm.value.code.length !== 6) {
+    warning('请输入 6 位验证码')
+    return
+  }
+
+  isSavingEmailBinding.value = true
+  try {
+    const response = await authAPI.unbindEmail(emailUnbindForm.value)
+    if (!response.success || !response.data) {
+      throw new Error(response.error || response.message || '解绑失败')
+    }
+    authStore.updateUser(response.data)
+    success('邮箱已解绑')
+    closeEmailUnbindModal()
+  } catch (err) {
+    showError('解绑失败', {
+      description: err.error || err.message || '请稍后重试。'
+    })
+  } finally {
+    isSavingEmailBinding.value = false
+  }
+}
+
+const sendDeletionCode = async () => {
+  if (!user.value?.email) {
+    warning('当前账号未绑定邮箱')
+    return
+  }
+
+  isSendingDeletionCode.value = true
+  try {
+    const response = await authAPI.sendVerifyCode(user.value.email, 'account_delete')
+    if (!response.success) {
+      throw new Error(response.error || response.message || '发送失败')
+    }
+    startCountdownRef(deletionCountdown, { get current() { return deletionTimer }, set current(value) { deletionTimer = value } })
+    success('验证码已发送', { description: '请检查当前绑定邮箱。' })
+  } catch (err) {
+    showError('发送失败', {
+      description: err.error || err.message || '请稍后重试。'
+    })
+  } finally {
+    isSendingDeletionCode.value = false
+  }
+}
+
+const requestDeletion = async () => {
+  if (!(await confirmDialog('确认申请注销账户吗？账户将进入 15 天冷静期。'))) return
+
+  isRequestingDeletion.value = true
+  try {
+    const method = deleteForm.value.method
+    const payload = { redirect: '/profile' }
+    if (method === 'password') payload.password = deleteForm.value.password
+    if (method === 'email') payload.emailCode = deleteForm.value.emailCode
+    if (method.startsWith('social:')) payload.socialProvider = method.replace('social:', '')
+
+    const response = await authAPI.requestAccountDeletion(payload)
+    if (!response.success) {
+      throw new Error(response.error || response.message || '注销申请失败')
+    }
+
+    if (response.data?.url) {
+      window.location.href = response.data.url
+      return
+    }
+
+    if (response.data?.user) {
+      authStore.updateUser(response.data.user)
+    }
+    success('已进入注销冷静期')
+    closeDeletionModal()
+  } catch (err) {
+    showError('注销申请失败', {
+      description: err.error || err.message || '请稍后重试。'
+    })
+  } finally {
+    isRequestingDeletion.value = false
+  }
+}
+
+const cancelDeletion = async () => {
+  if (!(await confirmDialog('确定撤销账户注销申请吗？'))) return
+
+  try {
+    const response = await authAPI.cancelAccountDeletion()
+    if (!response.success || !response.data) {
+      throw new Error(response.error || response.message || '撤销失败')
+    }
+    authStore.updateUser(response.data)
+    success('注销申请已撤销')
+  } catch (err) {
+    showError('撤销失败', {
+      description: err.error || err.message || '请稍后重试。'
+    })
   }
 }
 
@@ -1931,16 +2380,10 @@ const handleAvatarError = (event) => {
 }
 
 const saveProfile = async () => {
-  if (!editForm.value.username) {
-    warning('请输入用户名')
-    return
-  }
-
   isSaving.value = true
   try {
     const formData = new FormData()
-    formData.append('username', editForm.value.username)
-    formData.append('name', editForm.value.username)
+    formData.append('nickname', editForm.value.nickname || '')
 
     if (avatarFile.value) {
       formData.append('avatar', avatarFile.value)
@@ -2332,6 +2775,9 @@ watch(() => [user.value?.avatar, user.value?.avatarUrl], () => {
 
 onBeforeUnmount(() => {
   clearVerifyCodeTimer()
+  clearTimerRef({ get current() { return emailBindTimer }, set current(value) { emailBindTimer = value } })
+  clearTimerRef({ get current() { return emailUnbindTimer }, set current(value) { emailUnbindTimer = value } })
+  clearTimerRef({ get current() { return deletionTimer }, set current(value) { deletionTimer = value } })
 })
 </script>
 
@@ -2746,6 +3192,81 @@ onBeforeUnmount(() => {
 .profile-stack-list {
   display: grid;
   gap: 10px;
+}
+
+.profile-email-panel,
+.profile-danger-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 18px;
+  border: 1px solid rgba(228, 228, 231, 0.82);
+  border-radius: 22px;
+  background: rgba(250, 250, 250, 0.72);
+  padding: 18px;
+}
+
+.profile-email-panel h4,
+.profile-danger-panel h4 {
+  margin: 4px 0 3px;
+  color: rgb(24, 24, 27);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.profile-email-panel p,
+.profile-danger-panel p {
+  margin: 0;
+  color: rgb(113, 113, 122);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.profile-danger-panel {
+  border-color: rgba(254, 202, 202, 0.92);
+  background: rgba(254, 242, 242, 0.74);
+}
+
+.profile-danger-button {
+  min-height: 38px;
+  border: 1px solid rgba(220, 38, 38, 0.22);
+  border-radius: 999px;
+  background: rgb(127, 29, 29);
+  color: white;
+  padding: 0 14px;
+  font-size: 13px;
+  font-weight: 800;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.profile-danger-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.profile-danger-button:disabled {
+  opacity: 0.6;
+}
+
+.dark .profile-email-panel {
+  border-color: rgba(63, 63, 70, 0.82);
+  background: rgba(24, 24, 27, 0.7);
+}
+
+.dark .profile-danger-panel {
+  border-color: rgba(248, 113, 113, 0.32);
+  background: rgba(127, 29, 29, 0.18);
+}
+
+.dark .profile-email-panel h4,
+.dark .profile-danger-panel h4 {
+  color: rgb(250, 250, 250);
+}
+
+.dark .profile-email-panel p,
+.dark .profile-danger-panel p {
+  color: rgb(161, 161, 170);
 }
 
 .profile-linked-social {

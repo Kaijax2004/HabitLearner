@@ -230,10 +230,11 @@
                 v-model.trim="registerForm.name"
                 type="text"
                 required
-                minlength="2"
+                minlength="6"
+                maxlength="20"
                 autocomplete="username"
                 class="auth-input"
-                placeholder="请输入用户名"
+                placeholder="6-20 位字母或数字"
               >
             </div>
 
@@ -321,15 +322,7 @@
               <p v-if="registerForm.confirmPassword && !isRegisterPasswordMatch" class="mt-2 text-xs text-red-500">两次输入的密码不一致。</p>
             </div>
 
-            <label class="flex cursor-pointer items-start gap-3 border-t border-zinc-200 pt-4 text-sm leading-6 text-zinc-600 dark:border-zinc-800 dark:text-zinc-300">
-              <input
-                v-model="registerForm.agreeTerms"
-                type="checkbox"
-                required
-                class="mt-1 h-4 w-4 rounded border-zinc-300 text-zinc-950 focus:ring-zinc-950 dark:border-zinc-600 dark:bg-zinc-950 dark:text-white dark:focus:ring-white"
-              >
-              <span>我已阅读并同意用户协议与隐私政策。</span>
-            </label>
+            <TermsConsent v-model:accepted="registerForm.agreeTerms" />
 
             <button type="submit" class="primary-button w-full" :disabled="authStore.isLoading || !canSubmitRegister">
               {{ authStore.isLoading ? '注册中...' : '创建账户并进入工作区' }}
@@ -472,6 +465,7 @@ import * as authAPI from '@/api/auth.js'
 import { useToast } from '@/composables/useToast'
 import { useThemeStore } from '@/stores/theme'
 import Logo from '@/components/Logo.vue'
+import TermsConsent from '@/components/TermsConsent.vue'
 
 const authStore = useAuthStore()
 const themeStore = useThemeStore()
@@ -586,7 +580,7 @@ const authMeta = computed(() => {
 const isRegisterPasswordValid = computed(() => registerForm.value.password.length >= 6)
 const isRegisterPasswordMatch = computed(() => registerForm.value.password === registerForm.value.confirmPassword && registerForm.value.confirmPassword.length > 0)
 const canSubmitRegister = computed(() => (
-  registerForm.value.name.trim().length >= 2
+  /^[a-zA-Z0-9]{6,20}$/.test(registerForm.value.name.trim())
   && registerForm.value.email.trim()
   && registerForm.value.verificationCode.trim().length === 6
   && isRegisterPasswordValid.value
@@ -734,7 +728,7 @@ const handlePasswordLogin = async () => {
   const result = await authStore.login(loginForm.value)
 
   if (result.success) {
-    router.push('/dashboard')
+    router.push(result.user?.accountStatus === 'deletion_pending' ? '/profile' : '/dashboard')
     return
   }
 
@@ -750,7 +744,7 @@ const handleCodeLogin = async () => {
   })
 
   if (result.success) {
-    router.push('/dashboard')
+    router.push(result.user?.accountStatus === 'deletion_pending' ? '/profile' : '/dashboard')
     return
   }
 
@@ -774,7 +768,8 @@ const handleRegister = async () => {
     name: registerForm.value.name,
     email: registerForm.value.email.trim(),
     verificationCode: registerForm.value.verificationCode.trim(),
-    password: registerForm.value.password
+    password: registerForm.value.password,
+    acceptedPrivacyPolicy: registerForm.value.agreeTerms
   })
 
   if (result.success) {

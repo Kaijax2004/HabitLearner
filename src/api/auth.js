@@ -55,6 +55,16 @@ export const verifyCode = async (email, code, type = undefined) => {
   return api.post('/auth/verify-code', payload)
 }
 
+export const checkUsername = async (username) => api.get(`/auth/username/check?${new URLSearchParams({ username }).toString()}`)
+
+export const sendEmailBindCode = async (email) => api.post('/auth/email/bind/send-code', { email })
+
+export const bindEmail = async ({ email, code }) => api.put('/auth/email', { email, code })
+
+export const sendEmailUnbindCode = async () => api.post('/auth/email/unbind/send-code')
+
+export const unbindEmail = async ({ code }) => api.delete('/auth/email', { code })
+
 export const changePassword = async (passwordData) => {
   const payload = {
     ...passwordData,
@@ -113,5 +123,27 @@ export const getSocialBindUrl = async (provider, redirect = '/profile') => {
   return response?.success ? response.data?.url || '' : ''
 }
 
+export const getSocialUnlinkUrl = async (provider, redirect = '/profile') => {
+  const typeMap = {
+    qq: 'qq',
+    wechat: 'wx',
+    wx: 'wx',
+    google: 'google',
+    github: 'github'
+  }
+  const type = typeMap[provider]
+  if (!type) return ''
+
+  const response = await api.post(`/auth/social/${type}/unlink`, { redirect })
+  return response?.success ? response.data?.url || '' : ''
+}
+
 export const completeSocialProfile = async (payload) => api.post('/auth/social/complete', payload)
+
+export const requestAccountDeletion = async (payload = {}) => api.post('/auth/account/deletion/request', {
+  ...payload,
+  ...(payload.password ? { password: encrypt(payload.password) } : {})
+})
+
+export const cancelAccountDeletion = async () => api.post('/auth/account/deletion/cancel')
 

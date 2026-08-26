@@ -61,6 +61,19 @@ router.beforeEach(async (to, from) => {
     return { path: '/auth', query: { redirect: to.fullPath } }
   }
 
+  const needsProfileCompletion = authStore.isAuthenticated
+    && authStore.user
+    && !authStore.user.profileComplete
+    && !(authStore.user.profileCompletedAt && authStore.user.privacyPolicyAcceptedAt && authStore.user.username)
+
+  if (needsProfileCompletion && to.path !== '/auth/social/callback') {
+    return { path: '/auth/social/callback', query: { redirect: to.fullPath } }
+  }
+
+  if (to.path === '/auth/social/callback' && authStore.isAuthenticated && !needsProfileCompletion && !window.location.hash) {
+    return { path: '/dashboard' }
+  }
+
   if (to.meta.requiresAdmin && !(authStore.user?.isAdmin || authStore.user?.security?.isAdmin)) {
     return { path: '/dashboard' }
   }

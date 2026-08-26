@@ -9,7 +9,10 @@
       <form v-if="needsProfileCompletion" class="social-complete-form" @submit.prevent="submitProfile">
         <label class="social-field">
           <span>用户名</span>
-          <input v-model="form.username" maxlength="20" autocomplete="username" placeholder="6-20 位字母或数字" />
+          <input v-model="form.username" maxlength="20" autocomplete="username" placeholder="手动设置 6-20 位字母或数字" @blur="checkUsernameAvailability" />
+          <small :class="{ 'is-ok': usernameAvailable, 'is-error': usernameAvailable === false }">
+            {{ usernameHint }}
+          </small>
         </label>
 
         <label class="social-field">
@@ -22,10 +25,19 @@
           <input v-model="form.email" type="email" autocomplete="email" placeholder="绑定真实邮箱，留空也可继续" />
         </label>
 
-        <label class="social-agree">
-          <input v-model="form.acceptedPrivacyPolicy" type="checkbox" />
-          <span>我已阅读并同意用户协议与隐私政策</span>
+        <label v-if="form.email" class="social-field">
+          <span>邮箱验证码</span>
+          <div class="social-code-row">
+            <input v-model="form.emailVerificationCode" maxlength="6" inputmode="numeric" placeholder="请输入 6 位验证码" />
+            <button type="button" :disabled="isSendingEmailCode || emailCodeCountdown > 0" @click="sendEmailCode">
+              {{ isSendingEmailCode ? '发送中' : emailCodeCountdown > 0 ? `${emailCodeCountdown}s` : '发送' }}
+            </button>
+          </div>
         </label>
+
+        <p v-else class="social-note">你可以暂不绑定邮箱，后续在“我的 / 账户安全”中绑定。</p>
+
+        <TermsConsent v-model:accepted="form.acceptedPrivacyPolicy" />
 
         <button type="submit" class="social-callback-button" :disabled="isSubmitting">
           {{ isSubmitting ? '提交中...' : '完成资料' }}
@@ -40,25 +52,33 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Logo from '@/components/Logo.vue'
+import TermsConsent from '@/components/TermsConsent.vue'
 import { useAuthStore } from '@/stores/auth'
+import * as authAPI from '@/api/auth.js'
 
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 const hasError = ref(false)
 const isSubmitting = ref(false)
+const isSendingEmailCode = ref(false)
 const needsProfileCompletion = ref(false)
 const profileSnapshot = ref(null)
 const message = ref('正在确认第三方身份，请稍候。')
 const redirectTarget = ref('/dashboard')
+const usernameAvailable = ref(null)
+const usernameHint = ref('用户名一旦确定将不可修改。')
+const emailCodeCountdown = ref(0)
+let emailCodeTimer = null
 
 const form = ref({
   username: '',
   nickname: '',
   email: '',
+  emailVerificationCode: '',
   acceptedPrivacyPolicy: false
 })
 
@@ -80,23 +100,23 @@ const applyProfileSnapshot = (snapshot) => {
   profileSnapshot.value = snapshot
   if (!snapshot) return
 
-  const fallbackName = snapshot.nickname || ''
   form.value.nickname = snapshot.nickname || form.value.nickname || ''
-  form.value.email = snapshot.email || form.value.email || ''
-  form.value.username = snapshot.username || ''
-  if (!form.value.username) {
-    const base = (fallbackName || 'user').replace(/[^a-zA-Z0-9]/g, '').slice(0, 20)
-    form.value.username = (base.length >= 6 ? base : `user${Date.now().toString().slice(-6)}`).slice(0, 20)
-  }
+  form.value.email = snapshot.emailBound ? snapshot.email || form.value.email || '' : ''
 }
 
 const submitProfile = async () => {
+  if (form.value.email.trim() && form.value.emailVerificationCode.trim().length !== 6) {
+    message.value = '绑定邮箱需要先填写 6 位验证码；也可以清空邮箱后暂不绑定。'
+    return
+  }
+
   isSubmitting.value = true
   try {
     const result = await authStore.updateSocialProfile({
       username: form.value.username.trim(),
       nickname: form.value.nickname.trim(),
       email: form.value.email.trim(),
+      emailVerificationCode: form.value.emailVerificationCode.trim(),
       acceptedPrivacyPolicy: form.value.acceptedPrivacyPolicy
     })
 
@@ -112,6 +132,53 @@ const submitProfile = async () => {
   }
 }
 
+const checkUsernameAvailability = async () => {
+  const username = form.value.username.trim()
+  usernameAvailable.value = null
+  if (!username) {
+    usernameHint.value = '请输入你的唯一用户名。'
+    return
+  }
+  if (!/^[a-zA-Z0-9]{6,20}$/.test(username)) {
+    usernameAvailable.value = false
+    usernameHint.value = '用户名必须为 6-20 位字母或数字。'
+    return
+  }
+  const response = await authAPI.checkUsername(username)
+  usernameAvailable.value = Boolean(response?.success && response.data?.available)
+  usernameHint.value = usernameAvailable.value ? '这个用户名可以使用。' : (response?.error || response?.message || '该用户名已被使用。')
+}
+
+const startEmailCountdown = () => {
+  emailCodeCountdown.value = 60
+  if (emailCodeTimer) window.clearInterval(emailCodeTimer)
+  emailCodeTimer = window.setInterval(() => {
+    emailCodeCountdown.value -= 1
+    if (emailCodeCountdown.value <= 0) {
+      window.clearInterval(emailCodeTimer)
+      emailCodeTimer = null
+      emailCodeCountdown.value = 0
+    }
+  }, 1000)
+}
+
+const sendEmailCode = async () => {
+  if (!form.value.email.trim()) return
+  isSendingEmailCode.value = true
+  try {
+    const response = await authAPI.sendEmailBindCode(form.value.email.trim())
+    if (!response.success) {
+      throw new Error(response.error || response.message || '验证码发送失败')
+    }
+    startEmailCountdown()
+    message.value = '邮箱验证码已发送，请检查收件箱。'
+  } catch (error) {
+    message.value = error.message || '验证码发送失败'
+  } finally {
+    isSendingEmailCode.value = false
+  }
+}
+
 onMounted(async () => {
   const params = readHashParams()
   const error = params.get('error')
@@ -119,6 +186,8 @@ onMounted(async () => {
   const redirect = params.get('redirect') || '/dashboard'
   const complete = params.get('complete')
   const profile = params.get('profile')
+  const action = params.get('action')
+  const actionMessage = params.get('message')
 
   redirectTarget.value = route.query.redirect || redirect
 
@@ -128,10 +197,22 @@ onMounted(async () => {
     return
   }
 
-  const result = await authStore.acceptSocialToken(token)
-  if (!result.success) {
+  if (token) {
+    const result = await authStore.acceptSocialToken(token)
+    if (!result.success) {
+      hasError.value = true
+      message.value = result.error || '快捷登录失败，请重新尝试。'
+      return
+    }
+  } else if (!authStore.isAuthenticated) {
     hasError.value = true
-    message.value = result.error || '快捷登录失败，请重新尝试。'
+    message.value = '快捷登录凭证为空，请重新尝试。'
+    return
+  }
+
+  if (action === 'unlink' || action === 'delete') {
+    message.value = actionMessage || '操作已完成。'
+    await router.replace(redirectTarget.value)
     return
   }
 
@@ -143,7 +224,7 @@ onMounted(async () => {
     }
   }
 
-  if (complete === '0' || !authStore.user?.profileCompletedAt || !authStore.user?.privacyPolicyAcceptedAt) {
+  if (complete === '0' || !authStore.user?.profileComplete) {
     needsProfileCompletion.value = true
     message.value = '请完善用户名、昵称并同意隐私政策后继续。'
     applyProfileSnapshot(authStore.user)
@@ -151,6 +232,12 @@ onMounted(async () => {
   }
 
   await router.replace(redirectTarget.value)
+})
+
+onBeforeUnmount(() => {
+  if (emailCodeTimer) {
+    window.clearInterval(emailCodeTimer)
+  }
 })
 </script>
 
@@ -223,12 +310,42 @@ h1 {
   font-size: 0.95rem;
 }
 
-.social-agree {
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
-  font-size: 0.88rem;
-  color: rgba(63, 63, 70, 0.8);
+.social-field small {
+  color: rgba(82, 82, 91, 0.72);
+  font-size: 0.78rem;
+}
+
+.social-field small.is-ok {
+  color: #047857;
+}
+
+.social-field small.is-error {
+  color: #dc2626;
+}
+
+.social-code-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.5rem;
+}
+
+.social-code-row button {
+  border: 1px solid rgba(24, 24, 27, 0.12);
+  border-radius: 1rem;
+  background: #18181b;
+  color: #fff;
+  padding: 0 1rem;
+  font-weight: 700;
+}
+
+.social-code-row button:disabled {
+  opacity: 0.55;
+}
+
+.social-note {
+  margin: -0.2rem 0 0;
+  font-size: 0.82rem;
+  color: rgba(82, 82, 91, 0.74);
 }
 
 .social-callback-button {
