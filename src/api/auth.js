@@ -12,9 +12,11 @@ const persistTokenFromResponse = (response) => {
 export const register = async (userData) => {
   const payload = {
     name: userData.name || userData.username,
+    nickname: userData.nickname,
     email: userData.email,
     verificationCode: userData.verificationCode,
-    password: encrypt(userData.password)
+    password: encrypt(userData.password),
+    acceptedPrivacyPolicy: Boolean(userData.acceptedPrivacyPolicy)
   }
 
   const response = await api.post('/auth/register', payload)
@@ -23,8 +25,10 @@ export const register = async (userData) => {
 }
 
 export const login = async (credentials) => {
+  const loginId = credentials.loginId || credentials.email || ''
   const payload = {
-    email: credentials.email,
+    loginId,
+    email: loginId,
     password: encrypt(credentials.password)
   }
 
@@ -82,7 +86,9 @@ export const getSocialLoginUrl = (provider, redirect = '/dashboard') => {
   const typeMap = {
     qq: 'qq',
     wechat: 'wx',
-    wx: 'wx'
+    wx: 'wx',
+    google: 'google',
+    github: 'github'
   }
   const type = typeMap[provider]
   if (!type) return ''
@@ -91,4 +97,21 @@ export const getSocialLoginUrl = (provider, redirect = '/dashboard') => {
   const params = new URLSearchParams({ redirect })
   return `${base}/auth/social/${type}/start?${params.toString()}`
 }
+
+export const getSocialBindUrl = async (provider, redirect = '/profile') => {
+  const typeMap = {
+    qq: 'qq',
+    wechat: 'wx',
+    wx: 'wx',
+    google: 'google',
+    github: 'github'
+  }
+  const type = typeMap[provider]
+  if (!type) return ''
+
+  const response = await api.post(`/auth/social/${type}/link`, { redirect })
+  return response?.success ? response.data?.url || '' : ''
+}
+
+export const completeSocialProfile = async (payload) => api.post('/auth/social/complete', payload)
 

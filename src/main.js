@@ -4,7 +4,6 @@ import router from './router'
 import App from './App.vue'
 import { useThemeStore } from './stores/theme'
 import { showAPIConnectionStatus } from './utils/apiTest'
-import { runFullTest } from './utils/registrationTest'
 import './styles/main.css'
 import './styles/enhanced-ui.css'
 

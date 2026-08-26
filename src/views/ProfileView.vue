@@ -31,6 +31,10 @@
             <div class="min-w-0 flex-1">
               <p class="profile-kicker">Current User</p>
               <h2>{{ userDisplayName }}</h2>
+              <div class="profile-username-row">
+                <span class="profile-username-tag">用户名</span>
+                <strong class="profile-username-value">{{ user?.username || '未命名' }}</strong>
+              </div>
               <p>{{ user?.email || '未绑定邮箱' }}</p>
             </div>
             <span class="summary-badge summary-badge-success">已登录</span>
@@ -74,6 +78,33 @@
                 <span :class="item.badgeClass">{{ item.value }}</span>
               </div>
             </div>
+            <div class="profile-linked-social">
+              <div class="profile-linked-social-head">
+                <div>
+                  <p class="profile-kicker">Social Bindings</p>
+                  <h4>第三方登录绑定</h4>
+                </div>
+                <span class="summary-badge summary-badge-muted">{{ linkedSocialProviders.length }}/4</span>
+              </div>
+              <div class="profile-social-grid">
+                <button
+                  v-for="provider in socialProviderOptions"
+                  :key="provider.key"
+                  type="button"
+                  class="profile-social-bind-card"
+                  :class="{ 'is-bound': provider.bound, 'is-busy': bindingSocialProvider === provider.key }"
+                  :disabled="provider.bound || Boolean(bindingSocialProvider)"
+                  @click="startSocialBind(provider.key)"
+                >
+                  <img :src="provider.icon" :alt="provider.label" class="profile-social-icon" />
+                  <div class="profile-social-copy">
+                    <strong>{{ provider.label }}</strong>
+                    <p>{{ provider.description }}</p>
+                  </div>
+                  <span class="profile-social-state">{{ provider.bound ? '已绑定' : '去绑定' }}</span>
+                </button>
+              </div>
+            </div>
           </BaseCard>
 
           <BaseCard>
@@ -106,8 +137,8 @@
           <BaseCard v-if="isAdmin">
             <div class="profile-section-head">
               <div>
-                <p class="profile-kicker">Admin Mail</p>
-                <h3>管理员邮件中心</h3>
+                <p class="profile-kicker">Admin Console</p>
+                <h3>用户管理中心</h3>
               </div>
               <span class="summary-badge summary-badge-success">管理员</span>
             </div>
@@ -125,9 +156,9 @@
                 <strong>{{ adminEmailAudience.delivery?.enabled ? 'Resend 已启用' : '开发模式' }}</strong>
               </div>
             </div>
-            <p class="profile-muted-box">管理员可以向所有已绑定邮箱的用户发送产品更新、学习分享或活动通知。</p>
+            <p class="profile-muted-box">用户增长、活跃画像、社交来源和群发邮件已迁移到独立运营后台。</p>
             <div class="mt-4 grid gap-3 sm:grid-cols-2">
-              <button type="button" class="profile-primary-action" @click="openAdminMailModal">写邮件给所有用户</button>
+              <button type="button" class="profile-primary-action" @click="router.push('/admin/users')">进入用户管理</button>
               <button type="button" class="profile-ghost-action" :disabled="isLoadingAdminAudience" @click="loadAdminAudience">
                 {{ isLoadingAdminAudience ? '刷新中...' : '刷新受众数据' }}
               </button>
@@ -1064,6 +1095,10 @@ const syncProfilePanelFromRoute = () => {
   if (route.query.panel === 'notifications') {
     showNotificationModal.value = true
   }
+
+  if (route.query.panel === 'admin-mail' && isAdmin.value) {
+    openAdminMailModal()
+  }
 }
 
 const editForm = ref({
@@ -1235,7 +1270,45 @@ const settingItems = computed(() => [
 
 const user = computed(() => authStore.user)
 const isAdmin = computed(() => Boolean(user.value?.isAdmin || user.value?.security?.isAdmin))
-const userDisplayName = computed(() => user.value?.username || user.value?.name || '用户')
+const userDisplayName = computed(() => user.value?.nickname || user.value?.name || user.value?.username || '用户')
+const linkedSocialProviders = computed(() => Array.isArray(user.value?.socialIdentities) ? user.value.socialIdentities : [])
+const socialProviderOptions = computed(() => {
+  const boundProviders = new Set(linkedSocialProviders.value.map((item) => String(item.provider || '').toLowerCase()))
+  return [
+    {
+      key: 'wechat',
+      provider: 'wx',
+      label: '微信',
+      description: '微信快捷登录',
+      icon: '/auth-providers/wechat.png'
+    },
+    {
+      key: 'qq',
+      provider: 'qq',
+      label: 'QQ',
+      description: 'QQ 快捷登录',
+      icon: '/auth-providers/qq.png'
+    },
+    {
+      key: 'google',
+      provider: 'google',
+      label: 'Google',
+      description: 'Google 账号登录',
+      icon: '/auth-providers/google.png'
+    },
+    {
+      key: 'github',
+      provider: 'github',
+      label: 'GitHub',
+      description: 'GitHub 账号登录',
+      icon: '/auth-providers/github.png'
+    }
+  ].map((item) => ({
+    ...item,
+    bound: boundProviders.has(item.provider)
+  }))
+})
+const bindingSocialProvider = ref('')
 const withAvatarCacheBust = (url) => {
   if (!url || /^(data:|blob:)/i.test(url)) return url
 
@@ -1698,6 +1771,30 @@ const openAdminMailModal = async () => {
   showAdminMailModal.value = true
   if (!adminEmailAudience.value.totalUsers) {
     await loadAdminAudience()
+  }
+}
+
+const startSocialBind = async (providerKey) => {
+  if (!providerKey || bindingSocialProvider.value) return
+
+  const selected = socialProviderOptions.value.find((item) => item.key === providerKey)
+  if (!selected || selected.bound) {
+    return
+  }
+
+  bindingSocialProvider.value = providerKey
+  try {
+    const url = await authAPI.getSocialBindUrl(providerKey, '/profile')
+    if (!url) {
+      throw new Error('未获取到绑定地址')
+    }
+
+    window.location.href = url
+  } catch (err) {
+    showError('绑定失败', {
+      description: err.error || err.message || '请稍后重试。'
+    })
+    bindingSocialProvider.value = ''
   }
 }
 
@@ -2409,6 +2506,45 @@ onBeforeUnmount(() => {
   color: rgb(161, 161, 170);
 }
 
+.profile-username-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.profile-username-tag {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid rgba(180, 151, 85, 0.3);
+  border-radius: 999px;
+  background: rgba(180, 151, 85, 0.1);
+  padding: 4px 10px;
+  color: rgb(133, 103, 45);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.dark .profile-username-tag {
+  border-color: rgba(180, 151, 85, 0.36);
+  background: rgba(180, 151, 85, 0.14);
+  color: rgb(236, 201, 133);
+}
+
+.profile-username-value {
+  color: rgb(24, 24, 27);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.dark .profile-username-value {
+  color: rgb(244, 244, 245);
+}
+
 .profile-hero-copy {
   max-width: 460px;
   flex: 1 1 42%;
@@ -2610,6 +2746,145 @@ onBeforeUnmount(() => {
 .profile-stack-list {
   display: grid;
   gap: 10px;
+}
+
+.profile-linked-social {
+  margin-top: 18px;
+  border: 1px solid rgba(228, 228, 231, 0.82);
+  border-radius: 22px;
+  background: rgba(250, 250, 250, 0.72);
+  padding: 18px;
+}
+
+.dark .profile-linked-social {
+  border-color: rgba(63, 63, 70, 0.82);
+  background: rgba(24, 24, 27, 0.7);
+}
+
+.profile-linked-social-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.profile-linked-social-head h4 {
+  margin: 4px 0 0;
+  color: rgb(24, 24, 27);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.dark .profile-linked-social-head h4 {
+  color: rgb(250, 250, 250);
+}
+
+.profile-social-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.profile-social-bind-card {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  border: 1px solid rgba(228, 228, 231, 0.82);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.82);
+  padding: 13px 14px;
+  text-align: left;
+}
+
+.profile-social-bind-card:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: rgba(24, 24, 27, 0.24);
+}
+
+.profile-social-bind-card.is-bound {
+  border-color: rgba(16, 185, 129, 0.28);
+  background: rgba(236, 253, 245, 0.82);
+}
+
+.profile-social-bind-card.is-busy {
+  opacity: 0.72;
+}
+
+.dark .profile-social-bind-card {
+  border-color: rgba(63, 63, 70, 0.82);
+  background: rgba(39, 39, 42, 0.72);
+}
+
+.dark .profile-social-bind-card.is-bound {
+  border-color: rgba(16, 185, 129, 0.32);
+  background: rgba(6, 78, 59, 0.28);
+}
+
+.profile-social-icon {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 14px;
+  object-fit: cover;
+}
+
+.profile-social-copy {
+  min-width: 0;
+}
+
+.profile-social-copy strong {
+  display: block;
+  color: rgb(24, 24, 27);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.dark .profile-social-copy strong {
+  color: rgb(244, 244, 245);
+}
+
+.profile-social-copy p {
+  margin: 4px 0 0;
+  color: rgb(113, 113, 122);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.dark .profile-social-copy p {
+  color: rgb(161, 161, 170);
+}
+
+.profile-social-state {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid rgba(161, 161, 170, 0.34);
+  background: rgba(255, 255, 255, 0.72);
+  padding: 6px 10px;
+  color: rgb(63, 63, 70);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.profile-social-bind-card.is-bound .profile-social-state {
+  border-color: rgba(16, 185, 129, 0.28);
+  background: rgba(16, 185, 129, 0.1);
+  color: rgb(5, 150, 105);
+}
+
+.dark .profile-social-state {
+  border-color: rgba(113, 113, 122, 0.42);
+  background: rgba(24, 24, 27, 0.78);
+  color: rgb(228, 228, 231);
+}
+
+.dark .profile-social-bind-card.is-bound .profile-social-state {
+  border-color: rgba(16, 185, 129, 0.38);
+  background: rgba(16, 185, 129, 0.16);
+  color: rgb(110, 231, 183);
 }
 
 .profile-info-row {

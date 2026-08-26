@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 import { useAuthStore } from './auth'
-import { getWorkspaceAppearance, updateWorkspaceAppearance } from '@/api/workspace'
+import { getWorkspaceAppearance, updateWorkspaceAppearance } from '../api/workspace.js'
 
 const DEFAULT_APPEARANCE = {
   mode: 'system',

@@ -3,6 +3,7 @@ import api from './index.js'
 export const listEditorPages = (params = {}) => api.get('/editor/pages', params)
 export const getEditorPageTree = (params = {}) => api.get('/editor/pages/tree', params)
 export const getEditorPlanDocument = (planId) => api.get(`/editor/plans/${planId}/document`)
+export const getPlanEditorBootstrap = (planId, params = {}) => api.get(`/editor/plans/${planId}/editor-bootstrap`, params)
 export const getEditorPage = (id) => api.get(`/editor/pages/${id}`)
 export const createEditorPage = (payload = {}) => api.post('/editor/pages', payload)
 export const updateEditorPage = (id, payload = {}) => api.put(`/editor/pages/${id}`, payload)

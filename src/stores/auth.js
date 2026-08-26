@@ -179,13 +179,31 @@ export const useAuthStore = defineStore('auth', () => {
       : { success: false, error: '快捷登录成功，但用户资料加载失败' }
   }
 
+  const updateSocialProfile = async (payload) => {
+    isLoading.value = true
+    try {
+      const response = await authAPI.completeSocialProfile(payload)
+
+      if (response.success && response.data?.user) {
+        user.value = { ...(user.value || {}), ...(response.data.user || {}) }
+        return { success: true, user: response.data.user }
+      }
+
+      return { success: false, error: response.error, code: response.code }
+    } catch (error) {
+      return { success: false, error: error.error || error.message }
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   const updateProfile = async (profileData) => {
     isLoading.value = true
     try {
       const response = await authAPI.updateProfile(profileData)
 
       if (response.success) {
-        user.value = response.data
+        user.value = { ...(user.value || {}), ...(response.data || {}) }
         return { success: true, user: response.data }
       }
 
@@ -198,7 +216,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   const updateUser = (userData) => {
-    user.value = userData
+    user.value = { ...(user.value || {}), ...(userData || {}) }
   }
 
   return {
@@ -212,6 +230,7 @@ export const useAuthStore = defineStore('auth', () => {
     loginWithCode,
     register,
     acceptSocialToken,
+    updateSocialProfile,
     logout,
     checkAuth,
     updateProfile,

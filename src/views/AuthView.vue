@@ -130,14 +130,14 @@
 
             <form v-if="loginMethod === 'password'" class="auth-auth-form mt-7 space-y-5" @submit.prevent="handlePasswordLogin">
               <div>
-                <label class="field-label">邮箱地址</label>
+                <label class="field-label">邮箱或用户名</label>
                 <input
                   v-model.trim="loginForm.email"
-                  type="email"
+                  type="text"
                   required
-                  autocomplete="email"
+                  autocomplete="username"
                   class="auth-input"
-                  placeholder="请输入邮箱地址"
+                  placeholder="请输入邮箱或用户名"
                 >
               </div>
 
@@ -546,7 +546,9 @@ const resetForm = ref({
 
 const socialProviders = [
   { key: 'wechat', label: '微信登录', icon: '/auth-providers/wechat.png' },
-  { key: 'qq', label: 'QQ 登录', icon: '/auth-providers/qq.png' }
+  { key: 'qq', label: 'QQ 登录', icon: '/auth-providers/qq.png' },
+  { key: 'google', label: 'Google 登录', icon: '/auth-providers/google.png' },
+  { key: 'github', label: 'GitHub 登录', icon: '/auth-providers/github.png' }
 ]
 
 const authMeta = computed(() => {
@@ -664,7 +666,7 @@ const getErrorMessage = (message = '', code) => {
   }
 
   if (code === 401 || text.includes('密码错误') || normalized.includes('password') || normalized.includes('login')) {
-    return text || '邮箱或密码错误。'
+    return text || '账号或密码错误。'
   }
 
   if (code === 422 || text.includes('格式') || normalized.includes('validation')) {

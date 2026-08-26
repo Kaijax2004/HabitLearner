@@ -48,6 +48,8 @@ export const builtinAiSkills = [
 ]
 
 export const getWorkspaceToday = () => api.get('/workspace/today')
+export const getWorkspaceBootstrap = (params = {}) => api.get('/workspace/bootstrap', params)
+export const getDashboardSummary = (params = {}) => api.get('/dashboard/summary', params)
 export const getWorkspaceState = () => api.get('/workspace/state')
 export const getWorkspaceAppearance = () => api.get('/workspace/appearance')
 export const updateWorkspaceAppearance = (payload) => api.put('/workspace/appearance', payload)

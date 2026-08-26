@@ -350,6 +350,7 @@ import {
   createEditorBlock,
   createEditorPage,
   getEditorPageTree,
+  getPlanEditorBootstrap,
   updateEditorBlock,
   deleteEditorBlock,
   reorderEditorBlocks
@@ -3141,41 +3142,72 @@ const loadPlan = async () => {
     scheduleBlocks.value = []
     scheduleBlocksLoading.value = false
 
-    const [plan, editorResponse] = await Promise.all([
-      loadCurrentPlanRecord(),
-      editorDocument.loadForPlan(planId.value, route.query.editorPageId || null)
-    ])
+    const bootstrapResponse = await getPlanEditorBootstrap(planId.value)
 
     if (currentLoadSeq !== planLoadSeq) return
 
-    if (!plan) {
-      loadError.value = {
-        title: '计划不存在',
-        message: `没有找到计划 ${planId.value || ''}，可能已被删除或当前账号无权访问。`
-      }
-      return
-    }
-
-    title.value = plan.title || ''
-    status.value = plan.status || 'not_started'
-    priority.value = plan.priority || 'medium'
-    planType.value = plan.type || 'project'
-    customTypeName.value = plan.custom_type_name || ''
-    dueDate.value = plan.due_date || ''
-
-    if (editorResponse.success && editorResponse.data?.page) {
-      editorPageId.value = editorResponse.data.page.id
-      blocks.value = (editorResponse.data.blocks || []).map((block, index) => ({
+    if (bootstrapResponse.success && bootstrapResponse.data?.page) {
+      const bootstrap = bootstrapResponse.data
+      const plan = normalizePlanForEditor(bootstrap.plan || {})
+      title.value = plan.title || ''
+      status.value = plan.status || 'not_started'
+      priority.value = plan.priority || 'medium'
+      planType.value = plan.type || 'project'
+      customTypeName.value = plan.custom_type_name || ''
+      dueDate.value = plan.due_date || ''
+      editorPageId.value = bootstrap.editorPageId || bootstrap.page?.id || null
+      editorPageTree.value = Array.isArray(bootstrap.pageTree) ? bootstrap.pageTree : []
+      blocks.value = (bootstrap.blocks || []).map((block, index) => ({
         ...block,
         order: block.position || index + 1,
         content: block.content || createBlockContent(block.type)
       }))
+      scheduleBlocks.value = Array.isArray(bootstrap.scheduleBlocks) ? bootstrap.scheduleBlocks : []
+      editorDocument.page.value = bootstrap.page || null
+      editorDocument.blocks.value = (bootstrap.blocks || []).map((block, index) => ({
+        ...block,
+        order: block.position || index + 1,
+        content: block.content || createBlockContent(block.type)
+      }))
+      editorDocument.properties.value = bootstrap.properties || []
+      editorDocument.databaseViews.value = bootstrap.databaseViews || []
     } else {
-      loadError.value = {
-        title: editorResponse.code === 'EDITOR_PAGE_NOT_FOUND' ? '编辑器页面不存在' : '编辑器加载失败',
-        message: editorResponse.error || '计划已找到，但正文页面没有成功加载。请重试；如果仍失败，请检查后端是否已重启并完成数据库同步。'
+      const [plan, editorResponse] = await Promise.all([
+        loadCurrentPlanRecord(),
+        editorDocument.loadForPlan(planId.value, route.query.editorPageId || null)
+      ])
+
+      if (currentLoadSeq !== planLoadSeq) return
+
+      if (!plan) {
+        loadError.value = {
+          title: '计划不存在',
+          message: `没有找到计划 ${planId.value || ''}，可能已被删除或当前账号无权访问。`
+        }
+        return
       }
-      return
+
+      title.value = plan.title || ''
+      status.value = plan.status || 'not_started'
+      priority.value = plan.priority || 'medium'
+      planType.value = plan.type || 'project'
+      customTypeName.value = plan.custom_type_name || ''
+      dueDate.value = plan.due_date || ''
+
+      if (editorResponse.success && editorResponse.data?.page) {
+        editorPageId.value = editorResponse.data.page.id
+        blocks.value = (editorResponse.data.blocks || []).map((block, index) => ({
+          ...block,
+          order: block.position || index + 1,
+          content: block.content || createBlockContent(block.type)
+        }))
+      } else {
+        loadError.value = {
+          title: editorResponse.code === 'EDITOR_PAGE_NOT_FOUND' ? '编辑器页面不存在' : '编辑器加载失败',
+          message: editorResponse.error || '计划已找到，但正文页面没有成功加载。请重试；如果仍失败，请检查后端是否已重启并完成数据库同步。'
+        }
+        return
+      }
     }
 
     pendingBlockIds.value = new Set()
@@ -3183,11 +3215,15 @@ const loadPlan = async () => {
     editorHistory.reset(getEditorHistorySnapshot())
     runWhenIdle(() => {
       if (currentLoadSeq !== planLoadSeq) return
-      void Promise.allSettled([
-        loadPlanScheduleBlocks(planId.value, { silent: true }),
-        loadEditorPageTree(),
-        loadAiSkills({ silent: true })
-      ])
+      void Promise.allSettled(
+        bootstrapResponse.success && bootstrapResponse.data?.page
+          ? [loadAiSkills({ silent: true })]
+          : [
+              loadPlanScheduleBlocks(planId.value, { silent: true }),
+              loadEditorPageTree(),
+              loadAiSkills({ silent: true })
+            ]
+      )
     })
     nextTick(() => resizeTitle())
   } catch (error) {

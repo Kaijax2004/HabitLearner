@@ -95,7 +95,7 @@ import DashboardExecution from '@/views/dashboard/DashboardExecution.vue'
 import DashboardStatus from '@/views/dashboard/DashboardStatus.vue'
 import DashboardLoop from '@/views/dashboard/DashboardLoop.vue'
 import DashboardHabitManager from '@/views/dashboard/DashboardHabitManager.vue'
-import { chatWithMascotAssistant, getWorkspaceToday } from '@/api/workspace.js'
+import { chatWithMascotAssistant, getWorkspaceBootstrap } from '@/api/workspace.js'
 import { updateScheduleBlock } from '@/api/scheduleBlocks.js'
 
 const authStore = useAuthStore()
@@ -222,12 +222,12 @@ const dashboardGreeting = computed(() => {
   return name ? `${greeting.value} ${name}` : greeting.value
 })
 
-const loadWorkspaceToday = async () => {
+const loadWorkspaceToday = async ({ force = false } = {}) => {
   isWorkspaceLoading.value = true
   workspaceError.value = ''
 
   try {
-    const response = await getWorkspaceToday()
+    const response = await getWorkspaceBootstrap(force ? { noCache: '1' } : {})
     if (!response.success) {
       throw new Error(response.error || '今日工作台加载失败')
     }
@@ -237,6 +237,11 @@ const loadWorkspaceToday = async () => {
   } finally {
     isWorkspaceLoading.value = false
   }
+}
+
+const ensureHabitsLoaded = async () => {
+  if (habitStore.habits.length || habitStore.isLoading) return
+  await habitStore.fetchHabits()
 }
 
 const scheduleStatusLabel = (status) => ({
@@ -342,6 +347,7 @@ const quickCheckIn = async (habit) => {
 
   checkingHabitId.value = habit.id
   try {
+    await ensureHabitsLoaded()
     const response = await habitStore.completeHabit(habit.id)
     if (!response.success) {
       error('快捷打卡失败', { description: response.error || '请稍后重试' })
@@ -349,7 +355,7 @@ const quickCheckIn = async (habit) => {
     }
 
     success('打卡成功', { description: `「${habit.name}」已记录到今天。` })
-    await Promise.all([habitStore.fetchHabits(), loadWorkspaceToday()])
+    await loadWorkspaceToday({ force: true })
   } catch (err) {
     error('快捷打卡失败', { description: err.message || '请稍后重试' })
   } finally {
@@ -436,7 +442,7 @@ const deleteSelectedHabits = async () => {
 
   selectedHabitIds.value = []
   success('习惯已删除', { description: `已删除 ${count} 个习惯` })
-  await Promise.all([habitStore.fetchHabits(), loadWorkspaceToday()])
+  await loadWorkspaceToday({ force: true })
 }
 
 const generateTodayAiAdvice = async () => {
@@ -466,7 +472,7 @@ const generateTodayAiAdvice = async () => {
 }
 
 onMounted(async () => {
-  await Promise.all([habitStore.fetchHabits(), loadWorkspaceToday()])
+  await loadWorkspaceToday()
 })
 </script>
 

@@ -27,6 +27,7 @@ const routes = [
   { path: '/profile/ai-providers', name: 'AiProviderSettings', component: () => import('@/views/AiProviderSettingsView.vue'), meta: { requiresAuth: true } },
   { path: '/profile/ai-skills', name: 'AiSkillSettings', component: () => import('@/views/AiSkillSettingsView.vue'), meta: { requiresAuth: true } },
   { path: '/profile/pet-settings', name: 'PetSettings', component: () => import('@/views/PetSettingsView.vue'), meta: { requiresAuth: true } },
+  { path: '/admin/users', name: 'AdminUsers', component: () => import('@/views/AdminUsersView.vue'), meta: { requiresAuth: true, requiresAdmin: true } },
   { path: '/guide', name: 'UsageGuide', component: () => import('@/views/UsageGuideView.vue'), meta: { requiresAuth: true } },
   { path: '/reminder-test', name: 'ReminderTest', component: () => import('@/views/ReminderTestView.vue'), meta: { requiresAuth: true } }
 ]
@@ -58,6 +59,10 @@ router.beforeEach(async (to, from) => {
 
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
     return { path: '/auth', query: { redirect: to.fullPath } }
+  }
+
+  if (to.meta.requiresAdmin && !(authStore.user?.isAdmin || authStore.user?.security?.isAdmin)) {
+    return { path: '/dashboard' }
   }
 
   if (to.meta.requiresGuest && authStore.isAuthenticated) {

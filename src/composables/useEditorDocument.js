@@ -1,5 +1,5 @@
 import { ref } from 'vue'
-import { getEditorPage, getEditorPlanDocument, listEditorPages } from '@/api/editor'
+import { getEditorPage, getEditorPlanDocument, getPlanEditorBootstrap, listEditorPages } from '@/api/editor'
 
 const normalizeBlock = (block, index = 0) => ({
   ...block,
@@ -76,12 +76,12 @@ export function useEditorDocument() {
       if (response.success) return { ...response, data: { ...response.data, id: explicitPageId } }
     }
 
-    const documentResponse = await getEditorPlanDocument(planId)
-    if (documentResponse.success && documentResponse.data?.page) {
-      page.value = documentResponse.data.page
-      blocks.value = (documentResponse.data.blocks || []).map(normalizeBlock)
-      properties.value = documentResponse.data.properties || []
-      databaseViews.value = documentResponse.data.databaseViews || []
+    const bootstrapResponse = await getPlanEditorBootstrap(planId)
+    if (bootstrapResponse.success && bootstrapResponse.data?.page) {
+      page.value = bootstrapResponse.data.page
+      blocks.value = (bootstrapResponse.data.blocks || []).map(normalizeBlock)
+      properties.value = bootstrapResponse.data.properties || []
+      databaseViews.value = bootstrapResponse.data.databaseViews || []
       return {
         success: true,
         data: {
@@ -89,11 +89,14 @@ export function useEditorDocument() {
           blocks: blocks.value,
           properties: properties.value,
           databaseViews: databaseViews.value,
-          id: page.value.id
+          scheduleBlocks: bootstrapResponse.data.scheduleBlocks || [],
+          pageTree: bootstrapResponse.data.pageTree || [],
+          id: bootstrapResponse.data.editorPageId || page.value.id
         }
       }
     }
 
+    const documentResponse = await getEditorPlanDocument(planId)
     const pagesResponse = await listEditorPages({ source_plan_id: planId })
     if (!pagesResponse.success) {
       reset()

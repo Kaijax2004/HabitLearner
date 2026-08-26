@@ -1,4 +1,4 @@
-import api from '@/api/index.js'
+import api from '../api/index.js'
 
 // 测试API连接
 export const testAPIConnection = async () => {

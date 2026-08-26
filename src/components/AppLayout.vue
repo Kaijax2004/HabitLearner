@@ -219,6 +219,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useThemeStore } from '@/stores/theme'
+import { useAuthStore } from '@/stores/auth'
 import { useSidebarState } from '@/composables/useSidebarState'
 import Logo from './Logo.vue'
 import WorkspacePet from './WorkspacePet.vue'
@@ -241,6 +242,7 @@ const props = defineProps({
 const route = useRoute()
 const router = useRouter()
 const themeStore = useThemeStore()
+const authStore = useAuthStore()
 const { isSidebarCollapsed, toggleSidebar } = useSidebarState()
 
 const BRAND_NAME = '\u4e60\u77e5'
@@ -254,6 +256,8 @@ const layoutVars = computed(() => ({
 const sidebarToggleLabel = computed(() => (
   isSidebarCollapsed.value ? '\u5c55\u5f00\u4fa7\u8fb9\u680f' : '\u6536\u8d77\u4fa7\u8fb9\u680f'
 ))
+
+const isAdmin = computed(() => Boolean(authStore.user?.isAdmin || authStore.user?.security?.isAdmin))
 
 const navigationGroups = [
   {
@@ -301,6 +305,7 @@ const mobileWorkspaceGroups = computed(() => [
     label: '\u63a7\u5236\u4e2d\u5fc3',
     items: [
       { name: 'guide', label: '\u4f7f\u7528\u6559\u7a0b', to: '/guide', icon: 'GuideIcon', description: '\u529f\u80fd\u8bf4\u660e\u548c\u65e5\u5e38\u5de5\u4f5c\u6d41' },
+      ...(isAdmin.value ? [{ name: 'admin-users', label: '\u7528\u6237\u7ba1\u7406', to: '/admin/users', icon: 'UserIcon', description: '\u589e\u957f\u3001\u6d3b\u8dc3\u548c\u7528\u6237\u753b\u50cf' }] : []),
       { name: 'ai-providers', label: 'AI \u8bbe\u7f6e', to: '/profile/ai-providers', icon: 'SparkIcon', description: '\u7edf\u4e00\u4f9b\u5e94\u5546\u548c\u6a21\u578b' },
       { name: 'ai-skills', label: 'AI \u6280\u80fd', to: '/profile/ai-skills', icon: 'SparkIcon', description: '\u7ba1\u7406\u5185\u7f6e\u4e0e\u81ea\u5b9a\u4e49 skills' },
       { name: 'appearance', label: '\u5916\u89c2\u4e3b\u9898', to: '/profile/appearance', icon: 'BrushIcon', description: '\u80cc\u666f\u3001\u914d\u8272\u548c\u5bc6\u5ea6' },

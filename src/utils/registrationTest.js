@@ -1,4 +1,4 @@
-import api from '@/api/index.js'
+import api from '../api/index.js'
 
 // 测试注册功能
 export const testRegistration = async () => {
