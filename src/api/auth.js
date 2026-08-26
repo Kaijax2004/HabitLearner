@@ -138,7 +138,11 @@ export const getSocialUnlinkUrl = async (provider, redirect = '/profile') => {
   return response?.success ? response.data?.url || '' : ''
 }
 
-export const completeSocialProfile = async (payload) => api.post('/auth/social/complete', payload)
+export const completeSocialProfile = async (payload) => {
+  const response = await api.post('/auth/social/complete', payload)
+  persistTokenFromResponse(response)
+  return response
+}
 
 export const requestAccountDeletion = async (payload = {}) => api.post('/auth/account/deletion/request', {
   ...payload,

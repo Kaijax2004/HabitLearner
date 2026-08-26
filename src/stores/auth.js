@@ -185,7 +185,12 @@ export const useAuthStore = defineStore('auth', () => {
       const response = await authAPI.completeSocialProfile(payload)
 
       if (response.success && response.data?.user) {
-        user.value = { ...(user.value || {}), ...(response.data.user || {}) }
+        setAuthState({
+          nextUser: { ...(user.value || {}), ...(response.data.user || {}) },
+          nextToken: response.data.token || token.value,
+          persistToken: Boolean(response.data.token)
+        })
+        bootstrapComplete.value = true
         return { success: true, user: response.data.user }
       }
 
@@ -234,6 +239,7 @@ export const useAuthStore = defineStore('auth', () => {
     logout,
     checkAuth,
     updateProfile,
-    updateUser
+    updateUser,
+    clearAuthState
   }
 })
