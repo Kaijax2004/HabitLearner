@@ -62,13 +62,13 @@
 
     <div class="dashboard-ai-entry">
       <div>
-        <p class="workbench-eyebrow">Xizhi Intelligence</p>
-        <strong>问习知：今天先做什么？</strong>
+        <p class="workbench-eyebrow">Mentor-X Intelligence</p>
+        <strong>问 Mentor-X：今天先做什么？</strong>
         <span>{{ aiStatusText }}</span>
       </div>
       <div class="flex flex-wrap gap-2">
         <button type="button" class="workbench-primary" :disabled="aiLoading" @click="$emit('ask-ai')">
-          {{ aiLoading ? '生成中' : '问习知' }}
+          {{ aiLoading ? '生成中' : '问 Mentor-X' }}
         </button>
         <button v-if="aiErrorCode === 'AI_NOT_CONFIGURED'" type="button" class="workbench-secondary" @click="$emit('configure-ai')">
           配置

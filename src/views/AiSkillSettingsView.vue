@@ -1,5 +1,5 @@
 <template>
-  <AppLayout title="AI 技能管理" show-back-button>
+  <AppLayout title="Mentor-X 技能管理" show-back-button>
     <div class="mx-auto w-full max-w-5xl px-4 pb-20 pt-6 sm:px-6">
       <section class="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-8">
         <div class="flex flex-wrap items-start justify-between gap-4">

@@ -83,13 +83,13 @@ export const useWorkspaceAiStore = defineStore('workspaceAi', () => {
     modelsError.value = ''
     try {
       const providersResponse = await listAiProviders()
-      if (!providersResponse?.success) throw new Error(providersResponse?.error || 'AI 供应商配置读取失败')
+      if (!providersResponse?.success) throw new Error(providersResponse?.error || 'Mentor-X 模型引擎配置读取失败')
       const providers = Array.isArray(providersResponse.data?.providers) ? providersResponse.data.providers : []
       const provider = requestedProviderId
         ? providers.find((item) => String(item.id) === requestedProviderId && item.status === 'active')
         : providers.find((item) => item.is_default && item.status === 'active')
           || providers.find((item) => item.status === 'active')
-      if (!provider?.id) throw new Error('尚未配置 AI 供应商')
+      if (!provider?.id) throw new Error('尚未配置 Mentor-X 的模型引擎')
 
       const response = await listAiProviderModels({ id: provider.id })
       if (!response?.success) throw new Error(response?.error || '模型列表获取失败')

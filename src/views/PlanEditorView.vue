@@ -763,13 +763,13 @@ const applyAiModelOptions = (items = []) => {
 
 const loadAiModelsFallback = async () => {
   const providersResponse = await listAiProviders()
-  if (!providersResponse?.success) throw new Error(providersResponse?.error || 'AI 供应商配置读取失败')
+  if (!providersResponse?.success) throw new Error(providersResponse?.error || 'Mentor-X 模型引擎配置读取失败')
   const providers = Array.isArray(providersResponse.data?.providers) ? providersResponse.data.providers : []
   const providerId = workspaceAiStore.hasExplicitSelection ? String(workspaceAiStore.normalizedSelectedProviderId) : ''
   const provider = providerId
     ? providers.find((item) => String(item.id) === providerId && item.status === 'active')
     : providers.find((item) => item.is_default && item.status === 'active') || providers.find((item) => item.status === 'active')
-  if (!provider?.id) throw new Error('尚未配置 AI 供应商')
+  if (!provider?.id) throw new Error('尚未配置 Mentor-X 的模型引擎')
   const response = await listAiProviderModels({ id: provider.id })
   if (!response?.success) throw new Error(response?.error || '模型列表获取失败')
   workspaceAiStore.setModelOptions?.(response.data?.models || [], provider.id)
@@ -780,9 +780,9 @@ const aiImageModelOptions = computed(() => aiMediaModelOptions.value)
 const aiVideoModelOptions = computed(() => aiMediaModelOptions.value)
 const aiModelOptions = computed(() => aiMediaModelOptions.value)
 const aiMediaModelHint = computed(() => {
-  if (aiMediaModelsLoading.value) return '正在读取当前供应商模型列表...'
+  if (aiMediaModelsLoading.value) return '正在读取当前模型引擎模型列表...'
   if (aiMediaModelError.value) return aiMediaModelError.value
-  if (aiMediaModelOptions.value.length) return '模型来自当前 AI 供应商。'
+  if (aiMediaModelOptions.value.length) return '模型来自当前默认引擎。'
   return '尚未读取到模型列表。'
 })
 
@@ -2100,7 +2100,7 @@ const runAiWorkspaceChat = async () => {
         id: `assistant-error-${Date.now()}`,
         role: 'assistant',
         content: response?.code === 'AI_NOT_CONFIGURED'
-          ? '尚未配置 AI 能力，请先到“我的 / AI 供应商配置”中完成配置。'
+          ? '尚未配置 Mentor-X 能力，请先到“我的 / Mentor-X 模型引擎配置”中完成配置。'
           : getAiFailureDescription(response)
       })
       return
@@ -2120,7 +2120,7 @@ const runAiWorkspaceChat = async () => {
       aiChatMessages.value.push({
         id: `assistant-error-${Date.now()}`,
         role: 'assistant',
-        content: error.message || 'AI 工作区暂时无法连接。',
+        content: error.message || 'Mentor-X 工作区暂时无法连接。',
         createdAt: new Date().toISOString(),
         source: 'error'
       })
@@ -2137,7 +2137,7 @@ const loadAiSkills = async ({ force = false, silent = false } = {}) => {
     const response = await listAiSkills()
     if (!response?.success) {
       if (!silent) {
-        showInfo('AI 技能暂时无法加载', { description: response?.error || '你仍然可以使用默认提示。' })
+        showInfo('Mentor-X 技能暂时无法加载', { description: response?.error || '你仍然可以使用默认提示。' })
       }
       return response
     }
@@ -2384,17 +2384,17 @@ const getAiFailureDescription = (res) => {
   ].filter(Boolean)
   const debugText = debugParts.length ? `（${debugParts.join(' · ')}）` : ''
 
-  if (res?.code === 'AI_NOT_CONFIGURED') return '尚未配置 AI 能力，请先到“我的 / AI 供应商配置”中添加并设为默认。'
-  if (res?.code === 'AI_PROVIDER_NOT_FOUND') return '当前选择的 AI 供应商不存在或已停用，请回到 AI 供应商配置重新设置默认供应商。'
-  if (res?.code === 404) return `AI 接口不存在，请检查 Base URL 是否只填到 /v1，协议是否选对。${debugText}`
-  if (res?.code === 401 || res?.code === 403) return `AI Key 无效、权限不足或模型无权访问，请检查 Key 与模型名。${debugText}`
-  if (res?.code === 402) return `当前 AI Key 额度不足或账户不可用，请检查供应商余额与计费状态。${debugText}`
-  if (res?.code === 429) return `${res?.error || 'AI 请求过于频繁，请稍后再试。'}${debugText}`
+  if (res?.code === 'AI_NOT_CONFIGURED') return '尚未配置 Mentor-X 能力，请先到“我的 / Mentor-X 模型引擎配置”中添加并设为默认。'
+  if (res?.code === 'AI_PROVIDER_NOT_FOUND') return '当前选择的 Mentor-X 模型引擎不存在或已停用，请回到 Mentor-X 模型引擎配置重新设置默认模型引擎。'
+  if (res?.code === 404) return `模型引擎接口不存在，请检查 Base URL 是否只填到 /v1，协议是否选对。${debugText}`
+  if (res?.code === 401 || res?.code === 403) return `API Key 无效、权限不足或模型无权访问，请检查 Key 与模型名。${debugText}`
+  if (res?.code === 402) return `当前API Key 额度不足或账户不可用，请检查模型引擎余额与计费状态。${debugText}`
+  if (res?.code === 429) return `${res?.error || '模型引擎请求过于频繁，请稍后再试。'}${debugText}`
   if (res?.code === 422) return `${res?.error || '当前模式或参数不被供应商支持。'}${debugText}`
-  if (res?.code === 502) return `${res?.error || 'AI 服务暂时不可达，请检查后端网络、Base URL 或供应商状态。'}${debugText}`
-  if (res?.code === 503) return `${res?.error || '当前 AI 模型不可用，请检查模型配置。'}${debugText}`
-  if (res?.code === 504 || res?.code === 0) return `${res?.error || 'AI 请求超时或网络不可达，请确认服务器网络后重试。'}${debugText}`
-  if (/No available channel for model/i.test(res?.error || '')) return `当前供应商账号未开通该模型，请确认模型权限。${debugText}`
+  if (res?.code === 502) return `${res?.error || '模型引擎服务暂时不可达，请检查后端网络、Base URL 或上游状态。'}${debugText}`
+  if (res?.code === 503) return `${res?.error || '当前推理模型不可用，请检查模型配置。'}${debugText}`
+  if (res?.code === 504 || res?.code === 0) return `${res?.error || '模型引擎请求超时或网络不可达，请确认服务器网络后重试。'}${debugText}`
+  if (/No available channel for model/i.test(res?.error || '')) return `当前模型引擎账号未开通该模型，请确认模型权限。${debugText}`
   return `${res?.error || '请稍后再试。'}${debugText}`
 }
 
@@ -2541,7 +2541,7 @@ const handleAiVideoUploadFiles = async (event) => {
 
       if (!canUseForProvider) {
         showInfo('图片已上传，但当前返回的不是公网 URL', {
-          description: '如果当前供应商要求公网图片，请配置后端的 PUBLIC_MEDIA_BASE_URL，或直接手动填入公网图片地址。'
+          description: '如果当前模型引擎要求公网图片，请配置后端的 PUBLIC_MEDIA_BASE_URL，或直接手动填入公网图片地址。'
         })
       }
     }
@@ -2760,7 +2760,7 @@ const deleteAiVideoHistory = async (task) => {
 
 const runAiImage = async () => {
   if (isAiCoolingDown('image')) {
-    showInfo('AI 请求过于频繁', { description: '请在 ' + getAiCooldownRemaining('image') + ' 秒后再试。' })
+    showInfo('模型引擎请求过于频繁', { description: '请在 ' + getAiCooldownRemaining('image') + ' 秒后再试。' })
     return
   }
 
@@ -2777,7 +2777,7 @@ const runAiImage = async () => {
   if (!aiSelectedModel.value.trim()) {
     await ensureAiMediaModelsLoaded()
     if (!aiSelectedModel.value.trim()) {
-      showInfo('请选择 AI 模型', { description: aiMediaModelError.value || '当前供应商未返回可用模型。' })
+      showInfo('请选择推理模型', { description: aiMediaModelError.value || '当前模型引擎未返回可用模型。' })
       return
     }
   }
@@ -2862,7 +2862,7 @@ const runAiVideo = async () => {
   const availableSources = getAvailableAiVideoSources()
 
   if (isAiCoolingDown('video')) {
-    showInfo('AI 请求过于频繁', { description: '请在 ' + getAiCooldownRemaining('video') + ' 秒后再试。' })
+    showInfo('模型引擎请求过于频繁', { description: '请在 ' + getAiCooldownRemaining('video') + ' 秒后再试。' })
     return
   }
 
@@ -2884,7 +2884,7 @@ const runAiVideo = async () => {
   if (!aiSelectedModel.value.trim()) {
     await ensureAiMediaModelsLoaded()
     if (!aiSelectedModel.value.trim()) {
-      showInfo('请选择 AI 模型', { description: aiMediaModelError.value || '当前供应商未返回可用模型。' })
+      showInfo('请选择推理模型', { description: aiMediaModelError.value || '当前模型引擎未返回可用模型。' })
       return
     }
   }

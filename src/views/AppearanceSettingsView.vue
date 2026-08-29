@@ -5,7 +5,7 @@
         <div>
           <p class="workbench-eyebrow">Appearance</p>
           <h1 class="workbench-heading">把工作台调成你的节奏</h1>
-          <p class="workbench-copy">保留 HabitLearner 的简约骨架，只调整背景、强调色、透明度和密度。编辑器和 AI 工作区会继续保持可读。</p>
+          <p class="workbench-copy">保留 HabitLearner 的简约骨架，只调整背景、强调色、透明度和密度。编辑器和 Mentor-X 工作区会继续保持可读。</p>
         </div>
         <div class="appearance-actions">
           <button type="button" class="workbench-secondary" :disabled="isSaving" @click="handleReset">恢复默认</button>

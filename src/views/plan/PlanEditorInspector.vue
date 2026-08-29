@@ -29,7 +29,7 @@
     </button>
     <button type="button" class="plan-inspector-action" @click="$emit('open-ai')">
       <span>
-        <strong>AI 工作区</strong>
+        <strong>Mentor-X 工作区</strong>
         <small>问答、生图和生视频都在这里处理</small>
       </span>
       <span>→</span>

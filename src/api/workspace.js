@@ -40,7 +40,7 @@ export const builtinAiSkills = [
     id: 'builtin:workbench-operator',
     slug: 'workbench-operator',
     name: 'Workbench Operator',
-    description: '让习知理解 HabitLearner 工作台，并把建议收束成可确认的下一步动作。',
+    description: '让 Mentor-X 理解 HabitLearner 工作台，并把建议收束成可确认的下一步动作。',
     sourceType: 'builtin',
     status: 'active',
     manifest: { referenceCount: 0 }
@@ -50,10 +50,12 @@ export const builtinAiSkills = [
 export const getWorkspaceToday = () => api.get('/workspace/today')
 export const getWorkspaceBootstrap = (params = {}) => api.get('/workspace/bootstrap', params)
 export const getDashboardSummary = (params = {}) => api.get('/dashboard/summary', params)
+export const updateTodayPriorities = (payload) => api.put('/workspace/today/priorities', payload)
 export const getWorkspaceState = () => api.get('/workspace/state')
 export const getWorkspaceAppearance = () => api.get('/workspace/appearance')
 export const updateWorkspaceAppearance = (payload) => api.put('/workspace/appearance', payload)
 export const listWorkspaceEvents = (params = {}) => api.get('/workspace/events', params)
+export const trackWorkbenchEvent = (payload) => api.post('/workspace/events/track', payload)
 export const applyWorkspaceOp = (payload) => api.post('/workspace/ops', payload)
 export const rollbackWorkspaceEvent = (id) => api.post(`/workspace/events/${id}/rollback`)
 export const getWorkspaceInsights = (params = {}) => api.get('/workspace/insights', params)

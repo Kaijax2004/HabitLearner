@@ -60,17 +60,22 @@
         </div>
 
         <div v-if="lastActions.length" class="workspace-pet-panel-section">
-          <p class="workspace-pet-section-title">建议动作</p>
+          <p class="workspace-pet-section-title">待确认动作</p>
           <div class="workspace-pet-suggestions">
             <button
               v-for="action in lastActions"
-              :key="`${action.type || 'action'}-${action.title || action.label}`"
+              :key="`${action.type || 'action'}-${action.action || action.flow || action.title || action.label}`"
               type="button"
               class="workspace-pet-suggestion"
               @click="runProposedAction(action)"
             >
               <span>{{ action.label || ui.goHandle }}</span>
               <strong>{{ action.title || action.payload?.to || ui.goHandle }}</strong>
+              <small v-if="action.reason">{{ action.reason }}</small>
+              <div v-if="getActionSignalLabels(action).length || action.confidence" class="workspace-pet-suggestion-meta">
+                <em v-for="signal in getActionSignalLabels(action)" :key="signal">{{ signal }}</em>
+                <em v-if="action.confidence">把握 {{ formatConfidence(action.confidence) }}</em>
+              </div>
             </button>
           </div>
         </div>
@@ -161,16 +166,16 @@ const SHANGHAI_DATE_FORMATTER = new Intl.DateTimeFormat('en-CA', {
 })
 
 const ui = {
-  name: '\u4e60\u77e5',
-  kicker: 'HABITLEARNER AI',
+  name: 'Mentor-X',
+  kicker: 'HABITLEARNER AGENT',
   close: '\u5173\u95ed',
   capture: '\u5feb\u901f\u6536\u96c6',
   send: '\u8be2\u95ee',
   asking: '\u5224\u65ad\u4e2d',
   you: '\u4f60',
-  placeholder: '\u95ee\u4e60\u77e5\uff1a\u4eca\u5929\u5148\u505a\u4ec0\u4e48\uff1f',
-  welcome: '\u6211\u5728\u3002\u4f60\u53ef\u4ee5\u76f4\u63a5\u95ee\u4eca\u5929\u5148\u505a\u4ec0\u4e48\uff0c\u6216\u8ba9\u6211\u5e2e\u4f60\u628a\u6536\u96c6\u7bb1\u548c\u8ba1\u5212\u7406\u4e00\u904d\u3002',
-  actionsTitle: '\u5efa\u8bae\u52a8\u4f5c',
+  placeholder: '问 Mentor-X：今天先做什么？',
+  welcome: '我在。你可以直接问今天先做什么，或让我基于真实工作台生成待确认动作。',
+  actionsTitle: '智能体建议',
   goHandle: '\u53bb\u5904\u7406',
   flowTitle: '\u6b63\u5728\u5e2e\u4f60\u529e',
   flowConfirm: '\u786e\u8ba4\u521b\u5efa',
@@ -182,9 +187,9 @@ const ui = {
   thinking: '\u5224\u65ad\u4e2d',
   answered: '\u53ef\u4ee5',
   error: '\u5148\u7a33\u4f4f',
-  configuredMode: '\u5df2\u914d\u7f6e AI',
-  notConfiguredMode: '\u672a\u914d\u7f6e AI',
-  remoteMode: '\u4e91\u7aef AI',
+  configuredMode: '已配置 Mentor-X',
+  notConfiguredMode: '未配置 Mentor-X',
+  remoteMode: '云端模型',
   learningCard: '\u4eca\u65e5\u5b66\u4e60\u5361',
   track: '\u8f68\u9053',
   capture: '\u6536\u96c6',
@@ -976,7 +981,7 @@ const generateOutlineForCreatedPlan = async () => {
   } catch (error) {
     console.warn('Workspace pet plan outline failed', error)
     resetFlow()
-    await startAssistantMessage(`大纲生成暂时失败：${error.message || 'AI 服务不稳定'}。计划已经创建，你可以先打开计划继续编辑。`)
+    await startAssistantMessage(`大纲生成暂时失败：${error.message || '模型引擎服务不稳定'}。计划已经创建，你可以先打开计划继续编辑。`)
     lastActions.value = [
       {
         type: 'open_plan',
@@ -1425,10 +1430,56 @@ const normalizeBackendSuggestions = (suggestions = []) => (
       payload: item.payload && typeof item.payload === 'object'
         ? { ...item.payload, to: item.to || item.payload.to || '' }
         : { to: item.to || '' },
-      flow: item.flow || ''
+      flow: item.flow || '',
+      reason: item.reason || '',
+      confidence: item.confidence || null,
+      sourceSignals: Array.isArray(item.sourceSignals)
+        ? item.sourceSignals
+        : Array.isArray(item.source_signals)
+          ? item.source_signals
+          : []
     }))
     : []
 )
+
+const normalizeAssistantActions = (payload = {}) => {
+  const actionPlanActions = Array.isArray(payload.actionPlan?.actions) ? payload.actionPlan.actions : []
+  const proposedActions = Array.isArray(payload.proposedActions) ? payload.proposedActions : []
+  return normalizeBackendSuggestions(actionPlanActions.length ? actionPlanActions : proposedActions)
+}
+
+const sourceSignalLabels = {
+  today_schedule: '今日日程',
+  incomplete_schedule: '未完成',
+  pending_plan_blocks: '待安排',
+  focus_history: '专注记录',
+  capture_backlog: '收集积压',
+  review_missing: '待复盘',
+  active_tracks: '轨道趋势',
+  memory_preference: '个人偏好',
+  memory_pattern: '行为模式',
+  memory_risk: '风险记忆',
+  memory_assistant_style: '沟通偏好',
+  memory_custom: '个人记忆',
+  active_decisions: '决策原则',
+  plan_context: '当前计划',
+  content_opportunity: '内容机会'
+}
+
+const getActionSignalLabels = (action = {}) => (
+  Array.isArray(action.sourceSignals)
+    ? action.sourceSignals
+      .map((signal) => sourceSignalLabels[signal] || signal)
+      .filter(Boolean)
+      .slice(0, 3)
+    : []
+)
+
+const formatConfidence = (value) => {
+  const parsed = Number(value)
+  if (!Number.isFinite(parsed) || parsed <= 0) return ''
+  return `${Math.round(Math.min(Math.max(parsed, 0), 1) * 100)}%`
+}
 
 const runPetBackendAction = async (action, payload = {}) => {
   const response = await runMascotAssistantAction({
@@ -1589,9 +1640,9 @@ const submitQuestion = async () => {
     if (!response?.success) {
       if (response?.code === 'AI_NOT_CONFIGURED') {
         lastSource.value = 'not_configured'
-        messages.value.push({ id: createMessageId(), role: 'assistant', content: '尚未配置 AI 能力。请先到“我的”页面进入 AI 供应商配置。' })
+        messages.value.push({ id: createMessageId(), role: 'assistant', content: '尚未配置 Mentor-X 能力。请先到“我的”页面进入 Mentor-X 模型引擎配置。' })
         lastActions.value = [
-          { type: 'open_profile', label: '前往配置', title: 'AI 供应商配置', payload: { to: '/profile/ai-providers' } }
+          { type: 'open_profile', label: '前往配置', title: 'Mentor-X 模型引擎配置', payload: { to: '/profile/ai-providers' } }
         ]
         sendState('failed', 1300, '需要配置')
         return
@@ -1600,15 +1651,15 @@ const submitQuestion = async () => {
     }
 
     const payload = getAssistantPayload(response)
-    const answer = payload.reply || payload.answer || payload.message || 'AI 没有返回可用内容。'
+    const answer = payload.reply || payload.answer || payload.message || 'Mentor-X 没有返回可用内容。'
     lastSource.value = payload.source || 'configured'
-    lastActions.value = Array.isArray(payload.proposedActions) ? payload.proposedActions.slice(0, 3) : []
+    lastActions.value = normalizeAssistantActions(payload)
     messages.value.push({ id: createMessageId(), role: 'assistant', content: answer })
     sendState('waving', 1300, ui.answered)
   } catch (error) {
     console.warn('Workspace pet assistant failed', error)
     lastSource.value = 'configured'
-    messages.value.push({ id: createMessageId(), role: 'assistant', content: error.message || 'AI 请求失败' })
+    messages.value.push({ id: createMessageId(), role: 'assistant', content: error.message || 'Mentor-X 暂时无法完成推理' })
     sendState('failed', 1600, ui.error)
   } finally {
     isAsking.value = false
@@ -2063,6 +2114,34 @@ onBeforeUnmount(() => {
   line-height: 1.35;
 }
 
+.workspace-pet-suggestion small {
+  color: rgb(113, 113, 122);
+  font-size: 0.66rem;
+  line-height: 1.45;
+}
+
+.workspace-pet-suggestion-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.28rem;
+  margin-top: 0.12rem;
+}
+
+.workspace-pet-suggestion-meta em {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.28rem;
+  border: 1px solid rgba(24, 24, 27, 0.08);
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.48);
+  padding: 0 0.42rem;
+  color: rgb(82, 82, 91);
+  font-size: 0.58rem;
+  font-style: normal;
+  font-weight: 820;
+  letter-spacing: 0.03em;
+}
+
 .workspace-pet-composer {
   margin: 0.85rem 1rem 1rem;
   border: 1px solid var(--workbench-border);
@@ -2221,6 +2300,7 @@ onBeforeUnmount(() => {
 :global(.dark) .workspace-pet-message-name,
 :global(.dark) .workspace-pet-suggestions-title,
 :global(.dark) .workspace-pet-suggestion span,
+:global(.dark) .workspace-pet-suggestion small,
 :global(.dark) .workspace-pet-flow-kicker,
 :global(.dark) .workspace-pet-flow-summary {
   color: rgb(161, 161, 170);
@@ -2232,6 +2312,12 @@ onBeforeUnmount(() => {
 :global(.dark) .workspace-pet-suggestion strong,
 :global(.dark) .workspace-pet-input {
   color: white;
+}
+
+:global(.dark) .workspace-pet-suggestion-meta em {
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgb(212, 212, 216);
 }
 
 :global(.dark) .workspace-pet-flow-chip {

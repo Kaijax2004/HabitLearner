@@ -73,6 +73,47 @@
         </BaseCard>
       </section>
 
+      <section class="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
+        <BaseCard class="border border-zinc-200/80 bg-white/90 dark:border-zinc-800 dark:bg-zinc-950/75" :hover="false">
+          <div>
+            <p class="text-xs font-medium uppercase tracking-[0.24em] text-zinc-500 dark:text-zinc-400">Execution Loop</p>
+            <h2 class="mt-2 text-2xl font-semibold tracking-tight text-zinc-950 dark:text-white">执行闭环</h2>
+            <p class="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400">
+              这里不看“功能有多少”，只看用户有没有从看见下一步走到真实行动。
+            </p>
+          </div>
+          <div class="mt-5 grid gap-3 sm:grid-cols-2">
+            <div v-for="item in loopCards" :key="item.label" class="insights-metric-tile">
+              <p class="text-xs text-zinc-500 dark:text-zinc-400">{{ item.label }}</p>
+              <p class="mt-2 text-2xl font-semibold text-zinc-950 dark:text-white">{{ item.value }}</p>
+              <p class="mt-1 text-xs leading-5 text-zinc-500 dark:text-zinc-400">{{ item.hint }}</p>
+            </div>
+          </div>
+        </BaseCard>
+
+        <BaseCard class="border border-zinc-200/80 bg-white/90 dark:border-zinc-800 dark:bg-zinc-950/75" :hover="false">
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <p class="text-xs font-medium uppercase tracking-[0.24em] text-zinc-500 dark:text-zinc-400">Need Signal</p>
+              <h2 class="mt-2 text-2xl font-semibold tracking-tight text-zinc-950 dark:text-white">刚需信号漏斗</h2>
+              <p class="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400">日启动、下一步、专注、完成、复盘、内容和 AI 确认会被真实记录。</p>
+            </div>
+          </div>
+          <div class="mt-5 space-y-3">
+            <div v-for="item in loopFunnel" :key="item.key" class="insights-task-row">
+              <div class="flex items-center justify-between gap-3">
+                <p class="text-sm font-semibold text-zinc-950 dark:text-white">{{ item.label }}</p>
+                <span class="text-xs font-medium text-zinc-500 dark:text-zinc-400">{{ item.value }}</span>
+              </div>
+              <div class="mt-2 h-2 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
+                <span class="block h-full rounded-full bg-stone-700 dark:bg-stone-200" :style="{ width: `${Math.min(Number(item.percent || 0), 100)}%` }"></span>
+              </div>
+            </div>
+            <div v-if="!loopFunnel.length" class="insights-empty">还没有执行闭环事件。打开今日页并点击下一步后，这里会开始记录。</div>
+          </div>
+        </BaseCard>
+      </section>
+
       <section class="grid gap-5 xl:grid-cols-2">
         <BaseCard class="border border-zinc-200/80 bg-white/90 dark:border-zinc-800 dark:bg-zinc-950/75" :hover="false">
           <div class="flex items-start justify-between gap-4">
@@ -242,6 +283,18 @@ const createEmptyOverview = () => ({
     },
     taskBreakdown: [],
     dailyTrend: []
+  },
+  workbenchLoop: {
+    dailyStartViews: 0,
+    nextStepClicks: 0,
+    focusStarts: 0,
+    scheduleCompletions: 0,
+    reviewSaves: 0,
+    creatorCreates: 0,
+    aiConfirmations: 0,
+    activationRate: 0,
+    closeLoopRate: 0,
+    funnel: []
   }
 })
 
@@ -328,6 +381,13 @@ const focusTimeBuckets = computed(() => {
 
 const rankedHabits = computed(() => Array.isArray(overview.habit.rankedHabits) ? overview.habit.rankedHabits.slice(0, 6) : [])
 const taskBreakdown = computed(() => Array.isArray(overview.pomodoro.taskBreakdown) ? overview.pomodoro.taskBreakdown.slice(0, 6) : [])
+const loopFunnel = computed(() => Array.isArray(overview.workbenchLoop.funnel) ? overview.workbenchLoop.funnel : [])
+const loopCards = computed(() => [
+  { label: '启动转行动', value: `${overview.workbenchLoop.activationRate || 0}%`, hint: '日启动之后，至少点击下一步、开始专注或完成任务。' },
+  { label: '复盘收口率', value: `${overview.workbenchLoop.closeLoopRate || 0}%`, hint: '日启动之后是否有复盘保存记录。' },
+  { label: '下一步点击', value: overview.workbenchLoop.nextStepClicks || 0, hint: 'Current Truth 是否真的带来行动。' },
+  { label: 'AI 确认执行', value: overview.workbenchLoop.aiConfirmations || 0, hint: '习知是否从聊天变成了执行入口。' }
+])
 
 const dimensionCards = computed(() => [
   {
@@ -381,6 +441,11 @@ const applyOverview = (payload = {}) => {
   overview.pomodoro.focusTimeBuckets = {
     ...createEmptyOverview().pomodoro.focusTimeBuckets,
     ...(payload.pomodoro?.focusTimeBuckets || {})
+  }
+  overview.workbenchLoop = {
+    ...createEmptyOverview().workbenchLoop,
+    ...(payload.workbenchLoop || {}),
+    funnel: Array.isArray(payload.workbenchLoop?.funnel) ? payload.workbenchLoop.funnel : []
   }
 }
 

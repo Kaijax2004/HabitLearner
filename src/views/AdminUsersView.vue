@@ -112,6 +112,31 @@
               <p v-if="!conversionFunnel.length" class="admin-muted">暂无转化数据。</p>
             </div>
           </article>
+
+          <article class="admin-analytics-panel admin-product-panel">
+            <p class="admin-kicker">Need Signal</p>
+            <h2>产品刚需信号</h2>
+            <div class="admin-product-rates">
+              <div>
+                <span>启动转行动</span>
+                <strong>{{ productHealth.activationRate || 0 }}%</strong>
+              </div>
+              <div>
+                <span>复盘收口</span>
+                <strong>{{ productHealth.closeLoopRate || 0 }}%</strong>
+              </div>
+            </div>
+            <div class="admin-funnel-list">
+              <div v-for="step in productHealthItems" :key="step.key" class="admin-funnel-row">
+                <div>
+                  <strong>{{ step.label }}</strong>
+                  <span>{{ step.value }} 次</span>
+                </div>
+                <div class="admin-funnel-track"><i :style="{ width: Math.max(step.rate, step.value ? 4 : 0) + '%' }"></i></div>
+              </div>
+              <p v-if="!productHealthItems.length" class="admin-muted">暂无产品行为数据。</p>
+            </div>
+          </article>
         </section>
 
         <section class="admin-map-layout">
@@ -372,6 +397,8 @@ const metrics = computed(() => [
 
 const dailySeries = computed(() => analytics.value.dailySeries || [])
 const conversionFunnel = computed(() => analytics.value.conversionFunnel || [])
+const productHealth = computed(() => analytics.value.productHealth || {})
+const productHealthItems = computed(() => productHealth.value.items || [])
 const regionAnalytics = computed(() => analytics.value.regionAnalytics || {})
 const topRegions = computed(() => regionAnalytics.value.topRegions || [])
 const topCities = computed(() => regionAnalytics.value.topCities || [])
@@ -623,6 +650,12 @@ onMounted(() => {
 .admin-bar-row strong, .admin-funnel-row strong, .admin-region-row strong, .admin-city-list strong { color: rgb(24, 24, 27); }
 .admin-bar-track, .admin-funnel-track { height: 9px; overflow: hidden; border-radius: 999px; background: rgba(228, 228, 231, 0.72); }
 .admin-bar-track i, .admin-funnel-track i { display: block; height: 100%; border-radius: inherit; background: rgb(24, 24, 27); }
+.admin-product-rates { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 14px; }
+.admin-product-rates div { border: 1px solid rgba(228, 228, 231, 0.85); border-radius: 18px; background: rgba(250, 250, 250, 0.7); padding: 12px; }
+.admin-product-rates span { color: rgb(113, 113, 122); font-size: 12px; }
+.admin-product-rates strong { display: block; margin-top: 6px; color: rgb(24, 24, 27); font-size: 24px; letter-spacing: -0.04em; }
+.dark .admin-product-rates div { border-color: rgba(63, 63, 70, 0.9); background: rgba(39, 39, 42, 0.68); }
+.dark .admin-product-rates strong { color: white; }
 .admin-map-layout { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 16px; }
 .admin-map-content { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(260px, 0.65fr); gap: 18px; align-items: center; margin-top: 12px; }
 

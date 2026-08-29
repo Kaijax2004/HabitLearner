@@ -4,14 +4,65 @@
       <section class="creator-header">
         <div>
           <p class="workspace-kicker">Creator Track</p>
-          <h1>把热点变成可发布的内容</h1>
-          <p>先记录真实来源，再推进选题、写作、制作、发布和复盘。这里是个人创作者的内容工作面，不是孤立的热点列表。</p>
+          <h1>从真实来源到稳定发布</h1>
+          <p>内容创作不是孤立的热点列表，而是一条闭环：收集来源、判断选题、协作成稿、进入专注、发布复盘。</p>
         </div>
         <div class="creator-header-meta">
           <span>{{ summary.total || 0 }} 条进行中内容</span>
           <button type="button" class="creator-secondary-button" :disabled="isLoading" @click="loadWorkspace">
             {{ isLoading ? '同步中' : '刷新' }}
           </button>
+        </div>
+      </section>
+
+      <section class="creator-command-panel">
+        <article class="creator-command-card creator-command-card-primary">
+          <p class="workspace-kicker">Today Focus</p>
+          <h2>{{ creatorFocusItem?.title || '先建立一条可推进内容' }}</h2>
+          <p>{{ creatorFocusCopy }}</p>
+          <div class="creator-command-actions">
+            <button v-if="creatorFocusItem" type="button" class="creator-primary-button" @click="openDetails(creatorFocusItem)">
+              打开并推进
+            </button>
+            <button v-else type="button" class="creator-secondary-button" @click="focusQuickEntry">
+              新增来源或选题
+            </button>
+          </div>
+        </article>
+
+        <article class="creator-command-card">
+          <p class="workspace-kicker">Source Health</p>
+          <strong>{{ sourceHealthLabel }}</strong>
+          <p>{{ sourceHealthCopy }}</p>
+          <div class="creator-source-meter" aria-label="信息来源完整度">
+            <span :style="{ width: `${sourceReadiness}%` }"></span>
+          </div>
+        </article>
+
+        <article class="creator-command-card creator-command-card-agent">
+          <p class="workspace-kicker">Mentor-X Studio</p>
+          <strong>让智能体先做判断，不替你编造来源</strong>
+          <p>基于当前流水线生成选题判断、缺口检查和下一步动作。未配置模型引擎时会明确提示。</p>
+          <div class="creator-agent-actions">
+            <button type="button" class="creator-secondary-button" :disabled="isCreatorAiLoading" @click="askCreatorMentor('请基于我的内容流水线，判断今天最该推进哪一条内容，并给出可确认下一步。')">
+              今日推进建议
+            </button>
+            <button type="button" class="creator-secondary-button" :disabled="isCreatorAiLoading" @click="askCreatorMentor('请检查我的内容流水线里哪些条目缺少真实来源、目标用户、核心观点或发布准备。')">
+              检查信息缺口
+            </button>
+          </div>
+        </article>
+      </section>
+
+      <section v-if="creatorAiReply || creatorAiActions.length" class="creator-ai-result">
+        <div>
+          <p class="workspace-kicker">Mentor-X Output</p>
+          <p>{{ creatorAiReply }}</p>
+        </div>
+        <div v-if="creatorAiActions.length" class="creator-ai-actions">
+          <span v-for="action in creatorAiActions" :key="`${action.type}-${action.action || action.title}`">
+            {{ action.label || '待确认' }} · {{ action.title || action.action }}
+          </span>
         </div>
       </section>
 
@@ -132,7 +183,7 @@
           <button type="button" class="creator-primary-button" :disabled="isCreating" @click="submitItem">
             {{ isCreating ? '保存中...' : form.type === 'trend' ? '放入热点池' : '加入内容流水线' }}
           </button>
-          <p class="creator-note">热点尽量保留来源和时间，后续 AI 只基于真实素材生成草稿。</p>
+          <p class="creator-note">热点尽量保留来源和时间，后续 Mentor-X 只基于真实素材协作成稿。</p>
         </BaseCard>
 
         <section class="creator-pipeline">
@@ -351,6 +402,30 @@
                 {{ isCreatingPlan ? '创建中...' : '创建计划' }}
               </button>
             </div>
+
+            <section class="creator-detail-ai">
+              <div>
+                <p class="workspace-kicker">Mentor-X Co-create</p>
+                <h3>基于这条内容协作</h3>
+                <p>只使用当前标题、来源、目标用户、核心观点和大纲做判断。信息不足时会提示补齐，不会编造热点。</p>
+              </div>
+              <div class="creator-agent-actions">
+                <button type="button" class="creator-secondary-button" :disabled="isCreatorAiLoading" @click="askCreatorMentor('请基于当前内容条目，补出 3 个开头钩子、一个可执行大纲和下一步制作清单。', selectedItem)">
+                  钩子与大纲
+                </button>
+                <button type="button" class="creator-secondary-button" :disabled="isCreatorAiLoading" @click="askCreatorMentor('请检查当前内容条目还缺哪些真实来源、论据、目标用户或发布准备信息。', selectedItem)">
+                  缺口检查
+                </button>
+                <button type="button" class="creator-secondary-button" :disabled="isCreatorAiLoading" @click="askCreatorMentor('请把当前内容条目整理成发布前检查清单，并建议是否应该进入专注制作。', selectedItem)">
+                  发布检查
+                </button>
+              </div>
+            </section>
+
+            <section v-if="detailAiReply" class="creator-detail-ai-result">
+              <p class="workspace-kicker">Mentor-X Draft</p>
+              <p>{{ detailAiReply }}</p>
+            </section>
           </div>
 
           <footer class="creator-drawer-footer">
@@ -371,15 +446,19 @@ import AppLayout from '@/components/AppLayout.vue'
 import BaseCard from '@/components/BaseCard.vue'
 import { archiveCreatorItem, createCreatorItem, getCreatorSummary, updateCreatorItem } from '@/api/creator.js'
 import { createPlan } from '@/api/plans.js'
+import { chatWithMascotAssistant } from '@/api/workspace.js'
 import { useToast } from '@/composables/useToast'
 import { useRouter } from 'vue-router'
+import { useWorkspaceAiStore } from '@/stores/workspaceAi.js'
 
 const { success, error } = useToast()
 const router = useRouter()
+const workspaceAiStore = useWorkspaceAiStore()
 const isLoading = ref(false)
 const isCreating = ref(false)
 const isSavingDetails = ref(false)
 const isCreatingPlan = ref(false)
+const isCreatorAiLoading = ref(false)
 const errorMessage = ref('')
 const items = ref([])
 const summary = ref({ counts: {}, total: 0 })
@@ -388,6 +467,9 @@ const activeFilter = ref('all')
 const selectedItem = ref(null)
 const isDetailOpen = ref(false)
 const detailSnapshot = ref(null)
+const creatorAiReply = ref('')
+const detailAiReply = ref('')
+const creatorAiActions = ref([])
 const detailDraft = reactive({
   title: '',
   type: 'topic',
@@ -463,6 +545,110 @@ const nextStepLabel = (stage) => ({
   published: '记录发布结果',
   review: '沉淀复盘结论'
 }[stage] || '继续推进')
+
+const activeCreatorItems = computed(() => items.value.filter((item) => !['archived', 'published', 'review'].includes(item.stage)))
+const creatorFocusItem = computed(() => {
+  const stageRank = {
+    drafting: 1,
+    production: 2,
+    scheduled: 3,
+    research: 4,
+    inbox: 5,
+    published: 6,
+    review: 7
+  }
+  return activeCreatorItems.value
+    .slice()
+    .sort((a, b) => (stageRank[a.stage] || 9) - (stageRank[b.stage] || 9) || new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0))[0] || null
+})
+const creatorFocusCopy = computed(() => {
+  const item = creatorFocusItem.value
+  if (!item) return '先把真实来源、选题或草稿放进流水线，Mentor-X 才能基于真实素材协作。'
+  return `${typeLabel(item.type)} · ${nextStepLabel(item.stage)}。${item.metadata?.corePoint ? `核心观点：${item.metadata.corePoint}` : '建议先补齐核心观点，再进入制作。'}`
+})
+const sourceStats = computed(() => {
+  const total = Math.max(items.value.length, 0)
+  const withSource = items.value.filter((item) => item.source_url || item.source_name).length
+  const withAudience = items.value.filter((item) => item.metadata?.targetAudience).length
+  const withCorePoint = items.value.filter((item) => item.metadata?.corePoint).length
+  const withPublishPlan = items.value.filter((item) => item.metadata?.publishAt || item.stage === 'scheduled' || item.stage === 'published').length
+  return { total, withSource, withAudience, withCorePoint, withPublishPlan }
+})
+const sourceReadiness = computed(() => {
+  if (!sourceStats.value.total) return 0
+  const score = sourceStats.value.withSource + sourceStats.value.withAudience + sourceStats.value.withCorePoint + sourceStats.value.withPublishPlan
+  return Math.round((score / (sourceStats.value.total * 4)) * 100)
+})
+const sourceHealthLabel = computed(() => {
+  if (!sourceStats.value.total) return '等待第一条真实来源'
+  if (sourceReadiness.value >= 75) return '素材结构健康'
+  if (sourceReadiness.value >= 45) return '可以推进，但缺少部分判断依据'
+  return '来源和观点仍偏薄'
+})
+const sourceHealthCopy = computed(() => {
+  const stats = sourceStats.value
+  if (!stats.total) return '先保存一个来源 URL、平台热榜、用户反馈或灵感，再进入选题判断。'
+  return `${stats.withSource}/${stats.total} 有来源，${stats.withCorePoint}/${stats.total} 有核心观点，${stats.withAudience}/${stats.total} 有目标用户。`
+})
+
+const focusQuickEntry = () => {
+  const input = document.querySelector('.creator-capture-card input')
+  input?.focus?.()
+}
+
+const buildCreatorContextBlocks = (item = null) => {
+  const sourceItems = item ? [item] : items.value.slice(0, 8)
+  return sourceItems.map((entry) => ({
+    type: 'creator_item',
+    text: [
+      `标题：${entry.title || ''}`,
+      `类型：${typeLabel(entry.type)} / 阶段：${nextStepLabel(entry.stage)}`,
+      entry.body ? `说明：${entry.body}` : '',
+      entry.source_name || entry.source_url ? `来源：${entry.source_name || ''} ${entry.source_url || ''}` : '来源：未补齐',
+      entry.platform ? `平台：${entry.platform}` : '',
+      entry.metadata?.targetAudience ? `目标用户：${entry.metadata.targetAudience}` : '',
+      entry.metadata?.corePoint ? `核心观点：${entry.metadata.corePoint}` : '',
+      entry.metadata?.hook ? `钩子：${entry.metadata.hook}` : '',
+      entry.metadata?.outline ? `大纲：${entry.metadata.outline}` : ''
+    ].filter(Boolean).join('\n')
+  }))
+}
+
+const askCreatorMentor = async (prompt, item = null) => {
+  if (isCreatorAiLoading.value) return
+  isCreatorAiLoading.value = true
+  creatorAiActions.value = []
+  if (item) detailAiReply.value = ''
+  else creatorAiReply.value = ''
+
+  try {
+    const response = await chatWithMascotAssistant({
+      message: prompt,
+      providerId: workspaceAiStore.normalizedSelectedProviderId,
+      context: {
+        planTitle: item ? `内容条目：${item.title}` : '内容创作工作台',
+        blocks: buildCreatorContextBlocks(item)
+      }
+    })
+    if (!response?.success) {
+      if (response?.code === 'AI_NOT_CONFIGURED') {
+        error('需要先配置 Mentor-X 模型引擎', { description: '配置后才能基于内容流水线生成创作建议。' })
+        return
+      }
+      throw new Error(response?.error || response?.message || 'Mentor-X 暂时无法协作')
+    }
+    const payload = response.data || {}
+    const reply = payload.reply || payload.answer || payload.message || 'Mentor-X 没有返回可用内容。'
+    if (item) detailAiReply.value = reply
+    else creatorAiReply.value = reply
+    const actions = Array.isArray(payload.actionPlan?.actions) ? payload.actionPlan.actions : Array.isArray(payload.proposedActions) ? payload.proposedActions : []
+    creatorAiActions.value = actions.slice(0, 3)
+  } catch (err) {
+    error('Mentor-X 协作失败', { description: err.message || '请稍后重试' })
+  } finally {
+    isCreatorAiLoading.value = false
+  }
+}
 
 const toDateTimeInput = (value) => {
   if (!value) return ''
@@ -685,6 +871,19 @@ onMounted(loadWorkspace)
 .workspace-kicker { margin: 0; color: rgb(113, 113, 122); font-size: 0.68rem; font-weight: 800; letter-spacing: 0.22em; text-transform: uppercase; }
 .creator-header-meta, .creator-stage-summary, .creator-item-footer { display: flex; align-items: center; gap: 0.6rem; }
 .creator-header-meta { flex-shrink: 0; color: rgb(113, 113, 122); font-size: 0.78rem; font-weight: 700; }
+.creator-command-panel { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(220px, 0.68fr) minmax(260px, 0.82fr); gap: 0.85rem; }
+.creator-command-card { display: grid; align-content: space-between; gap: 0.72rem; min-height: 11.5rem; border: 1px solid rgb(228, 228, 231); border-radius: 1.35rem; background: rgba(255, 255, 255, 0.72); padding: 1rem; box-shadow: 0 18px 48px rgba(24, 24, 27, 0.055); backdrop-filter: blur(18px); }
+.creator-command-card-primary { background: radial-gradient(circle at 92% 8%, rgba(24, 24, 27, 0.08), transparent 32%), rgba(255, 255, 255, 0.82); }
+.creator-command-card-agent { background: linear-gradient(135deg, rgba(24, 24, 27, 0.035), rgba(255, 255, 255, 0.82)); }
+.creator-command-card h2 { margin: 0; color: rgb(24, 24, 27); font-size: clamp(1.2rem, 2vw, 1.85rem); font-weight: 760; letter-spacing: -0.055em; line-height: 1.05; }
+.creator-command-card strong { color: rgb(24, 24, 27); font-size: 1rem; line-height: 1.35; }
+.creator-command-card p:not(.workspace-kicker), .creator-ai-result p:not(.workspace-kicker), .creator-detail-ai p:not(.workspace-kicker), .creator-detail-ai-result p:not(.workspace-kicker) { margin: 0; color: rgb(113, 113, 122); font-size: 0.76rem; line-height: 1.65; }
+.creator-command-actions, .creator-agent-actions, .creator-ai-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.creator-command-actions .creator-primary-button, .creator-command-actions .creator-secondary-button, .creator-agent-actions .creator-secondary-button { width: auto; min-height: 2.25rem; padding: 0 0.85rem; font-size: 0.72rem; }
+.creator-source-meter { overflow: hidden; height: 0.42rem; border-radius: 999px; background: rgb(244, 244, 245); }
+.creator-source-meter span { display: block; height: 100%; border-radius: inherit; background: rgb(24, 24, 27); transition: width 0.25s ease; }
+.creator-ai-result { display: grid; grid-template-columns: minmax(0, 1fr) minmax(220px, 0.38fr); gap: 0.85rem; border: 1px solid rgb(228, 228, 231); border-radius: 1.2rem; background: rgba(250, 250, 250, 0.8); padding: 0.95rem 1rem; }
+.creator-ai-actions span { display: inline-flex; align-items: center; border: 1px solid rgb(228, 228, 231); border-radius: 999px; background: white; padding: 0.35rem 0.58rem; color: rgb(82, 82, 91); font-size: 0.65rem; font-weight: 800; }
 .creator-secondary-button, .creator-primary-button { min-height: 2.55rem; border-radius: 999px; padding: 0 1rem; font-size: 0.78rem; font-weight: 800; }
 .creator-secondary-button { border: 1px solid rgb(212, 212, 216); background: rgb(255, 255, 255); color: rgb(63, 63, 70); }
 .creator-primary-button { width: 100%; background: rgb(24, 24, 27); color: white; }
@@ -761,12 +960,15 @@ onMounted(loadWorkspace)
 .creator-drawer-save { width: auto; min-width: 8rem; }
 .creator-drawer-links { display: flex; flex-wrap: wrap; gap: 0.6rem; padding-top: 0.25rem; }
 .creator-drawer-links .creator-secondary-button { min-height: 2.3rem; }
+.creator-detail-ai, .creator-detail-ai-result { display: grid; gap: 0.72rem; border: 1px solid rgb(228, 228, 231); border-radius: 1.1rem; background: rgb(250, 250, 250); padding: 0.95rem; }
+.creator-detail-ai h3 { margin: 0.2rem 0 0; color: rgb(24, 24, 27); font-size: 1rem; letter-spacing: -0.025em; }
+.creator-detail-ai-result { background: white; }
 .dark .creator-drawer { border-color: rgb(63, 63, 70); background: rgb(24, 24, 27); }
 .dark .creator-drawer-header, .dark .creator-drawer-footer { border-color: rgb(63, 63, 70); }
 .dark .creator-drawer-header h2 { color: white; }
-.dark .creator-header h1, .dark .creator-pipeline h2, .dark .creator-capture-card h2, .dark .creator-item-card h3 { color: white; }
-.dark .creator-header p:not(.workspace-kicker), .dark .workspace-kicker, .dark .creator-header-meta, .dark .creator-field, .dark .creator-item-footer { color: rgb(161, 161, 170); }
-.dark .creator-secondary-button, .dark .creator-type-switch button, .dark .creator-field input, .dark .creator-field select, .dark .creator-field textarea, .dark .creator-column, .dark .creator-item-card, .dark .creator-count, .dark .creator-stage-summary span { border-color: rgb(63, 63, 70); background: rgb(24, 24, 27); color: rgb(228, 228, 231); }
+.dark .creator-header h1, .dark .creator-pipeline h2, .dark .creator-capture-card h2, .dark .creator-item-card h3, .dark .creator-command-card h2, .dark .creator-command-card strong, .dark .creator-detail-ai h3 { color: white; }
+.dark .creator-header p:not(.workspace-kicker), .dark .workspace-kicker, .dark .creator-header-meta, .dark .creator-field, .dark .creator-item-footer, .dark .creator-command-card p:not(.workspace-kicker), .dark .creator-ai-result p:not(.workspace-kicker), .dark .creator-detail-ai p:not(.workspace-kicker), .dark .creator-detail-ai-result p:not(.workspace-kicker) { color: rgb(161, 161, 170); }
+.dark .creator-secondary-button, .dark .creator-type-switch button, .dark .creator-field input, .dark .creator-field select, .dark .creator-field textarea, .dark .creator-column, .dark .creator-item-card, .dark .creator-count, .dark .creator-stage-summary span, .dark .creator-command-card, .dark .creator-ai-result, .dark .creator-detail-ai, .dark .creator-detail-ai-result, .dark .creator-ai-actions span { border-color: rgb(63, 63, 70); background: rgb(24, 24, 27); color: rgb(228, 228, 231); }
 .dark .creator-type-switch button.is-active { border-color: white; background: white; color: rgb(24, 24, 27); }
 .dark .creator-view-switch, .dark .creator-list-row, .dark .creator-list-row select { border-color: rgb(63, 63, 70); background: rgb(24, 24, 27); color: rgb(228, 228, 231); }
 .dark .creator-view-switch button.is-active { background: white; color: rgb(24, 24, 27); }
@@ -775,13 +977,17 @@ onMounted(loadWorkspace)
 .dark .creator-filter-switch button.is-active { border-bottom-color: white; color: white; }
 .dark .creator-details { border-color: rgb(63, 63, 70); }
 .dark .creator-details summary, .dark .creator-metadata-preview { color: rgb(212, 212, 216) !important; }
-@media (max-width: 1100px) { .creator-layout { grid-template-columns: 1fr; } }
+.dark .creator-source-meter { background: rgb(39, 39, 42); }
+.dark .creator-source-meter span { background: white; }
+@media (max-width: 1100px) { .creator-layout, .creator-command-panel { grid-template-columns: 1fr; } }
 @media (max-width: 720px) {
   .creator-page { gap: 1rem; }
   .creator-header, .creator-pipeline-toolbar { align-items: flex-start; flex-direction: column; }
   .creator-header { padding-top: 0.15rem; }
   .creator-header h1, .creator-pipeline h2, .creator-capture-card h2 { font-size: clamp(1.35rem, 8vw, 1.9rem); }
   .creator-header p:not(.workspace-kicker) { font-size: 0.82rem; line-height: 1.65; }
+  .creator-command-card { min-height: auto; border-radius: 1.1rem; }
+  .creator-ai-result { grid-template-columns: 1fr; }
   .creator-layout { display: flex; flex-direction: column; gap: 1rem; }
   .creator-pipeline { order: 1; width: 100%; }
   .creator-capture-card { order: 2; width: 100%; }

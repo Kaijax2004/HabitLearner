@@ -7,7 +7,11 @@
         :dashboard-narrative="dashboardNarrative"
         :primary-action="primaryDashboardAction"
         :dashboard-highlights="dashboardHighlights"
-        @primary-action="primaryDashboardAction.action"
+        :selected-priority-items="selectedPriorityItems"
+        :priority-candidates="priorityCandidates"
+        @primary-action="handlePrimaryDashboardAction"
+        @add-priority="addTodayPriority"
+        @remove-priority="removeTodayPriority"
       />
 
       <div v-if="workspaceError" class="dashboard-error">{{ workspaceError }}</div>
@@ -95,7 +99,12 @@ import DashboardExecution from '@/views/dashboard/DashboardExecution.vue'
 import DashboardStatus from '@/views/dashboard/DashboardStatus.vue'
 import DashboardLoop from '@/views/dashboard/DashboardLoop.vue'
 import DashboardHabitManager from '@/views/dashboard/DashboardHabitManager.vue'
-import { chatWithMascotAssistant, getWorkspaceBootstrap } from '@/api/workspace.js'
+import {
+  chatWithMascotAssistant,
+  getWorkspaceBootstrap,
+  trackWorkbenchEvent,
+  updateTodayPriorities
+} from '@/api/workspace.js'
 import { updateScheduleBlock } from '@/api/scheduleBlocks.js'
 
 const authStore = useAuthStore()
@@ -119,6 +128,8 @@ const workspaceActions = computed(() => workspaceToday.value?.currentTruth?.next
 const workspaceSeventyTwoDays = computed(() => workspaceToday.value?.seventyTwoHours?.days || [])
 const workspaceCaptures = computed(() => workspaceToday.value?.captures || [])
 const workspaceTracks = computed(() => workspaceToday.value?.tracks?.items || [])
+const selectedPriorityItems = computed(() => workspaceToday.value?.todayPriorities?.items || [])
+const priorityCandidates = computed(() => workspaceToday.value?.todayPriorities?.candidates || [])
 const primaryWorkspaceTrack = computed(() => workspaceTracks.value[0] || null)
 const todayScheduleBlocks = computed(() => workspaceToday.value?.plans?.scheduleBlocks || [])
 const creatorSnapshot = computed(() => workspaceToday.value?.creator || { total: 0, counts: {}, nextItem: null, activeItems: [] })
@@ -280,6 +291,66 @@ const changeScheduleStatus = async (item, status) => {
   await loadWorkspaceToday()
 }
 
+const createClientMutationId = (prefix) => `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+
+const recordDashboardEvent = async (eventType, payload = {}) => {
+  await trackWorkbenchEvent({
+    eventType,
+    action: eventType.replace(/^dashboard_/, ''),
+    clientMutationId: createClientMutationId(eventType),
+    payload,
+    metadata: { page: 'dashboard' }
+  })
+}
+
+const saveTodayPriorities = async (items, action, item = null) => {
+  const response = await updateTodayPriorities({
+    items,
+    clientMutationId: createClientMutationId(`today_priorities_${action}`)
+  })
+  if (!response.success) {
+    error('今日三件事更新失败', { description: response.error || '请稍后重试' })
+    return false
+  }
+  workspaceToday.value = {
+    ...(workspaceToday.value || {}),
+    todayPriorities: {
+      ...(workspaceToday.value?.todayPriorities || {}),
+      items: response.data?.items || items
+    }
+  }
+  await recordDashboardEvent(`dashboard_priority_${action}`, item ? { id: item.id, title: item.title } : {})
+  return true
+}
+
+const addTodayPriority = async (item) => {
+  if (!item?.id || selectedPriorityItems.value.some((candidate) => candidate.id === item.id)) return
+  if (selectedPriorityItems.value.length >= 3) {
+    error('今日三件事已满', { description: '先移除一项，再加入新的重点。' })
+    return
+  }
+  const saved = await saveTodayPriorities([...selectedPriorityItems.value, item], 'add', item)
+  if (saved) success('已加入今日三件事', { description: item.title })
+}
+
+const removeTodayPriority = async (item) => {
+  if (!item?.id) return
+  const saved = await saveTodayPriorities(
+    selectedPriorityItems.value.filter((candidate) => candidate.id !== item.id),
+    'remove',
+    item
+  )
+  if (saved) success('已从今日三件事移除')
+}
+
+const handlePrimaryDashboardAction = async () => {
+  await recordDashboardEvent('dashboard_next_step_click', {
+    title: primaryDashboardAction.value?.title || '',
+    label: primaryDashboardAction.value?.label || ''
+  })
+  primaryDashboardAction.value?.action?.()
+}
+
 const dayPreviewItems = (day) => {
   const schedules = (day.scheduleBlocks || []).map((item) => ({
     key: `schedule-${item.id}`,
@@ -333,11 +404,22 @@ const primaryDashboardAction = computed(() => {
 
 const todayAiStatusText = computed(() => {
   if (todayAiLoading.value) return '正在读取当前工作台数据'
-  if (todayAiErrorCode.value === 'AI_NOT_CONFIGURED') return '尚未配置 AI 能力'
+  if (todayAiErrorCode.value === 'AI_NOT_CONFIGURED') return '尚未配置 Mentor-X 能力'
   if (todayAiErrorMessage.value) return todayAiErrorMessage.value
   if (todayAiRemoteAdvice.value?.source) return '已生成供应商建议'
-  return '点击后按当前供应商配置生成'
+  return '点击后按当前模型引擎配置生成'
 })
+
+const normalizeMentorXError = (value) => {
+  const message = String(value || '').trim()
+  if (!message) return 'Mentor-X 建议生成失败'
+  const unreadableCount = (message.match(/\uFFFD/g) || []).length
+  if (unreadableCount >= 3 || unreadableCount / Math.max(message.length, 1) > 0.02) {
+    return '模型返回了不可读内容，请检查 Mentor-X 模型引擎的协议和响应格式配置。'
+  }
+  return message
+}
+
 const goToHabitDetail = (habitId) => {
   router.push(`/habit/${habitId}`)
 }
@@ -459,13 +541,13 @@ const generateTodayAiAdvice = async () => {
 
     if (!response.success) {
       todayAiErrorCode.value = response.code || ''
-      todayAiErrorMessage.value = response.error || response.message || 'AI 建议生成失败'
+      todayAiErrorMessage.value = normalizeMentorXError(response.error || response.message)
       return
     }
 
     todayAiRemoteAdvice.value = response.data || null
   } catch (err) {
-    todayAiErrorMessage.value = err.message || 'AI 建议生成失败'
+    todayAiErrorMessage.value = normalizeMentorXError(err.message)
   } finally {
     todayAiLoading.value = false
   }
@@ -473,6 +555,10 @@ const generateTodayAiAdvice = async () => {
 
 onMounted(async () => {
   await loadWorkspaceToday()
+  recordDashboardEvent('dashboard_daily_start_view', {
+    hasPriorities: selectedPriorityItems.value.length > 0,
+    scheduleCount: todayScheduleBlocks.value.length
+  })
 })
 </script>
 

@@ -2,7 +2,7 @@
   <aside v-if="aiPanel.show" class="ai-panel ai-workspace-inline" @click.stop @mousedown.stop>
     <div class="ai-panel-header">
             <div>
-              <div class="text-lg font-semibold text-zinc-950 dark:text-white">AI 工作区</div>
+              <div class="text-lg font-semibold text-zinc-950 dark:text-white">Mentor-X 工作区</div>
               <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">问答、图片和视频统一在这里处理，结果可以插入当前计划。</p>
             </div>
             <div class="flex items-center gap-2">

@@ -12,7 +12,7 @@
           <div class="guide-actions">
             <router-link class="workbench-primary" to="/dashboard">从今日开始</router-link>
             <router-link class="workbench-secondary" to="/plan">打开计划</router-link>
-            <router-link class="workbench-secondary" to="/profile/ai-providers">配置 AI</router-link>
+            <router-link class="workbench-secondary" to="/profile/ai-providers">配置 Mentor-X</router-link>
           </div>
         </div>
         <div class="guide-hero-card">
@@ -107,6 +107,7 @@ const loopSteps = [
   '整理判断',
   '计划编辑',
   '安排执行',
+  'Mentor-X 判断',
   '习惯 / 专注 / 学习',
   '内容发布',
   '复盘沉淀',
@@ -130,9 +131,9 @@ const quickStart = [
   },
   {
     index: '03',
-    title: '配置 AI 后再使用',
-    description: 'AI 默认不请求远程。配置供应商和模型后，助手、计划 AI、学习 AI 会走同一套供应商逻辑。',
-    action: '配置 AI',
+    title: '配置 Mentor-X',
+    description: 'Mentor-X 不是模型本身。配置模型引擎后，它会把上下文、记忆、决策规则和确认执行网关编排起来。',
+    action: '配置 Mentor-X',
     to: '/profile/ai-providers'
   },
   {
@@ -212,26 +213,36 @@ const guideSections = [
         points: ['把计划块安排到今日', '从今日时间线完成或跳过', '手机端会优先保留正文可读性']
       },
       {
-        title: 'AI 工作区',
-        description: '计划页只保留一个 AI 工作区，问答、生图、生视频都在右侧或手机底部工作区处理。',
-        points: ['文本结果先预览再写入', '生成图片可插入图片块', '生成视频可插入视频块', '未配置 AI 时不会请求远程']
+        title: 'Mentor-X 工作区',
+        description: '计划页只保留一个 Mentor-X 工作区，问答、生图、生视频都在右侧或手机底部工作区处理。',
+        points: ['文本结果先预览再写入', '生成图片可插入图片块', '生成视频可插入视频块', '未配置模型引擎时不会请求远程']
       }
     ]
   },
   {
     id: 'ai',
-    title: 'AI 供应商与技能',
-    kicker: 'AI',
-    description: '所有 AI 功能使用同一套用户供应商配置，不再有隐藏默认 Key 或本地假结果。',
+    title: 'Mentor-X 智能体',
+    kicker: 'Agent',
+    description: 'Mentor-X 是习知里的个人工作流智能体，不替代模型，而是把模型、上下文、记忆、决策规则和真实执行动作编排成每天可用的行动系统。',
     links: [
-      { label: 'AI 供应商', to: '/profile/ai-providers' },
-      { label: 'AI 技能', to: '/profile/ai-skills' }
+      { label: 'Mentor-X 模型引擎', to: '/profile/ai-providers' },
+      { label: 'Mentor-X 技能', to: '/profile/ai-skills' }
     ],
     features: [
       {
-        title: '供应商配置',
-        description: '在我的页面配置 Base URL、协议、模型和 Key。默认供应商会被计划、今日、学习和助手共用。',
-        points: ['支持 Responses API', '支持 Chat Completions', '模型列表在配置中心刷新', '未配置时提示需要配置']
+        title: '五层架构',
+        description: '模型引擎只负责推理，Mentor-X 的灵魂来自产品自己的工作流内核。',
+        points: ['模型引擎层：接入外部模型', 'Prompt 核心层：定义角色、边界和输出协议', '用户记忆层：读取偏好、模式和风险', '决策策略层：遵守你的长期原则', '工作流执行层：生成待确认动作并由后端真实写入']
+      },
+      {
+        title: '确认执行',
+        description: 'Mentor-X 可以提出动作，但不会越过你直接写入。每张动作卡会显示建议理由、上下文信号和执行状态。',
+        points: ['安排到今天', '开始专注', '完成今日块', '收集转内容', '创建内容条目', '保存复盘']
+      },
+      {
+        title: '模型引擎配置',
+        description: '在我的页面配置 Base URL、协议、模型和 Key。默认模型引擎会被计划、今日、学习和 Mentor-X 工作区共用。',
+        points: ['支持 Responses API', '支持 Chat Completions', '模型列表在配置中心刷新', '未配置时提示需要配置 Mentor-X 模型引擎']
       },
       {
         title: '技能系统',
@@ -348,8 +359,8 @@ const guideSections = [
       },
       {
         title: '移动端编辑',
-        description: '计划页手机端优先保证文档可读，AI 工作区以底部面板出现。',
-        points: ['正文优先显示', 'AI 不覆盖底部按钮', '内容创作详情为全屏编辑抽屉']
+        description: '计划页手机端优先保证文档可读，Mentor-X 工作区以底部面板出现。',
+        points: ['正文优先显示', 'Mentor-X 不覆盖底部按钮', '内容创作详情为全屏编辑抽屉']
       }
     ]
   }

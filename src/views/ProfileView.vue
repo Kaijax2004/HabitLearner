@@ -196,8 +196,8 @@
           <BaseCard>
             <div class="profile-section-head">
               <div>
-                <p class="profile-kicker">AI Provider</p>
-                <h3>AI 供应商配置</h3>
+                <p class="profile-kicker">Mentor-X Core</p>
+                <h3>Mentor-X 智能体配置</h3>
               </div>
               <span :class="['summary-badge', aiProviderStatus === 'configured' ? 'summary-badge-success' : 'summary-badge-warn']">
                 {{ aiProviderStatusLabel }}
@@ -206,7 +206,7 @@
             <p class="profile-ai-summary">{{ aiProviderSummary }}</p>
             <div class="profile-ai-status-grid">
               <div>
-                <span>默认供应商</span>
+                <span>默认模型引擎</span>
                 <strong>{{ aiDefaultProvider?.name || '尚未配置' }}</strong>
               </div>
               <div>
@@ -638,13 +638,13 @@
 
     <div v-if="showAiProviderModal" class="modal-overlay" @click.self="closeAiProviderModal">
       <div class="modal-card ai-provider-modal">
-        <ModalHeader title="AI 供应商配置" @close="closeAiProviderModal" />
+        <ModalHeader title="Mentor-X 智能体配置" @close="closeAiProviderModal" />
         <div class="ai-provider-shell">
           <section class="ai-provider-hero">
             <div>
               <p class="ai-provider-kicker">Provider Console</p>
-              <h3>管理 API 供应商、协议、Key 与模型</h3>
-              <p>AI 默认不启用。你可以接入官方 API，也可以接入纯 API / 中转 API。Key 会加密存储在服务器，请确认你信任当前部署环境。</p>
+              <h3>管理外部模型引擎、协议、Key 与模型</h3>
+              <p>Mentor-X 默认不启用。你可以接入官方 API 或纯 API / 中转 API，外部模型负责推理，HabitLearner 负责 Prompt、上下文、决策规则和确认执行闭环。</p>
             </div>
             <span :class="['summary-badge', aiProviderStatus === 'configured' ? 'summary-badge-success' : 'summary-badge-warn']">
               {{ aiProviderStatusLabel }}
@@ -656,7 +656,7 @@
               <div class="ai-provider-panel-head">
                 <div>
                   <p class="ai-provider-kicker">Edit Provider</p>
-                  <h4>{{ aiProviderForm.id ? '编辑供应商' : '新增供应商' }}</h4>
+                  <h4>{{ aiProviderForm.id ? '编辑模型引擎' : '新增模型引擎' }}</h4>
                   <p>先填写接入信息，再刷新上游模型列表并选择默认模型。</p>
                 </div>
                 <button type="button" class="btn-secondary" @click="resetAiProviderForm">新建配置</button>
@@ -745,7 +745,7 @@
                 <div class="ai-provider-final-row">
                   <label class="option-row">
                     <input v-model="aiProviderForm.is_default" type="checkbox" />
-                    <span>设为默认 AI 供应商</span>
+                    <span>设为默认 Mentor-X 模型引擎</span>
                   </label>
                   <div class="ai-provider-risk-note">
                     Key 会加密存储在服务器。请不要填写你不愿托管到当前部署环境的高权限 Key。
@@ -755,7 +755,7 @@
 
               <div class="ai-provider-footer-actions">
                 <button type="button" class="btn-primary flex-1" :disabled="isSavingAiProvider" @click="saveAiProviderConfig">
-                  {{ isSavingAiProvider ? '保存中...' : '保存供应商' }}
+                  {{ isSavingAiProvider ? '保存中...' : '保存模型引擎' }}
                 </button>
                 <button type="button" class="btn-secondary flex-1" :disabled="!aiProviderForm.id || isTestingAiProvider" @click="testAiProviderConfig(aiProviderForm.id)">
                   {{ isTestingAiProvider ? '测试中...' : '测试连接' }}
@@ -767,8 +767,8 @@
               <div class="ai-provider-panel-head">
                 <div>
                   <p class="ai-provider-kicker">Provider List</p>
-                  <h4>已保存供应商</h4>
-                  <p>管理默认供应商、连接测试和停用状态。</p>
+                  <h4>已保存模型引擎</h4>
+                  <p>管理默认模型引擎、连接测试和停用状态。</p>
                 </div>
                 <button type="button" class="btn-secondary" :disabled="isLoadingAiProviders" @click="loadAiProviders">
                   {{ isLoadingAiProviders ? '刷新中...' : '刷新' }}
@@ -801,8 +801,8 @@
               </div>
 
               <div v-else class="ai-provider-empty">
-                <div class="text-base font-medium text-zinc-950 dark:text-white">尚未配置 AI 能力</div>
-                <p class="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400">保存一个供应商并设为默认后，计划页 AI、习知助手和相关 AI 功能才会开始请求远程模型。</p>
+                <div class="text-base font-medium text-zinc-950 dark:text-white">尚未配置 Mentor-X 能力</div>
+                <p class="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400">保存并启用默认模型引擎后，Mentor-X 才会开始请求远程模型。</p>
               </div>
             </section>
           </div>
@@ -1407,7 +1407,7 @@ const settingItems = computed(() => [
     action: () => { router.push('/profile/pet-settings') }
   },
   {
-    title: 'AI 技能管理',
+    title: 'Mentor-X 技能管理',
     description: '管理内置技能，上传自己的 SKILL.md 技能包',
     iconClass: 'border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-900/70 dark:bg-sky-500/10 dark:text-sky-300',
     icon: 'M12 3l1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9l4.4-1.6L12 3zm6 12l.8 2.2L21 18l-2.2.8L18 21l-.8-2.2L15 18l2.2-.8L18 15z',
@@ -1582,10 +1582,10 @@ const aiProviderStatusLabel = computed(() => (
 
 const aiProviderSummary = computed(() => {
   if (!aiDefaultProvider.value) {
-    return 'AI 默认不启用。配置供应商并设为默认后，计划页 AI、习知助手和媒体生成入口才会开始请求远程模型。'
+    return 'Mentor-X 默认不启用。配置模型引擎并设为默认后，Mentor-X 会在今日、计划、内容和媒体生成场景中调用远程模型。'
   }
 
-  return `${aiDefaultProvider.value.name} 正作为默认 AI 供应商，协议为 ${getProtocolLabel(aiDefaultProvider.value.protocol)}，模型为 ${aiDefaultProvider.value.model || '未填写'}。`
+  return `${aiDefaultProvider.value.name} 正作为默认 Mentor-X 模型引擎，协议为 ${getProtocolLabel(aiDefaultProvider.value.protocol)}，模型为 ${aiDefaultProvider.value.model || '未填写'}。`
 })
 
 const aiModelPlaceholder = computed(() => (
@@ -1818,14 +1818,14 @@ const saveAiProviderConfig = async () => {
       : await saveAiProvider(payload)
 
     if (!response?.success) {
-      throw new Error(response?.error || response?.message || '保存供应商失败')
+      throw new Error(response?.error || response?.message || '保存模型引擎失败')
     }
 
-    success(form.id ? '供应商配置已更新' : '供应商配置已创建')
+    success(form.id ? '模型引擎配置已更新' : '模型引擎配置已创建')
     await loadAiProviders()
     resetAiProviderForm()
   } catch (err) {
-    showError('保存 AI 供应商失败', {
+    showError('保存模型引擎失败', {
       description: err?.error || err?.message || '请稍后重试。'
     })
   } finally {
@@ -1835,7 +1835,7 @@ const saveAiProviderConfig = async () => {
 
 const testAiProviderConfig = async (providerId) => {
   if (!providerId) {
-    warning('请先保存供应商配置，再测试连接')
+    warning('请先保存模型引擎配置，再测试连接')
     return
   }
 
@@ -1864,13 +1864,13 @@ const disableAiProvider = async (provider) => {
   try {
     const response = await deleteAiProvider(provider.id)
     if (!response?.success) {
-      throw new Error(response?.error || response?.message || '停用供应商失败')
+      throw new Error(response?.error || response?.message || '停用模型引擎失败')
     }
     success('供应商已停用')
     await loadAiProviders()
     resetAiProviderForm()
   } catch (err) {
-    showError('停用 AI 供应商失败', {
+    showError('停用模型引擎失败', {
       description: err?.error || err?.message || '请稍后重试。'
     })
   }
