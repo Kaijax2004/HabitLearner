@@ -185,7 +185,7 @@
                             {{ course.title }}
                           </option>
                         </select>
-                        <p v-if="!courses.length" class="mt-2 text-xs text-zinc-500 dark:text-zinc-400">课程库暂时为空，可以先到学习页同步课程。</p>
+                        <p v-if="!courses.length" class="mt-2 text-xs text-zinc-500 dark:text-zinc-400">学习内容库正在重建，暂时可以先把这条内容保存在收集箱或转入计划。</p>
                       </div>
 
                       <div v-if="conversionType === 'habit_comment'" class="mt-4">
@@ -229,6 +229,9 @@
                     <button v-if="capture.status === 'pending'" class="capture-primary-button" type="button" @click="openConversionPanel(capture)">整理</button>
                     <button v-if="capture.status !== 'archived'" class="capture-danger-button" type="button" @click="archiveCapture(capture)">归档</button>
                     <button v-if="capture.status === 'archived'" class="capture-secondary-button" type="button" @click="restoreCapture(capture)">恢复</button>
+                    <button class="capture-delete-button" type="button" :disabled="deletingId === capture.id" @click="deleteCapture(capture)">
+                      {{ deletingId === capture.id ? '删除中' : confirmDeleteId === capture.id ? '确认删除' : '删除' }}
+                    </button>
                   </div>
                 </div>
               </article>
@@ -248,6 +251,7 @@ import BaseCard from '@/components/BaseCard.vue'
 import {
   batchUpdateQuickCaptures,
   createQuickCapture,
+  deleteQuickCapture,
   linkQuickCapture,
   listQuickCaptures,
   updateQuickCapture
@@ -268,6 +272,8 @@ const isLoading = ref(false)
 const isCreating = ref(false)
 const isBatchUpdating = ref(false)
 const isConverting = ref(false)
+const deletingId = ref(null)
+const confirmDeleteId = ref(null)
 const errorMessage = ref('')
 const activeStatus = ref('pending')
 const editingId = ref(null)
@@ -407,6 +413,7 @@ const loadCaptures = async () => {
   isLoading.value = true
   errorMessage.value = ''
   selectedIds.value = []
+  confirmDeleteId.value = null
   closeConversionPanel()
   const response = await listQuickCaptures({ status: activeStatus.value, limit: 100 })
   isLoading.value = false
@@ -457,9 +464,11 @@ const toggleSelection = (id) => {
 
 const clearSelection = () => {
   selectedIds.value = []
+  confirmDeleteId.value = null
 }
 
 const startEdit = (capture) => {
+  confirmDeleteId.value = null
   editingId.value = capture.id
   editingContent.value = capture.content || ''
 }
@@ -488,6 +497,7 @@ const saveEdit = async (capture) => {
 }
 
 const openConversionPanel = async (capture) => {
+  confirmDeleteId.value = null
   conversionTargetId.value = capture.id
   conversionType.value = capture.content?.includes('复盘问题')
     ? 'review_question'
@@ -526,7 +536,7 @@ const submitConversion = async (capture) => {
 
   if (conversionType.value === 'learning_note') {
     if (!selectedCourseId.value) {
-      error('请选择课程', { description: '学习笔记需要选择一个来源课程。' })
+      error('请选择课程', { description: '学习笔记暂时需要选择一个内容来源；学习内容库重建期间可以先转入收集箱或计划。' })
       return
     }
     payload.courseId = Number(selectedCourseId.value)
@@ -580,6 +590,28 @@ const restoreCapture = async (capture) => {
   }
 
   success('已恢复为待处理')
+  await loadCaptures()
+}
+
+const deleteCapture = async (capture) => {
+  if (!capture?.id || deletingId.value) return
+
+  if (confirmDeleteId.value !== capture.id) {
+    confirmDeleteId.value = capture.id
+    return
+  }
+
+  deletingId.value = capture.id
+  const response = await deleteQuickCapture(capture.id)
+  deletingId.value = null
+
+  if (!response.success) {
+    error('删除失败', { description: response.error || '请稍后重试' })
+    return
+  }
+
+  confirmDeleteId.value = null
+  success('已删除收集项')
   await loadCaptures()
 }
 
@@ -658,6 +690,7 @@ onMounted(async () => {
 .capture-primary-button,
 .capture-secondary-button,
 .capture-danger-button,
+.capture-delete-button,
 .capture-filter-button,
 .capture-conversion-tab {
   min-height: 2.5rem;
@@ -675,6 +708,7 @@ onMounted(async () => {
 
 .capture-secondary-button,
 .capture-danger-button,
+.capture-delete-button,
 .capture-filter-button,
 .capture-conversion-tab {
   border: 1px solid rgba(212, 212, 216, 0.9);
@@ -698,9 +732,16 @@ onMounted(async () => {
   color: rgb(185, 28, 28);
 }
 
+.capture-delete-button {
+  border-color: rgba(248, 113, 113, 0.45);
+  background: rgba(254, 242, 242, 0.92);
+  color: rgb(153, 27, 27);
+}
+
 .capture-primary-button:hover:not(:disabled),
 .capture-secondary-button:hover:not(:disabled),
 .capture-danger-button:hover:not(:disabled),
+.capture-delete-button:hover:not(:disabled),
 .capture-filter-button:hover:not(:disabled),
 .capture-conversion-tab:hover:not(:disabled) {
   transform: translateY(-1px);
@@ -709,6 +750,7 @@ onMounted(async () => {
 .capture-primary-button:disabled,
 .capture-secondary-button:disabled,
 .capture-danger-button:disabled,
+.capture-delete-button:disabled,
 .capture-conversion-tab:disabled {
   cursor: not-allowed;
   opacity: 0.58;
@@ -783,6 +825,7 @@ onMounted(async () => {
 .dark .capture-textarea,
 .dark .capture-secondary-button,
 .dark .capture-danger-button,
+.dark .capture-delete-button,
 .dark .capture-filter-button,
 .dark .capture-conversion-tab {
   border-color: rgba(63, 63, 70, 0.9);
@@ -801,8 +844,14 @@ onMounted(async () => {
   color: rgb(24, 24, 27);
 }
 
-.dark .capture-danger-button {
+.dark .capture-danger-button,
+.dark .capture-delete-button {
   color: rgb(252, 165, 165);
+}
+
+.dark .capture-delete-button {
+  border-color: rgba(248, 113, 113, 0.35);
+  background: rgba(127, 29, 29, 0.18);
 }
 
 .dark .capture-bulk-bar,

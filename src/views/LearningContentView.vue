@@ -2,18 +2,21 @@
   <AppLayout title="学习工作台">
     <div class="learning-workbench w-full min-w-0 space-y-5">
       <section class="learning-hero w-full rounded-[2rem] border border-zinc-200/80 bg-white/90 p-6 shadow-sm backdrop-blur-xl dark:border-zinc-800 dark:bg-zinc-950/80 lg:p-8">
-        <div class="grid gap-6 xl:grid-cols-2 xl:items-end">
+        <div class="grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(360px,0.8fr)] xl:items-end">
           <div>
-            <p class="text-xs font-semibold uppercase tracking-[0.32em] text-zinc-500 dark:text-zinc-400">Learning Workbench</p>
+            <p class="text-xs font-semibold uppercase tracking-[0.32em] text-zinc-500 dark:text-zinc-400">Learning Workbench v2</p>
             <h1 class="mt-3 w-full max-w-none text-3xl font-semibold tracking-tight text-zinc-950 dark:text-white lg:text-5xl">
-              把输入变成明天能执行的一步
+              学习不是看完内容，而是转成自己的行动资产
             </h1>
             <p class="mt-4 w-full max-w-none text-sm leading-7 text-zinc-600 dark:text-zinc-300">
-              学习页重新定义为个人成长工作台里的“输入处理区”：先完成一张今日卡片，再写下笔记，最后把收获转成计划、习惯或复盘问题。
+              固定微课程库先下线。新的学习模块围绕真实来源运转：手动记录、热点雷达、内容创作和复盘沉淀都可以成为输入，再由 Mentor-X 帮你拆成计划、习惯实验或复盘问题。
             </p>
             <div class="mt-6 flex flex-wrap gap-3">
-              <button class="learning-primary-button" type="button" @click="openRecommendedCourse">开始今日学习</button>
-              <button class="learning-secondary-button" type="button" :disabled="isLoading" @click="loadData">同步课程库</button>
+              <button class="learning-primary-button" type="button" @click="focusCapture">记录学习输入</button>
+              <button class="learning-secondary-button" type="button" :disabled="isMentorLoading" @click="askLearningMentor('请基于我当前的学习输入、计划、轨道和笔记，推荐今天最值得学的一件事，并给出可以转化的下一步。')">
+                {{ isMentorLoading ? 'Mentor-X 思考中' : '问 Mentor-X 学什么' }}
+              </button>
+              <button class="learning-secondary-button" type="button" :disabled="isLoading" @click="loadData">刷新状态</button>
             </div>
           </div>
 
@@ -27,89 +30,132 @@
         </div>
       </section>
 
+      <section class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <article v-for="source in learningSources" :key="source.title" class="learning-source-card">
+          <span class="learning-source-index">{{ source.index }}</span>
+          <p class="text-sm font-semibold text-zinc-950 dark:text-white">{{ source.title }}</p>
+          <p class="mt-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">{{ source.description }}</p>
+        </article>
+      </section>
+
+      <section class="grid gap-5 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
+        <BaseCard class="border border-zinc-200/80 bg-white/90 dark:border-zinc-800 dark:bg-zinc-950/75" :hover="false">
+          <div class="space-y-5">
+            <div>
+              <p class="text-xs font-medium uppercase tracking-[0.24em] text-zinc-500 dark:text-zinc-400">Learning Input</p>
+              <h2 class="mt-2 text-2xl font-semibold tracking-tight text-zinc-950 dark:text-white">学习输入</h2>
+              <p class="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400">输入可以来自一条热点、一次创作卡点、一个计划问题，也可以只是你刚看到的一句话。</p>
+            </div>
+            <textarea v-model="learningCapture" data-learning-capture class="learning-textarea min-h-40" rows="7" placeholder="例如：我今天刷到一个 AI 工具工作流，想把它拆成自己的选题流程和 30 分钟实践动作。"></textarea>
+            <div class="flex flex-wrap gap-2">
+              <button v-for="item in outputTemplates" :key="`capture-${item.title}`" class="learning-template-chip" type="button" @click="applyOutputTemplate(item)">
+                {{ item.title }}
+              </button>
+            </div>
+            <div class="grid gap-3 sm:grid-cols-2">
+              <button class="learning-primary-button w-full" type="button" :disabled="isCapturing" @click="submitLearningCapture">
+                {{ isCapturing ? '收集中' : '加入收集箱' }}
+              </button>
+              <button class="learning-secondary-button w-full" type="button" :disabled="isMentorLoading" @click="askLearningMentor('请把这条学习输入拆成一个收集箱条目、一个计划块建议、一个习惯实验和一个复盘问题。')">
+                拆成可执行
+              </button>
+            </div>
+          </div>
+        </BaseCard>
+
+        <BaseCard class="border border-zinc-200/80 bg-white/90 dark:border-zinc-800 dark:bg-zinc-950/75" :hover="false">
+          <div class="space-y-5">
+            <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+              <div>
+                <p class="text-xs font-medium uppercase tracking-[0.24em] text-zinc-500 dark:text-zinc-400">Mentor-X Learning Coach</p>
+                <h2 class="mt-2 text-2xl font-semibold tracking-tight text-zinc-950 dark:text-white">Mentor-X 学习教练</h2>
+                <p class="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400">只基于真实输入、计划、热点沉淀和学习资产给建议，不再伪造固定课程推荐。</p>
+              </div>
+              <button class="learning-secondary-button" type="button" :disabled="isMentorLoading" @click="askLearningMentor('我现在只想做一个最小学习动作，请根据真实上下文给我一个建议和一个待确认动作。')">
+                {{ isMentorLoading ? '生成中' : '今日建议' }}
+              </button>
+            </div>
+
+            <div v-if="isMentorLoading" class="rounded-[1.6rem] border border-dashed border-zinc-200 py-14 text-center text-sm text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
+              Mentor-X 正在读取你的学习输入和工作台上下文...
+            </div>
+
+            <div v-else-if="mentorReply" class="learning-mentor-panel">
+              <p class="whitespace-pre-line text-sm leading-7 text-zinc-700 dark:text-zinc-200">{{ mentorReply }}</p>
+              <div v-if="mentorActions.length" class="mt-5 grid gap-3">
+                <article v-for="(action, index) in mentorActions" :key="`${action.action || 'action'}-${index}`" class="learning-mentor-action">
+                  <div class="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p class="text-sm font-semibold text-zinc-950 dark:text-white">{{ action.label || action.title || action.action || '待确认动作' }}</p>
+                      <p v-if="action.reason" class="mt-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">理由：{{ action.reason }}</p>
+                    </div>
+                    <span class="rounded-full bg-zinc-950 px-3 py-1 text-xs font-semibold text-white dark:bg-white dark:text-zinc-950">{{ formatConfidence(action.confidence) }}</span>
+                  </div>
+                  <div v-if="Array.isArray(action.sourceSignals) && action.sourceSignals.length" class="mt-3 flex flex-wrap gap-2">
+                    <span v-for="signal in action.sourceSignals" :key="signal" class="rounded-full bg-zinc-100 px-2.5 py-1 text-[11px] text-zinc-500 dark:bg-zinc-800 dark:text-zinc-300">{{ signal }}</span>
+                  </div>
+                </article>
+              </div>
+            </div>
+
+            <div v-else class="rounded-[1.6rem] border border-dashed border-zinc-200 px-5 py-12 text-center text-sm leading-6 text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
+              先记录一条真实学习输入，或让 Mentor-X 根据今日计划和已有资产推荐一个最小学习动作。
+            </div>
+          </div>
+        </BaseCard>
+      </section>
+
       <section class="grid gap-5 xl:grid-cols-2">
         <BaseCard class="border border-zinc-200/80 bg-white/90 dark:border-zinc-800 dark:bg-zinc-950/75" :hover="false">
           <div class="space-y-5">
             <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
               <div>
                 <p class="text-xs font-medium uppercase tracking-[0.24em] text-zinc-500 dark:text-zinc-400">Today Learning</p>
-                <h2 class="mt-2 text-2xl font-semibold tracking-tight text-zinc-950 dark:text-white">今日学习行动台</h2>
-                <p class="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400">今天只做一个小输入，并把它转成可执行动作。</p>
+                <h2 class="mt-2 text-2xl font-semibold tracking-tight text-zinc-950 dark:text-white">今日学习卡片</h2>
+                <p class="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400">作为过渡期的学习提示卡，只负责给你一个可转化输入，不再绑定固定课程。</p>
               </div>
               <button class="learning-secondary-button" type="button" :disabled="dailyCardLoading || refreshingDailyCard" @click="refreshDailyCard">
-                {{ refreshingDailyCard ? '刷新中' : '换一张卡片' }}
+                {{ refreshingDailyCard ? '刷新中' : '换一张' }}
               </button>
             </div>
 
-            <div v-if="dailyCardLoading" class="rounded-[1.6rem] border border-dashed border-zinc-200 py-16 text-center text-sm text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
+            <div v-if="dailyCardLoading" class="rounded-[1.6rem] border border-dashed border-zinc-200 py-14 text-center text-sm text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
               正在整理今日学习卡片...
             </div>
 
-            <div v-else-if="dailyCard" class="grid gap-5 lg:grid-cols-2">
-              <div class="learning-daily-card">
-                <div class="flex flex-wrap items-center gap-2 text-xs">
-                  <span class="rounded-full bg-zinc-950 px-3 py-1 text-white dark:bg-white dark:text-zinc-950">{{ dailyCard.focusCategoryName || '今日主题' }}</span>
-                  <span class="rounded-full bg-white px-3 py-1 text-zinc-600 dark:bg-zinc-900 dark:text-zinc-300">已配置供应商</span>
-                </div>
-                <h3 class="mt-4 text-2xl font-semibold leading-tight text-zinc-950 dark:text-white">{{ dailyCard.title }}</h3>
-                <p class="mt-3 text-sm leading-7 text-zinc-600 dark:text-zinc-300">{{ dailyCard.summary }}</p>
-                <div class="mt-5 rounded-[1.4rem] bg-white/78 p-4 dark:bg-zinc-950/60">
-                  <p class="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400">为什么是今天</p>
-                  <p class="mt-2 text-sm leading-7 text-zinc-700 dark:text-zinc-300">{{ dailyCard.rationale }}</p>
-                </div>
-                <div class="mt-5 flex flex-wrap gap-3">
-                  <button v-if="dailyCard.recommendedCourseId" class="learning-primary-button" type="button" @click="openDailyCardCourse">打开推荐课程</button>
-                  <button class="learning-secondary-button" type="button" :disabled="dailyCardActionLoading" @click="convertDailyCardToCapture">
-                    {{ dailyCardActionLoading ? '整理中' : '转成今日行动' }}
-                  </button>
-                  <span class="rounded-2xl border border-zinc-200 px-4 py-3 text-xs text-zinc-500 dark:border-zinc-700 dark:text-zinc-400">更新于 {{ formatDateTime(dailyCard.updatedAt || dailyCard.generatedAt) }}</span>
-                </div>
+            <div v-else-if="dailyCard" class="learning-daily-card">
+              <div class="flex flex-wrap items-center gap-2 text-xs">
+                <span class="rounded-full bg-zinc-950 px-3 py-1 text-white dark:bg-white dark:text-zinc-950">{{ dailyCard.focusCategoryName || '今日主题' }}</span>
+                <span class="rounded-full bg-white px-3 py-1 text-zinc-600 dark:bg-zinc-900 dark:text-zinc-300">真实输入优先</span>
               </div>
-
-              <div class="space-y-3">
-                <div v-for="(item, index) in dailyActions" :key="`${index}-${item}`" class="learning-action-step">
-                  <span class="learning-step-index">{{ index + 1 }}</span>
-                  <p class="text-sm leading-7 text-zinc-700 dark:text-zinc-300">{{ item }}</p>
-                </div>
-                <div class="rounded-[1.35rem] border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-white/5">
-                  <p class="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400">复盘问题</p>
-                  <p class="mt-2 text-sm leading-7 text-zinc-700 dark:text-zinc-300">{{ dailyCard.reflectionQuestion }}</p>
-                </div>
+              <h3 class="mt-4 text-2xl font-semibold leading-tight text-zinc-950 dark:text-white">{{ dailyCard.title }}</h3>
+              <p class="mt-3 text-sm leading-7 text-zinc-600 dark:text-zinc-300">{{ dailyCard.summary }}</p>
+              <div class="mt-5 rounded-[1.4rem] bg-white/78 p-4 dark:bg-zinc-950/60">
+                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400">转化问题</p>
+                <p class="mt-2 text-sm leading-7 text-zinc-700 dark:text-zinc-300">{{ dailyCard.reflectionQuestion || '这条输入能转成哪一个今天可验证的小动作？' }}</p>
+              </div>
+              <div class="mt-5 flex flex-wrap gap-3">
+                <button class="learning-secondary-button" type="button" :disabled="dailyCardActionLoading" @click="convertDailyCardToCapture">
+                  {{ dailyCardActionLoading ? '整理中' : '转成学习输入' }}
+                </button>
+                <span class="rounded-2xl border border-zinc-200 px-4 py-3 text-xs text-zinc-500 dark:border-zinc-700 dark:text-zinc-400">更新于 {{ formatDateTime(dailyCard.updatedAt || dailyCard.generatedAt) }}</span>
               </div>
             </div>
 
-            <div v-else class="rounded-[1.6rem] border border-dashed border-zinc-200 py-16 text-center text-sm text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
-              今天还没有学习卡片，可以先从下方学习路径开始。
+            <div v-else class="rounded-[1.6rem] border border-dashed border-zinc-200 py-14 text-center text-sm text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
+              今日卡片未启用。你可以直接记录真实输入，后续再接更适合的内容源。
             </div>
           </div>
         </BaseCard>
 
-        <aside class="min-w-0 space-y-5">
-          <BaseCard class="border border-zinc-200/80 bg-white/90 dark:border-zinc-800 dark:bg-zinc-950/75" :hover="false">
-            <p class="text-xs font-medium uppercase tracking-[0.24em] text-zinc-500 dark:text-zinc-400">Capture</p>
-            <h2 class="mt-2 text-xl font-semibold text-zinc-950 dark:text-white">学习收集</h2>
-            <p class="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400">把一个收获、疑问或行动先收进箱子，后续再转成计划或复盘素材。</p>
-            <textarea v-model="learningCapture" class="learning-textarea mt-4" rows="4" placeholder="例如：我想把拖延拆成一个 10 分钟启动动作"></textarea>
-            <div class="mt-3 flex flex-wrap gap-2">
-              <button
-                v-for="item in outputTemplates"
-                :key="`capture-${item.title}`"
-                class="learning-template-chip"
-                type="button"
-                @click="applyOutputTemplate(item)"
-              >
-                {{ item.title }}
-              </button>
+        <BaseCard class="border border-zinc-200/80 bg-white/90 dark:border-zinc-800 dark:bg-zinc-950/75" :hover="false">
+          <div class="space-y-5">
+            <div>
+              <p class="text-xs font-medium uppercase tracking-[0.24em] text-zinc-500 dark:text-zinc-400">Learning Loop</p>
+              <h2 class="mt-2 text-2xl font-semibold tracking-tight text-zinc-950 dark:text-white">闭环状态</h2>
+              <p class="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400">先追求每天形成一个闭环，而不是堆更多课程。</p>
             </div>
-            <button class="learning-primary-button mt-3 w-full" type="button" :disabled="isCapturing" @click="submitLearningCapture">
-              {{ isCapturing ? '收集中' : '加入学习收集' }}
-            </button>
-          </BaseCard>
-
-          <BaseCard class="border border-zinc-200/80 bg-white/90 dark:border-zinc-800 dark:bg-zinc-950/75" :hover="false">
-            <p class="text-xs font-medium uppercase tracking-[0.24em] text-zinc-500 dark:text-zinc-400">Learning Loop</p>
-            <h2 class="mt-2 text-xl font-semibold text-zinc-950 dark:text-white">闭环状态</h2>
-            <div class="mt-4 space-y-3">
+            <div class="grid gap-3">
               <div v-for="item in learningLoop" :key="item.title" class="rounded-2xl border border-zinc-200/80 p-4 dark:border-zinc-800">
                 <div class="flex items-center justify-between gap-3">
                   <p class="text-sm font-semibold text-zinc-950 dark:text-white">{{ item.title }}</p>
@@ -118,76 +164,18 @@
                 <p class="mt-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">{{ item.description }}</p>
               </div>
             </div>
-          </BaseCard>
-        </aside>
+          </div>
+        </BaseCard>
       </section>
 
       <section class="grid w-full gap-5 xl:grid-cols-2">
         <BaseCard class="border border-zinc-200/80 bg-white/90 dark:border-zinc-800 dark:bg-zinc-950/75" :hover="false">
           <div class="space-y-5">
-            <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-              <div>
-                <p class="text-xs font-medium uppercase tracking-[0.24em] text-zinc-500 dark:text-zinc-400">Notes</p>
-                <h2 class="mt-2 text-2xl font-semibold tracking-tight text-zinc-950 dark:text-white">学习笔记沉淀</h2>
-                <p class="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400">笔记不只用来保存，要继续转成复盘问题、习惯实验或下一步计划。</p>
-              </div>
-              <button class="learning-secondary-button" type="button" :disabled="isNotesLoading" @click="loadLearningNotes">
-                {{ isNotesLoading ? '同步中' : '同步笔记' }}
-              </button>
+            <div>
+              <p class="text-xs font-medium uppercase tracking-[0.24em] text-zinc-500 dark:text-zinc-400">Conversion</p>
+              <h2 class="text-2xl font-semibold tracking-tight text-zinc-950 dark:text-white">学习转化</h2>
+              <p class="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400">学习内容必须有出口：收集箱、计划块、习惯实验、复盘问题，至少选一个。</p>
             </div>
-
-            <div v-if="isNotesLoading" class="rounded-[1.6rem] border border-dashed border-zinc-200 py-12 text-center text-sm text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
-              正在整理学习笔记...
-            </div>
-
-            <div v-else-if="recentNotes.length" class="grid gap-3">
-              <article
-                v-for="note in recentNotes"
-                :key="note.id"
-                class="learning-note-card"
-              >
-                <div class="min-w-0">
-                  <div class="flex flex-wrap items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
-                    <span class="rounded-full bg-zinc-100 px-2.5 py-1 dark:bg-zinc-800">{{ note.category || '学习课程' }}</span>
-                    <span>{{ formatDateTime(note.updatedAt) }}</span>
-                  </div>
-                  <h3 class="mt-3 truncate text-base font-semibold text-zinc-950 dark:text-white">{{ note.courseTitle || '未命名课程' }}</h3>
-                  <p class="mt-2 line-clamp-2 text-sm leading-6 text-zinc-600 dark:text-zinc-300">{{ note.excerpt || '这条笔记还没有摘要。' }}</p>
-                </div>
-                <div class="learning-note-actions">
-                  <button class="learning-mini-button" type="button" @click="goToNoteCourse(note)">打开课程</button>
-                  <button class="learning-mini-button" type="button" :disabled="noteActionId === note.id" @click="convertNoteToPlanAction(note)">
-                    先放入收集箱
-                  </button>
-                  <button class="learning-mini-button learning-mini-button-dark" type="button" :disabled="!selectedActionPlanId || noteActionId === note.id" @click="convertNoteToPlanBlock(note)">
-                    追加到计划
-                  </button>
-                  <button class="learning-mini-button" type="button" :disabled="noteActionId === note.id" @click="convertNoteToReviewQuestion(note)">
-                    转复盘问题
-                  </button>
-                  <button class="learning-mini-button" type="button" :disabled="noteActionId === note.id" @click="convertNoteToHabitExperiment(note)">
-                    转习惯实验
-                  </button>
-                  <button class="learning-mini-button" type="button" :disabled="!selectedTargetHabitId || noteActionId === note.id" @click="convertNoteToHabitComment(note)">
-                    追加到习惯
-                  </button>
-                  <button class="learning-mini-button" type="button" :disabled="!selectedTargetTrackId || noteActionId === note.id" @click="convertNoteToTrack(note)">
-                    沉到轨道
-                  </button>
-                </div>
-              </article>
-            </div>
-
-            <div v-else class="rounded-[1.6rem] border border-dashed border-zinc-200 px-5 py-12 text-center text-sm leading-6 text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
-              还没有学习笔记。先完成一节微课程，在详情页写下一句收获，这里就会变成你的学习沉淀池。
-            </div>
-          </div>
-        </BaseCard>
-
-        <BaseCard class="border border-zinc-200/80 bg-white/90 dark:border-zinc-800 dark:bg-zinc-950/75" :hover="false">
-          <div class="space-y-4">
-            <p class="text-xs font-medium uppercase tracking-[0.24em] text-zinc-500 dark:text-zinc-400">Conversion</p>
-            <h2 class="text-2xl font-semibold tracking-tight text-zinc-950 dark:text-white">学习转化规则</h2>
             <div class="rounded-[1.35rem] border border-zinc-200/80 bg-zinc-50/70 p-4 dark:border-zinc-800 dark:bg-white/5">
               <label class="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">目标计划</label>
               <select v-model="selectedActionPlanId" class="learning-input mt-3 w-full">
@@ -196,9 +184,6 @@
                   {{ plan.title }}
                 </option>
               </select>
-              <p class="mt-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
-                选中后，笔记卡里的“追加到计划”会把学习收获写入该计划的末尾计划块。
-              </p>
             </div>
             <div class="grid gap-3 md:grid-cols-2">
               <div class="rounded-[1.35rem] border border-zinc-200/80 bg-zinc-50/70 p-4 dark:border-zinc-800 dark:bg-white/5">
@@ -209,9 +194,6 @@
                     {{ habit.name }}
                   </option>
                 </select>
-                <p class="mt-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
-                  选中后，可把学习实验追加为该习惯的今日备注。
-                </p>
               </div>
 
               <div class="rounded-[1.35rem] border border-zinc-200/80 bg-zinc-50/70 p-4 dark:border-zinc-800 dark:bg-white/5">
@@ -222,9 +204,6 @@
                     {{ track.name }}
                   </option>
                 </select>
-                <p class="mt-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
-                  选中后，可把学习收获写入轨道沉淀，方便后续复盘。
-                </p>
               </div>
             </div>
             <div class="space-y-3">
@@ -235,132 +214,67 @@
             </div>
           </div>
         </BaseCard>
-      </section>
 
-      <section class="rounded-[2rem] border border-zinc-200/80 bg-white/90 p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950/75 lg:p-6">
-        <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-          <div>
-            <p class="text-xs font-medium uppercase tracking-[0.24em] text-zinc-500 dark:text-zinc-400">Paths</p>
-            <h2 class="mt-2 text-2xl font-semibold tracking-tight text-zinc-950 dark:text-white">学习路径</h2>
-            <p class="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400">选择一个主题路径，再从最小课程开始推进。</p>
-          </div>
-          <button class="learning-secondary-button" type="button" @click="selectedCategory = 'all'">查看全部</button>
-        </div>
-
-        <div class="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-          <button
-            v-for="category in categories"
-            :key="category.id"
-            type="button"
-            class="learning-path-card"
-            :class="selectedCategory === category.id ? 'is-active' : ''"
-            @click="selectedCategory = category.id"
-          >
-            <div class="flex items-start justify-between gap-3">
-              <div class="text-left">
-                <h3 class="text-base font-semibold tracking-tight">{{ category.name }}</h3>
-                <p class="mt-2 line-clamp-2 text-xs leading-5 opacity-75">{{ category.description }}</p>
-              </div>
-              <span class="rounded-full px-2.5 py-1 text-xs" :class="selectedCategory === category.id ? 'bg-white/15 text-white dark:bg-zinc-200 dark:text-zinc-950' : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300'">
-                {{ categoryProgress(category.id).completed }}/{{ categoryProgress(category.id).total }}
-              </span>
-            </div>
-            <div class="mt-4 h-1.5 overflow-hidden rounded-full bg-zinc-200/70 dark:bg-zinc-800">
-              <span class="block h-full rounded-full bg-current" :style="{ width: `${categoryProgress(category.id).percent}%` }"></span>
-            </div>
-            <div class="mt-4 flex items-center justify-between gap-3 text-xs">
-              <span class="opacity-75">{{ categoryPathStatus(category.id) }}</span>
-              <span class="font-semibold">下一步：{{ categoryNextCourseTitle(category.id) }}</span>
-            </div>
-          </button>
-        </div>
-      </section>
-
-      <section class="grid gap-5 xl:grid-cols-2">
         <BaseCard class="border border-zinc-200/80 bg-white/90 dark:border-zinc-800 dark:bg-zinc-950/75" :hover="false">
           <div class="space-y-5">
-            <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
               <div>
-                <p class="text-xs font-medium uppercase tracking-[0.24em] text-zinc-500 dark:text-zinc-400">Next Course</p>
-                <h2 class="mt-2 text-2xl font-semibold tracking-tight text-zinc-950 dark:text-white">下一节最适合开始的课</h2>
-                <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">当前路径：{{ selectedPathName }}</p>
+                <p class="text-xs font-medium uppercase tracking-[0.24em] text-zinc-500 dark:text-zinc-400">Learning Assets</p>
+                <h2 class="mt-2 text-2xl font-semibold tracking-tight text-zinc-950 dark:text-white">学习资产</h2>
+                <p class="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400">先用笔记和收集箱承接，后续再沉淀成个人知识库。</p>
               </div>
-              <input v-model.trim="search" type="search" class="learning-input md:w-72" placeholder="搜索课程、方法或关键词" />
+              <button class="learning-secondary-button" type="button" :disabled="isNotesLoading" @click="loadLearningNotes">
+                {{ isNotesLoading ? '同步中' : '同步资产' }}
+              </button>
             </div>
 
-            <div v-if="recommendedCourse" :class="['overflow-hidden rounded-[1.75rem] bg-gradient-to-br p-6 text-white shadow-xl', recommendedCourse.accent || 'from-zinc-800 to-black']">
-              <div class="flex flex-wrap items-center gap-2 text-xs text-white/80">
-                <span class="rounded-full bg-white/15 px-3 py-1">{{ recommendedCourse.category }}</span>
-                <span>{{ formatDuration(recommendedCourse.duration) }}</span>
-                <span>{{ recommendedCourse.level }}</span>
-              </div>
-              <h2 class="mt-5 text-2xl font-semibold leading-tight lg:text-3xl">{{ recommendedCourse.title }}</h2>
-              <p class="mt-3 w-full max-w-none text-sm leading-7 text-white/85 lg:text-base">{{ recommendedCourse.summary || recommendedCourse.description }}</p>
-              <div class="mt-6 flex flex-wrap gap-3">
-                <button class="rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-zinc-950 transition hover:bg-zinc-100" type="button" @click="goToCourse(recommendedCourse)">打开课程</button>
-                <div class="rounded-2xl border border-white/20 px-4 py-3 text-sm text-white/80">{{ recommendedCourse.isCompleted ? '已完成，可回顾笔记' : '推荐先完成这节并写下笔记' }}</div>
-              </div>
+            <div v-if="isNotesLoading" class="rounded-[1.6rem] border border-dashed border-zinc-200 py-12 text-center text-sm text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
+              正在整理学习资产...
             </div>
 
-            <div v-else-if="!isLoading" class="rounded-3xl border border-dashed border-zinc-300 py-16 text-center text-sm text-zinc-500 dark:border-zinc-700 dark:text-zinc-400">
-              当前没有可学习的课程。
-            </div>
-          </div>
-        </BaseCard>
-
-        <BaseCard class="border border-zinc-200/80 bg-white/90 dark:border-zinc-800 dark:bg-zinc-950/75" :hover="false">
-          <div class="space-y-5">
-            <div>
-              <p class="text-xs font-medium uppercase tracking-[0.24em] text-zinc-500 dark:text-zinc-400">Action Output</p>
-              <h2 class="mt-2 text-2xl font-semibold tracking-tight text-zinc-950 dark:text-white">学习输出模板</h2>
-              <p class="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400">每次学习结束后，建议只沉淀这三类内容，减少记了但不用。</p>
-            </div>
-            <div class="grid gap-3">
-              <div v-for="item in outputTemplates" :key="item.title" class="rounded-[1.4rem] border border-zinc-200/80 bg-zinc-50/70 p-4 dark:border-zinc-800 dark:bg-white/5">
-                <div class="flex items-start justify-between gap-3">
-                  <p class="text-sm font-semibold text-zinc-950 dark:text-white">{{ item.title }}</p>
-                  <button class="learning-template-button" type="button" @click="applyOutputTemplate(item)">使用</button>
+            <div v-else-if="recentNotes.length" class="grid gap-3">
+              <article v-for="note in recentNotes" :key="note.id" class="learning-note-card">
+                <div class="min-w-0">
+                  <div class="flex flex-wrap items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
+                    <span class="rounded-full bg-zinc-100 px-2.5 py-1 dark:bg-zinc-800">{{ note.category || '学习输入' }}</span>
+                    <span>{{ formatDateTime(note.updatedAt) }}</span>
+                  </div>
+                  <h3 class="mt-3 truncate text-base font-semibold text-zinc-950 dark:text-white">{{ note.courseTitle || '学习资产' }}</h3>
+                  <p class="mt-2 line-clamp-2 text-sm leading-6 text-zinc-600 dark:text-zinc-300">{{ note.excerpt || note.content || '这条资产还没有摘要。' }}</p>
                 </div>
-                <p class="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-300">{{ item.description }}</p>
-              </div>
+                <div class="learning-note-actions">
+                  <button v-if="note.courseId" class="learning-mini-button" type="button" @click="goToNoteCourse(note)">查看来源</button>
+                  <button class="learning-mini-button" type="button" :disabled="noteActionId === note.id" @click="convertNoteToPlanAction(note)">进收集箱</button>
+                  <button class="learning-mini-button learning-mini-button-dark" type="button" :disabled="!selectedActionPlanId || noteActionId === note.id" @click="convertNoteToPlanBlock(note)">转计划块</button>
+                  <button class="learning-mini-button" type="button" :disabled="noteActionId === note.id" @click="convertNoteToReviewQuestion(note)">转复盘</button>
+                  <button class="learning-mini-button" type="button" :disabled="noteActionId === note.id" @click="convertNoteToHabitExperiment(note)">转习惯实验</button>
+                  <button class="learning-mini-button" type="button" :disabled="!selectedTargetTrackId || noteActionId === note.id" @click="convertNoteToTrack(note)">沉到轨道</button>
+                </div>
+              </article>
+            </div>
+
+            <div v-else class="rounded-[1.6rem] border border-dashed border-zinc-200 px-5 py-12 text-center text-sm leading-6 text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
+              暂无学习资产。先写一条输入，再把它转成收集箱、计划块或复盘问题。
             </div>
           </div>
         </BaseCard>
       </section>
 
       <BaseCard class="border border-zinc-200/80 bg-white/90 dark:border-zinc-800 dark:bg-zinc-950/75" :hover="false">
-        <div class="flex items-end justify-between gap-4">
+        <div class="grid gap-5 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:items-center">
           <div>
-            <p class="text-xs font-medium uppercase tracking-[0.24em] text-zinc-500 dark:text-zinc-400">Library</p>
-            <h2 class="mt-2 text-2xl font-semibold tracking-tight text-zinc-950 dark:text-white">课程资料库</h2>
-            <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">共 {{ filteredCourses.length }} 节，课程库只作为输入来源，完成后要写笔记并转行动。</p>
+            <p class="text-xs font-medium uppercase tracking-[0.24em] text-zinc-500 dark:text-zinc-400">Content Library</p>
+            <h2 class="mt-2 text-2xl font-semibold tracking-tight text-zinc-950 dark:text-white">内容库暂缓重建</h2>
+            <p class="mt-2 text-sm leading-7 text-zinc-500 dark:text-zinc-400">
+              旧微课程不适合上线，YouTube 推荐链路也已下线。下一阶段更适合做“真实来源池”：热点雷达、用户收藏、内容创作复盘、管理员精选来源，再由 Mentor-X 组织成当天最值得学的行动。
+            </p>
           </div>
-        </div>
-
-        <div v-if="isLoading" class="py-14 text-center text-sm text-zinc-500 dark:text-zinc-400">正在加载课程...</div>
-        <div v-else-if="!filteredCourses.length" class="py-14 text-center text-sm text-zinc-500 dark:text-zinc-400">没有匹配的课程，换个关键词试试。</div>
-        <div v-else class="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <article
-            v-for="course in filteredCourses"
-            :key="course.id"
-            class="group cursor-pointer overflow-hidden rounded-[1.5rem] border border-zinc-200 bg-white transition hover:-translate-y-1 hover:shadow-xl dark:border-zinc-800 dark:bg-zinc-900"
-            @click="goToCourse(course)"
-          >
-            <div :class="['relative h-28 overflow-hidden bg-gradient-to-br p-5 text-white', course.accent || 'from-zinc-800 to-black']">
-              <div class="relative flex items-center justify-between text-xs text-white/85">
-                <span class="rounded-full bg-white/15 px-2 py-1">{{ course.category }}</span>
-                <span>{{ course.level }}</span>
-              </div>
-              <div class="relative mt-7 flex items-center justify-between">
-                <div class="text-2xl font-semibold">{{ formatDuration(course.duration) }}</div>
-                <span class="rounded-full px-3 py-1 text-xs font-medium" :class="course.isCompleted ? 'bg-emerald-400/20 text-emerald-50' : 'bg-black/20 text-white'">{{ course.isCompleted ? '已完成' : '未完成' }}</span>
-              </div>
+          <div class="grid gap-3 md:grid-cols-3">
+            <div v-for="item in libraryRoadmap" :key="item.title" class="rounded-[1.4rem] border border-zinc-200/80 bg-zinc-50/70 p-4 dark:border-zinc-800 dark:bg-white/5">
+              <p class="text-sm font-semibold text-zinc-950 dark:text-white">{{ item.title }}</p>
+              <p class="mt-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">{{ item.description }}</p>
             </div>
-            <div class="p-5">
-              <h3 class="text-base font-semibold leading-tight text-zinc-950 dark:text-white">{{ course.title }}</h3>
-              <p class="mt-2 line-clamp-3 text-sm leading-6 text-zinc-600 dark:text-zinc-300">{{ course.description }}</p>
-            </div>
-          </article>
+          </div>
         </div>
       </BaseCard>
     </div>
@@ -371,7 +285,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import * as learningAPI from '@/api/learning.js'
-import { createQuickCapture, linkQuickCapture } from '@/api/workspace.js'
+import { chatWithMascotAssistant, createQuickCapture, linkQuickCapture } from '@/api/workspace.js'
 import { listPlans } from '@/api/plans.js'
 import { getHabits } from '@/api/habits.js'
 import { listTracks } from '@/api/tracks.js'
@@ -385,10 +299,6 @@ const { success, error } = useToast()
 const workspaceAiStore = useWorkspaceAiStore()
 
 const isLoading = ref(false)
-const selectedCategory = ref('all')
-const search = ref('')
-const categories = ref([])
-const courses = ref([])
 const dailyCard = ref(null)
 const dailyCardLoading = ref(false)
 const refreshingDailyCard = ref(false)
@@ -405,101 +315,75 @@ const tracks = ref([])
 const selectedActionPlanId = ref('')
 const selectedTargetHabitId = ref('')
 const selectedTargetTrackId = ref('')
-const overview = ref({
-  totalCourses: 0,
-  completedCourses: 0,
-  remainingCourses: 0,
-  totalCategories: 0
-})
+const isMentorLoading = ref(false)
+const mentorReply = ref('')
+const mentorActions = ref([])
 
-const filteredCourses = computed(() => {
-  const keyword = search.value.trim().toLowerCase()
-  return courses.value.filter((course) => {
-    const matchCategory = selectedCategory.value === 'all' || String(course.categoryId) === String(selectedCategory.value)
-    const haystack = [course.title, course.description, course.summary, course.practice, course.category].join(' ').toLowerCase()
-    const matchSearch = !keyword || haystack.includes(keyword)
-    return matchCategory && matchSearch
-  })
-})
-
-const recommendedCourse = computed(() => filteredCourses.value.find((course) => !course.isCompleted) || filteredCourses.value[0] || null)
-const completionPercent = computed(() => {
-  if (!overview.value.totalCourses) return 0
-  return Math.round((overview.value.completedCourses / overview.value.totalCourses) * 100)
-})
-
-const selectedPathName = computed(() => {
-  if (selectedCategory.value === 'all') return '全部主题'
-  return categories.value.find((category) => String(category.id) === String(selectedCategory.value))?.name || '当前主题'
-})
-
-const stats = computed(() => [
-  { label: '课程', value: overview.value.totalCourses || courses.value.length, hint: '可用于微学习的内容量' },
-  { label: '完成', value: overview.value.completedCourses || courses.value.filter((course) => course.isCompleted).length, hint: '已经完成并记录的课程' },
-  { label: '笔记', value: learningNoteTotal.value || learningNotes.value.length, hint: '已经沉淀的学习记录' },
-  { label: '完成率', value: `${completionPercent.value}%`, hint: '学习轨道当前完成比例' }
-])
-
-const recentNotes = computed(() => learningNotes.value.slice(0, 6))
 const activePlans = computed(() => plans.value.filter((plan) => !['completed', 'done', 'archived'].includes(plan.status)))
 const activeTracks = computed(() => tracks.value.filter((track) => track.status !== 'archived'))
+const recentNotes = computed(() => learningNotes.value.slice(0, 6))
+const hasLearningInput = computed(() => Boolean(learningCapture.value.trim() || dailyCard.value || learningNotes.value.length))
+const hasLearningConversion = computed(() => Boolean(selectedActionPlanId.value || selectedTargetHabitId.value || selectedTargetTrackId.value || mentorActions.value.length))
 
-const dailyActions = computed(() => {
-  const items = Array.isArray(dailyCard.value?.actionItems) ? dailyCard.value.actionItems : []
-  return items.length ? items : ['读完一节微课程', '写下一句学习笔记', '把一个收获转成行动']
-})
+const stats = computed(() => [
+  { label: '输入源', value: learningSources.length, hint: '手动、热点、创作、复盘都能进入学习' },
+  { label: '资产', value: learningNoteTotal.value || learningNotes.value.length, hint: '已经沉淀的学习记录' },
+  { label: '计划承接', value: activePlans.value.length, hint: '可以承接学习行动的计划' },
+  { label: '转化出口', value: 4, hint: '收集箱、计划块、习惯实验、复盘问题' }
+])
 
-const learningLoop = computed(() => {
-  const hasCourse = Boolean(recommendedCourse.value)
-  const hasNotes = learningNotes.value.length > 0
-  const hasCompleted = courses.value.some((course) => course.isCompleted)
-  return [
-    { title: '输入', description: '读完一张今日卡片或一节微课程。', done: Boolean(dailyCard.value || hasCourse) },
-    { title: '沉淀', description: '写下一个收获、疑问或可复用方法。', done: hasNotes },
-    { title: '行动', description: '把学习内容转成计划、习惯或明天第一步。', done: hasCompleted && hasNotes }
-  ]
-})
+const learningSources = [
+  { index: '01', title: '手动记录', description: '把看到的观点、疑问、方法和卡点先记下来。' },
+  { index: '02', title: '热点雷达', description: '从真实热点中挑选值得学习和拆解的主题。' },
+  { index: '03', title: '内容创作', description: '把创作卡点、选题复盘反向变成学习输入。' },
+  { index: '04', title: '执行复盘', description: '从计划、习惯、复盘里发现下一次该学什么。' }
+]
+
+const learningLoop = computed(() => [
+  { title: '输入', description: '记录一条真实学习输入，或把热点、创作卡点转进来。', done: hasLearningInput.value },
+  { title: '判断', description: '让 Mentor-X 基于真实上下文判断今天最值得学什么。', done: Boolean(mentorReply.value) },
+  { title: '转化', description: '把学习内容转成收集箱、计划块、习惯实验或复盘问题。', done: hasLearningConversion.value },
+  { title: '资产', description: '把有效方法沉淀到笔记、轨道或后续个人知识库。', done: learningNotes.value.length > 0 }
+])
 
 const outputTemplates = [
   { title: '一句收获', description: '我今天学到的关键方法是：……', content: '一句收获：我今天学到的关键方法是：' },
   { title: '一个问题', description: '我还没想清楚的问题是：……', content: '一个问题：我还没想清楚的问题是：' },
-  { title: '一个行动', description: '明天我可以执行的最小动作是：……', content: '一个行动：明天我可以执行的最小动作是：' }
+  { title: '一个行动', description: '明天我可以执行的最小动作是：……', content: '一个行动：明天我可以执行的最小动作是：' },
+  { title: '一个来源', description: '这条信息来自哪里，为什么可信：……', content: '来源记录：\n可信理由：\n我想验证的是：' }
 ]
 
 const learningConversionRules = [
-  { title: '笔记先进入收集箱', description: '转化结果先作为待处理内容保存，避免自动创建错误计划或习惯。' },
-  { title: '行动计划用于明天启动', description: '没想好去向时先进收集箱；已选目标计划时，可直接追加为计划块。' },
-  { title: '复盘问题用于晚上收口', description: '把学习中的疑问转成今天需要回答的问题，帮助复盘更具体。' },
-  { title: '习惯实验保持小而短', description: '把方法转成 3-7 天的小实验，先验证有效，再决定是否长期坚持。' }
+  { title: '先进入收集箱', description: '所有不确定的学习输入先进入收集箱，避免自动创建错误计划。' },
+  { title: '能执行才算学习', description: '一条学习内容至少要能变成一个 20-30 分钟内可以验证的小动作。' },
+  { title: '方法要变成实验', description: '好方法不要直接长期坚持，先变成 3-7 天的小习惯实验。' },
+  { title: '疑问进入复盘', description: '没想清楚的问题沉到复盘里，晚上用真实结果回答。' }
 ]
 
-const categoryProgress = (categoryId) => {
-  const items = courses.value.filter((course) => String(course.categoryId) === String(categoryId))
-  const completed = items.filter((course) => course.isCompleted).length
-  const total = items.length
-  return {
-    total,
-    completed,
-    percent: total ? Math.round((completed / total) * 100) : 0
-  }
+const libraryRoadmap = [
+  { title: '真实来源池', description: '优先接热点、收藏、用户输入和管理员精选。' },
+  { title: 'Mentor-X 组织', description: '根据目标和执行状态推荐今天该学什么。' },
+  { title: '个人知识库', description: '等资产足够后再沉淀长期偏好、方法和经验。' }
+]
+
+const dailyActions = computed(() => {
+  const items = Array.isArray(dailyCard.value?.actionItems) ? dailyCard.value.actionItems : []
+  return items.length ? items : ['选择一个真实输入来源', '写下一句学习笔记', '把一个收获转成行动']
+})
+
+const focusCapture = () => {
+  const textarea = document.querySelector('[data-learning-capture]')
+  if (!textarea) return
+  textarea.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  textarea.focus()
 }
 
-const categoryPathStatus = (categoryId) => {
-  const progress = categoryProgress(categoryId)
-  if (!progress.total) return '待补内容'
-  if (progress.completed === 0) return '未开始'
-  if (progress.completed >= progress.total) return '已完成'
-  return '推进中'
+const formatConfidence = (value) => {
+  const number = Number(value)
+  if (!Number.isFinite(number)) return '建议'
+  const percent = number <= 1 ? Math.round(number * 100) : Math.round(number)
+  return `${Math.max(0, Math.min(100, percent))}%`
 }
-
-const categoryNextCourseTitle = (categoryId) => {
-  const nextCourse = courses.value.find((course) => String(course.categoryId) === String(categoryId) && !course.isCompleted)
-  if (nextCourse) return nextCourse.title
-  const fallbackCourse = courses.value.find((course) => String(course.categoryId) === String(categoryId))
-  return fallbackCourse ? '回顾笔记' : '等待课程'
-}
-
-const formatDuration = (duration) => `${Number(duration || 0)} 分钟`
 
 const formatDateTime = (value) => {
   if (!value) return '刚刚'
@@ -508,25 +392,59 @@ const formatDateTime = (value) => {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
 }
 
-const goToCourse = (course) => {
-  router.push(`/learning/course/${course.id}`)
-}
-
-const goToNoteCourse = (note) => {
-  if (note?.courseId) router.push(`/learning/course/${note.courseId}`)
-}
-
-const openDailyCardCourse = () => {
-  if (dailyCard.value?.recommendedCourseId) router.push(`/learning/course/${dailyCard.value.recommendedCourseId}`)
-}
-
-const openRecommendedCourse = () => {
-  if (recommendedCourse.value) goToCourse(recommendedCourse.value)
-}
-
 const applyOutputTemplate = (template) => {
   const current = learningCapture.value.trim()
   learningCapture.value = current ? `${current}\n${template.content}` : template.content
+}
+
+const buildLearningMentorBlocks = () => [
+  { type: 'learning_input', text: learningCapture.value.trim() || '暂无手动学习输入' },
+  { type: 'daily_learning_card', text: dailyCard.value ? `${dailyCard.value.title || ''}\n${dailyCard.value.summary || ''}\n${dailyCard.value.rationale || ''}` : '今日学习卡片未启用或暂无卡片' },
+  { type: 'learning_assets', text: recentNotes.value.map((note) => `${note.courseTitle || '学习资产'}：${note.excerpt || note.content || ''}`).join('\n') || '暂无学习资产' },
+  { type: 'active_plans', text: activePlans.value.slice(0, 8).map((plan) => plan.title).join('；') || '暂无可承接计划' },
+  { type: 'active_habits', text: habits.value.slice(0, 8).map((habit) => habit.name).join('；') || '暂无可承接习惯' },
+  { type: 'active_tracks', text: activeTracks.value.slice(0, 8).map((track) => track.name).join('；') || '暂无长期轨道' }
+]
+
+const askLearningMentor = async (prompt) => {
+  if (isMentorLoading.value) return
+  if (!learningCapture.value.trim() && !dailyCard.value && !recentNotes.value.length && !activePlans.value.length) {
+    error('请先记录学习输入', { description: 'Mentor-X 需要真实输入、计划或学习资产作为判断依据。' })
+    focusCapture()
+    return
+  }
+
+  isMentorLoading.value = true
+  mentorReply.value = ''
+  mentorActions.value = []
+
+  try {
+    const response = await chatWithMascotAssistant({
+      message: prompt,
+      providerId: workspaceAiStore.normalizedSelectedProviderId,
+      context: {
+        planTitle: '学习工作台 v2',
+        blocks: buildLearningMentorBlocks()
+      }
+    })
+
+    if (!response?.success) {
+      if (response?.code === 'AI_NOT_CONFIGURED') {
+        error('需要先配置 Mentor-X 模型引擎', { description: '配置后才能基于真实学习输入生成建议。' })
+        return
+      }
+      throw new Error(response?.error || response?.message || 'Mentor-X 暂时无法生成学习建议')
+    }
+
+    const payload = response.data || {}
+    mentorReply.value = payload.reply || payload.answer || payload.message || 'Mentor-X 没有返回可用内容。'
+    const actions = Array.isArray(payload.actionPlan?.actions) ? payload.actionPlan.actions : Array.isArray(payload.proposedActions) ? payload.proposedActions : []
+    mentorActions.value = actions.slice(0, 3)
+  } catch (err) {
+    error('Mentor-X 学习建议失败', { description: err.message || '请稍后重试' })
+  } finally {
+    isMentorLoading.value = false
+  }
 }
 
 const submitLearningCapture = async () => {
@@ -535,23 +453,26 @@ const submitLearningCapture = async () => {
     error('请先写下学习内容')
     return
   }
+
   isCapturing.value = true
   const response = await createQuickCapture({ type: 'learning', content })
   isCapturing.value = false
+
   if (!response.success) {
     error('学习收集失败', { description: response.error || '请稍后重试' })
     return
   }
+
   learningCapture.value = ''
-  success('已加入学习收集')
+  success('已加入学习收集', { description: '下一步可以把它转成计划、习惯实验或复盘问题。' })
 }
 
 const buildDailyCardActionContent = () => {
   const card = dailyCard.value || {}
   const lines = [
-    '【今日学习行动】',
+    '【今日学习输入】',
     `主题：${card.focusCategoryName || '今日学习'}`,
-    `卡片：${card.title || '未命名学习卡片'}`,
+    `标题：${card.title || '未命名学习卡片'}`,
     `摘要：${card.summary || '暂无摘要'}`,
     `为什么是今天：${card.rationale || '根据当前学习节奏安排一个小输入。'}`
   ]
@@ -559,7 +480,7 @@ const buildDailyCardActionContent = () => {
     lines.push(`行动 ${index + 1}：${item}`)
   })
   if (card.reflectionQuestion) lines.push(`复盘问题：${card.reflectionQuestion}`)
-  lines.push('处理建议：先放入收集箱，确认后再转成计划块或今日复盘。')
+  lines.push('处理建议：先放入收集箱，确认后再转成计划块、习惯实验或今日复盘。')
   return lines.join('\n')
 }
 
@@ -571,17 +492,19 @@ const convertDailyCardToCapture = async () => {
     content: buildDailyCardActionContent()
   })
   dailyCardActionLoading.value = false
+
   if (!response.success) {
-    error('今日学习行动整理失败', { description: response.error || '请稍后重试' })
+    error('今日学习输入整理失败', { description: response.error || '请稍后重试' })
     return
   }
-  success('已加入收集箱', { description: '今日学习卡片会等待你确认后再转成计划或复盘。' })
+
+  success('已加入收集箱', { description: '这条学习输入会等待你确认后再转化。' })
 }
 
 const buildNoteBaseLines = (note) => [
-  `来源课程：${note.courseTitle || '未命名课程'}`,
-  `学习主题：${note.category || '学习课程'}`,
-  `原始笔记：${note.content || note.excerpt || '暂无具体笔记内容'}`
+  `来源：${note.courseTitle || '学习输入'}`,
+  `学习主题：${note.category || '学习资产'}`,
+  `原始内容：${note.content || note.excerpt || '暂无具体笔记内容'}`
 ]
 
 const buildNotePlanActionContent = (note) => [
@@ -604,6 +527,10 @@ const buildNoteTrackContent = (note) => [
   '沉淀方式：把这条学习收获放入长期轨道，用于后续复盘趋势和下一步行动。',
   '下一步：从这条沉淀里挑一个能在今天或明天验证的小动作。'
 ].join('\n')
+
+const goToNoteCourse = (note) => {
+  if (note?.courseId) router.push(`/learning/course/${note.courseId}`)
+}
 
 const convertNoteToReviewQuestion = async (note) => {
   if (!note?.id || noteActionId.value) return
@@ -648,7 +575,7 @@ const convertNoteToPlanAction = async (note) => {
 const convertNoteToPlanBlock = async (note) => {
   if (!note?.id || noteActionId.value) return
   if (!selectedActionPlanId.value) {
-    error('请先选择目标计划', { description: '选择后才能把学习笔记追加为计划块。' })
+    error('请先选择目标计划', { description: '选择后才能把学习资产追加为计划块。' })
     return
   }
 
@@ -688,9 +615,7 @@ const convertNoteToPlanBlock = async (note) => {
 const convertNoteToHabitExperiment = async (note) => {
   if (!note?.id || noteActionId.value) return
   noteActionId.value = note.id
-  const content = buildNoteHabitExperimentContent(note)
-
-  const response = await createQuickCapture({ type: 'habit', content })
+  const response = await createQuickCapture({ type: 'habit', content: buildNoteHabitExperimentContent(note) })
   noteActionId.value = null
 
   if (!response.success) {
@@ -699,46 +624,6 @@ const convertNoteToHabitExperiment = async (note) => {
   }
 
   success('已加入收集箱', { description: '习惯实验会在收集箱里等待确认。' })
-}
-
-const convertNoteToHabitComment = async (note) => {
-  if (!note?.id || noteActionId.value) return
-  if (!selectedTargetHabitId.value) {
-    error('请先选择目标习惯', { description: '选择后才能把学习实验追加为习惯备注。' })
-    return
-  }
-
-  noteActionId.value = note.id
-  const captureResponse = await createQuickCapture({
-    type: 'habit',
-    content: buildNoteHabitExperimentContent(note)
-  })
-
-  if (!captureResponse.success) {
-    noteActionId.value = null
-    error('创建习惯实验失败', { description: captureResponse.error || '请稍后重试' })
-    return
-  }
-
-  const captureId = captureResponse.data?.id
-  if (!captureId) {
-    noteActionId.value = null
-    error('创建习惯实验失败', { description: '后端没有返回收集记录编号。' })
-    return
-  }
-
-  const linkResponse = await linkQuickCapture(captureId, {
-    targetType: 'habit_comment',
-    habitId: Number(selectedTargetHabitId.value)
-  })
-  noteActionId.value = null
-
-  if (!linkResponse.success) {
-    error('追加到习惯失败', { description: linkResponse.error || '实验已进入收集箱，可稍后手动整理。' })
-    return
-  }
-
-  success('已追加到习惯', { description: '学习实验已经写入该习惯的今日备注。' })
 }
 
 const convertNoteToTrack = async (note) => {
@@ -809,11 +694,11 @@ const loadLearningNotes = async () => {
   isNotesLoading.value = true
   try {
     const response = await learningAPI.listLearningNotes({ limit: 20 })
-    if (!response.success) throw new Error(response.error || '学习笔记加载失败')
+    if (!response.success) throw new Error(response.error || '学习资产加载失败')
     learningNotes.value = Array.isArray(response.data?.notes) ? response.data.notes : []
     learningNoteTotal.value = Number(response.data?.total || learningNotes.value.length)
   } catch (err) {
-    error('学习笔记加载失败', { description: err.message || '请稍后重试' })
+    error('学习资产加载失败', { description: err.message || '请稍后重试' })
   } finally {
     isNotesLoading.value = false
   }
@@ -822,25 +707,17 @@ const loadLearningNotes = async () => {
 const loadData = async () => {
   isLoading.value = true
   try {
-    const [categoriesResponse, coursesResponse, plansResponse, habitsResponse, tracksResponse] = await Promise.all([
-      learningAPI.getCourseCategories(),
-      learningAPI.getCourses({ limit: 100 }),
+    const [plansResponse, habitsResponse, tracksResponse] = await Promise.all([
       listPlans(),
       getHabits(),
       listTracks()
     ])
 
-    if (!categoriesResponse.success) throw new Error(categoriesResponse.error || '学习分类加载失败')
-    if (!coursesResponse.success) throw new Error(coursesResponse.error || '课程列表加载失败')
-
-    categories.value = Array.isArray(categoriesResponse.data) ? categoriesResponse.data : []
-    courses.value = Array.isArray(coursesResponse.data?.courses) ? coursesResponse.data.courses : []
-    overview.value = coursesResponse.data?.summary || overview.value
     if (plansResponse.success) plans.value = Array.isArray(plansResponse.data) ? plansResponse.data : []
     if (habitsResponse.success) habits.value = Array.isArray(habitsResponse.data) ? habitsResponse.data : []
     if (tracksResponse.success) tracks.value = Array.isArray(tracksResponse.data) ? tracksResponse.data : []
   } catch (err) {
-    error('学习内容加载失败', { description: err.message || '请稍后重试' })
+    error('学习状态加载失败', { description: err.message || '请稍后重试' })
   } finally {
     isLoading.value = false
   }
@@ -881,6 +758,47 @@ onMounted(async () => {
   border: 1px solid rgba(212, 212, 216, 0.85);
   border-radius: 1.4rem;
   background: rgba(250, 250, 250, 0.78);
+  padding: 1rem;
+}
+
+.learning-source-card {
+  min-height: 8.25rem;
+  border: 1px solid rgba(212, 212, 216, 0.82);
+  border-radius: 1.55rem;
+  background: rgba(255, 255, 255, 0.82);
+  padding: 1rem;
+  box-shadow: 0 16px 34px rgba(24, 24, 27, 0.05);
+  backdrop-filter: blur(18px);
+}
+
+.learning-source-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.25rem;
+  height: 1.75rem;
+  margin-bottom: 0.8rem;
+  border-radius: 999px;
+  background: rgb(24, 24, 27);
+  color: white;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.learning-mentor-panel {
+  border: 1px solid rgba(212, 212, 216, 0.9);
+  border-radius: 1.6rem;
+  background:
+    radial-gradient(circle at 92% 10%, rgba(24, 24, 27, 0.08), transparent 34%),
+    rgba(250, 250, 250, 0.84);
+  padding: 1.15rem;
+}
+
+.learning-mentor-action {
+  border: 1px solid rgba(212, 212, 216, 0.88);
+  border-radius: 1.25rem;
+  background: rgba(255, 255, 255, 0.78);
   padding: 1rem;
 }
 
@@ -1069,12 +987,16 @@ onMounted(async () => {
 .dark .learning-metric-card,
 .dark .learning-daily-card,
 .dark .learning-action-step,
-.dark .learning-note-card {
+.dark .learning-note-card,
+.dark .learning-source-card,
+.dark .learning-mentor-panel,
+.dark .learning-mentor-action {
   border-color: rgba(63, 63, 70, 0.9);
   background: rgba(24, 24, 27, 0.82);
 }
 
 .dark .learning-step-index,
+.dark .learning-source-index,
 .dark .learning-primary-button {
   background: white;
   color: rgb(24, 24, 27);

@@ -9,6 +9,15 @@
             这不是功能清单，而是一条使用路线：先收集，再判断，写成计划，安排执行，最后复盘进轨道。
             每天只围绕三个问题推进：今天最重要的是什么、现在做哪一步、结果如何沉淀。
           </p>
+
+
+          <div class="guide-visual-strip" aria-label="产品作用图解">
+            <article v-for="card in productStoryCards" :key="card.title">
+              <span>{{ card.icon }}</span>
+              <strong>{{ card.title }}</strong>
+              <small>{{ card.description }}</small>
+            </article>
+          </div>
           <div class="guide-actions">
             <router-link class="workbench-primary" to="/dashboard">从今日开始</router-link>
             <router-link class="workbench-secondary" to="/plan">打开计划</router-link>
@@ -29,6 +38,7 @@
           <a v-for="section in guideSections" :key="section.id" :href="`#${section.id}`">
             {{ section.title }}
           </a>
+          <a href="#faq">常见问题</a>
         </aside>
 
         <div class="guide-content">
@@ -84,7 +94,19 @@
           </section>
         </div>
       </section>
-    </main>
+      <section id="faq" class="guide-section workbench-panel">
+        <div class="guide-section-head">
+          <p class="workbench-eyebrow">FAQ</p>
+          <h2>新用户常见疑问</h2>
+          <p>把第一次使用最容易卡住的问题提前讲清楚，避免用户打开后不知道下一步。</p>
+        </div>
+        <div class="guide-faq-list">
+          <article v-for="item in faqItems" :key="item.question">
+            <h3>{{ item.question }}</h3>
+            <p>{{ item.answer }}</p>
+          </article>
+        </div>
+      </section>    </main>
   </AppLayout>
 </template>
 
@@ -101,6 +123,62 @@ const goBack = () => {
   }
   router.push('/profile')
 }
+
+
+
+const productStoryCards = [
+  {
+    icon: '看',
+    title: '看清真实状态',
+    description: '今日页把计划、习惯、专注、收集和内容创作压缩成当前事实。'
+  },
+  {
+    icon: '选',
+    title: '选择最小下一步',
+    description: '热点雷达、计划和 Mentor-X 都服务于一个目标：减少犹豫。'
+  },
+  {
+    icon: '做',
+    title: '进入真实执行',
+    description: '通过今日三件事、日程块和专注，把想法推进成可验证结果。'
+  },
+  {
+    icon: '复',
+    title: '沉淀长期能力',
+    description: '复盘和轨道把一次次完成记录沉淀成长期趋势。'
+  }
+]
+
+const faqItems = [
+  {
+    question: '习知和普通待办软件有什么区别？',
+    answer: '普通待办更像清单，习知更像个人工作台。它不仅记录任务，还把热点、选题、计划、专注、复盘和 Mentor-X 决策串起来，帮助你每天知道先做什么。'
+  },
+  {
+    question: '我第一次进来应该先用哪个功能？',
+    answer: '先从今日页开始。如果你已经有明确目标，就创建计划；如果你是创作者但不知道写什么，就打开热点雷达；如果你很乱，就直接问 Mentor-X 今天先做什么。'
+  },
+  {
+    question: '热点雷达适合所有人吗？',
+    answer: '最适合创作者、独立开发者、自媒体运营和需要持续观察趋势的人。它不是让你追热点，而是把高价值信号转成可以执行的选题。'
+  },
+  {
+    question: 'Mentor-X 是不是一个模型？',
+    answer: '不是。Mentor-X 是习知里的个人工作流智能体，外部模型只是推理引擎。真正的价值来自上下文、记忆、决策规则和确认执行工作流。'
+  },
+  {
+    question: '为什么 Mentor-X 不能直接替我完成所有操作？',
+    answer: '第一版坚持用户确认后再真实写入，避免 AI 编造完成、误删数据或越权操作。它可以建议和编排，但关键动作需要你确认。'
+  },
+  {
+    question: '如果我只是想管理生活习惯，也能用吗？',
+    answer: '可以。你可以只使用今日页、习惯、计划、专注和复盘。热点雷达和内容创作是给创作者的增强链路，不会强迫使用。'
+  },
+  {
+    question: '我应该怎么反馈问题？',
+    answer: '点击侧边栏或工作区里的反馈共创入口，加入微信群或关注公众号。早期共创用户的反馈会直接影响功能优先级。'
+  }
+]
 
 const loopSteps = [
   '快速收集',
@@ -414,13 +492,14 @@ const guideSections = [
 .guide-hero-card {
   align-self: stretch;
   border: 1px solid var(--workbench-border);
-  border-radius: calc(var(--workbench-radius) * 1.25);
-  background: rgb(255 255 255 / 0.54);
+  border-radius: calc(var(--workbench-radius) * 1.02);
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--workbench-glass-highlight) 46%, transparent), transparent 54%),
+    var(--workbench-surface-muted);
   padding: 1rem;
-}
-
-.dark .guide-hero-card {
-  background: rgb(24 24 27 / 0.46);
+  box-shadow: inset 0 1px 0 var(--workbench-glass-highlight);
+  backdrop-filter: blur(calc(var(--workbench-backdrop-blur) * 0.72)) saturate(150%);
+  -webkit-backdrop-filter: blur(calc(var(--workbench-backdrop-blur) * 0.72)) saturate(150%);
 }
 
 .guide-hero-card span {
@@ -520,8 +599,11 @@ const guideSections = [
 .guide-step-card,
 .guide-feature-row {
   border: 1px solid var(--workbench-border);
-  border-radius: calc(var(--workbench-radius) * 0.9);
-  background: var(--workbench-surface-muted);
+  border-radius: calc(var(--workbench-radius) * 0.82);
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--workbench-glass-highlight) 42%, transparent), transparent 54%),
+    var(--workbench-surface-muted);
+  box-shadow: inset 0 1px 0 var(--workbench-glass-highlight);
 }
 
 .guide-step-card {
@@ -584,8 +666,80 @@ const guideSections = [
   color: rgb(var(--workbench-accent-rgb));
 }
 
+
+
+.guide-visual-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin-top: 1.2rem;
+}
+
+.guide-visual-strip article,
+.guide-faq-list article {
+  display: grid;
+  gap: 0.42rem;
+  border: 1px solid var(--workbench-border);
+  border-radius: calc(var(--workbench-radius) * 0.78);
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--workbench-glass-highlight) 48%, transparent), transparent 52%),
+    var(--workbench-surface-muted);
+  padding: 0.9rem;
+  box-shadow: inset 0 1px 0 var(--workbench-glass-highlight);
+  backdrop-filter: blur(calc(var(--workbench-backdrop-blur) * 0.62)) saturate(150%);
+  -webkit-backdrop-filter: blur(calc(var(--workbench-backdrop-blur) * 0.62)) saturate(150%);
+  transition: transform var(--workbench-motion-duration) var(--workbench-ease), border-color var(--workbench-motion-duration) var(--workbench-ease), box-shadow var(--workbench-motion-duration) var(--workbench-ease);
+}
+
+.guide-visual-strip article:hover,
+.guide-faq-list article:hover {
+  border-color: rgb(var(--workbench-accent-rgb) / 0.26);
+  box-shadow:
+    inset 0 1px 0 var(--workbench-glass-highlight),
+    0 12px 30px color-mix(in srgb, var(--workbench-glass-shadow) 70%, transparent);
+  transform: translateY(-2px);
+}
+
+.guide-visual-strip span {
+  display: grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--workbench-text);
+  color: var(--workbench-page);
+  font-size: 0.86rem;
+  font-weight: 880;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.18);
+}
+
+.guide-visual-strip strong,
+.guide-faq-list h3 {
+  margin: 0;
+  color: var(--workbench-text);
+  font-size: 0.92rem;
+  font-weight: 820;
+  line-height: 1.4;
+}
+
+.guide-visual-strip small,
+.guide-faq-list p {
+  margin: 0;
+  color: var(--workbench-text-muted);
+  font-size: 0.74rem;
+  line-height: 1.65;
+}
+
+.guide-faq-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
 @media (max-width: 1100px) {
-  .guide-step-grid {
+  .guide-step-grid,
+  .guide-visual-strip,
+  .guide-faq-list {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -628,7 +782,9 @@ const guideSections = [
     font-size: clamp(2rem, 12vw, 3.1rem);
   }
 
-  .guide-step-grid {
+  .guide-step-grid,
+  .guide-visual-strip,
+  .guide-faq-list {
     grid-template-columns: 1fr;
   }
 
@@ -644,3 +800,4 @@ const guideSections = [
   }
 }
 </style>
+

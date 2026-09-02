@@ -39,7 +39,7 @@
       <span>
         <small>内容创作</small>
         <strong>{{ creatorNextAction.title }}</strong>
-        <em>{{ creatorCounts.trend || 0 }} 条热点 · {{ creatorCounts.drafting || 0 }} 条写作中 · {{ creatorCounts.scheduled || 0 }} 条待发布</em>
+        <em>{{ creatorCounts.trend || 0 }} 条信号 · {{ creatorCounts.drafting || 0 }} 条写作中 · {{ creatorCounts.scheduled || 0 }} 条待发布</em>
       </span>
       <span>→</span>
     </button>

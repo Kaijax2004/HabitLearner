@@ -264,6 +264,76 @@
               <button type="button" class="admin-primary-button w-full" @click="openMailCenter">打开邮件中心</button>
             </section>
 
+            <section class="admin-side-card admin-feedback-config-card">
+              <p class="admin-kicker">Feedback Hub</p>
+              <h3>反馈入口配置</h3>
+              <p>维护反馈页展示的共创群二维码、公众号截图和说明文案，保存后用户刷新反馈页即可看到最新内容。</p>
+
+              <div v-if="feedbackConfigStatus" class="admin-config-status">{{ feedbackConfigStatus }}</div>
+
+              <div class="admin-config-form">
+                <label>
+                  <span>页面主标题</span>
+                  <input v-model.trim="feedbackConfigForm.hero.title" class="admin-input" maxlength="120" />
+                </label>
+                <label>
+                  <span>页面说明</span>
+                  <textarea v-model.trim="feedbackConfigForm.hero.description" class="admin-input" rows="3" maxlength="500"></textarea>
+                </label>
+              </div>
+
+              <div class="admin-feedback-assets">
+                <article>
+                  <div class="admin-feedback-preview">
+                    <img v-if="feedbackGroupImage" :src="feedbackGroupImage" alt="微信群二维码预览" />
+                    <span v-else>未上传微信群二维码</span>
+                  </div>
+                  <label>
+                    <span>微信群标题</span>
+                    <input v-model.trim="feedbackConfigForm.wechatGroup.title" class="admin-input" maxlength="80" />
+                  </label>
+                  <label>
+                    <span>微信群说明</span>
+                    <textarea v-model.trim="feedbackConfigForm.wechatGroup.description" class="admin-input" rows="3" maxlength="500"></textarea>
+                  </label>
+                  <label class="admin-upload-button">
+                    <input type="file" accept="image/*" :disabled="Boolean(feedbackUploadingKey)" @change="uploadFeedbackImage('wechatGroupQr', $event)" />
+                    {{ feedbackUploadingKey === 'wechatGroupQr' ? '上传中...' : '上传微信群二维码' }}
+                  </label>
+                </article>
+
+                <article>
+                  <div class="admin-feedback-preview">
+                    <img v-if="feedbackOfficialImage" :src="feedbackOfficialImage" alt="公众号截图预览" />
+                    <span v-else>未上传公众号截图</span>
+                  </div>
+                  <label>
+                    <span>公众号标题</span>
+                    <input v-model.trim="feedbackConfigForm.officialAccount.title" class="admin-input" maxlength="80" />
+                  </label>
+                  <label>
+                    <span>公众号说明</span>
+                    <textarea v-model.trim="feedbackConfigForm.officialAccount.description" class="admin-input" rows="3" maxlength="500"></textarea>
+                  </label>
+                  <label>
+                    <span>公众号链接</span>
+                    <input v-model.trim="feedbackConfigForm.officialAccount.url" class="admin-input" placeholder="https://..." />
+                  </label>
+                  <label class="admin-upload-button">
+                    <input type="file" accept="image/*" :disabled="Boolean(feedbackUploadingKey)" @change="uploadFeedbackImage('officialAccountQr', $event)" />
+                    {{ feedbackUploadingKey === 'officialAccountQr' ? '上传中...' : '上传公众号截图' }}
+                  </label>
+                </article>
+              </div>
+
+              <div class="admin-config-actions">
+                <button type="button" class="admin-secondary-button" :disabled="isLoadingFeedbackConfig" @click="loadFeedbackConfig">重新加载</button>
+                <button type="button" class="admin-primary-button" :disabled="isSavingFeedbackConfig" @click="saveFeedbackConfig">
+                  {{ isSavingFeedbackConfig ? '保存中...' : '保存配置' }}
+                </button>
+              </div>
+            </section>
+
             <section class="admin-side-card">
               <p class="admin-kicker">Membership</p>
               <h3>会员权益预留</h3>
@@ -345,13 +415,14 @@
   </AppLayout>
 </template>
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import AppLayout from '@/components/AppLayout.vue'
 import AdminChinaGeoMap from '@/components/AdminChinaGeoMap.vue'
 import { useAuthStore } from '@/stores/auth'
-import { getAdminUserDetail, getAdminUsers, getAdminUsersAnalytics, getAdminUsersOverview } from '@/api/admin'
+import { getAdminFeedbackConfig, getAdminUserDetail, getAdminUsers, getAdminUsersAnalytics, getAdminUsersOverview, updateAdminFeedbackConfig, uploadAdminFeedbackImage } from '@/api/admin'
 import * as settingsAPI from '@/api/settings'
+import { resolveMediaUrl } from '@/utils/media.js'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -369,6 +440,16 @@ const isLoadingDetail = ref(false)
 const isLoadingAnalytics = ref(false)
 const errorMessage = ref('')
 const analyticsDays = ref(30)
+
+const isLoadingFeedbackConfig = ref(false)
+const isSavingFeedbackConfig = ref(false)
+const feedbackUploadingKey = ref('')
+const feedbackConfigStatus = ref('')
+const feedbackConfigForm = reactive({
+  hero: { title: '', description: '' },
+  wechatGroup: { title: '', description: '', qr: null },
+  officialAccount: { title: '', description: '', url: '', qr: null }
+})
 
 const filters = ref({
   q: '',
@@ -406,6 +487,9 @@ const locatedUsers = computed(() => regionAnalytics.value.locatedUsers || 0)
 const unknownUsers = computed(() => regionAnalytics.value.unknownUsers || 0)
 const recentLocatedUsers = computed(() => regionAnalytics.value.recentLocatedUsers || [])
 const ipLocationNote = computed(() => analytics.value.ipLocation?.note || 'IP 地区为运营分析推断结果，可能存在误差。')
+
+const feedbackGroupImage = computed(() => resolveFeedbackImage(feedbackConfigForm.wechatGroup.qr))
+const feedbackOfficialImage = computed(() => resolveFeedbackImage(feedbackConfigForm.officialAccount.qr))
 
 const chartTicks = [42, 88, 134, 180, 226]
 const chartMax = computed(() => Math.max(1, ...dailySeries.value.flatMap((item) => [item.registered || 0, item.loginActive || 0, item.behaviorActive || 0])))
@@ -481,6 +565,84 @@ const chartAreaPath = (field) => {
   const start = points[0]
   const end = points[points.length - 1]
   return `M ${start.x} 222 L ${points.map((point) => `${point.x} ${point.y}`).join(' L ')} L ${end.x} 222 Z`
+}
+
+const resolveFeedbackImage = (image) => {
+  if (!image) return ''
+  const value = image.publicUrl || image.absoluteUrl || image.displayUrl || image.path || ''
+  return resolveMediaUrl(value)
+}
+
+const applyFeedbackConfig = (payload = {}) => {
+  feedbackConfigForm.hero.title = payload.hero?.title || ''
+  feedbackConfigForm.hero.description = payload.hero?.description || ''
+  feedbackConfigForm.wechatGroup.title = payload.wechatGroup?.title || ''
+  feedbackConfigForm.wechatGroup.description = payload.wechatGroup?.description || ''
+  feedbackConfigForm.wechatGroup.qr = payload.wechatGroup?.qr || null
+  feedbackConfigForm.officialAccount.title = payload.officialAccount?.title || ''
+  feedbackConfigForm.officialAccount.description = payload.officialAccount?.description || ''
+  feedbackConfigForm.officialAccount.url = payload.officialAccount?.url || ''
+  feedbackConfigForm.officialAccount.qr = payload.officialAccount?.qr || null
+}
+
+const loadFeedbackConfig = async () => {
+  if (!isAdmin.value) return
+  isLoadingFeedbackConfig.value = true
+  feedbackConfigStatus.value = ''
+  try {
+    const response = await getAdminFeedbackConfig()
+    if (!response.success) throw new Error(response.error || '反馈配置加载失败')
+    applyFeedbackConfig(response.data || {})
+  } catch (error) {
+    feedbackConfigStatus.value = error.message || '反馈配置加载失败'
+  } finally {
+    isLoadingFeedbackConfig.value = false
+  }
+}
+
+const saveFeedbackConfig = async () => {
+  isSavingFeedbackConfig.value = true
+  feedbackConfigStatus.value = ''
+  try {
+    const response = await updateAdminFeedbackConfig({
+      hero: feedbackConfigForm.hero,
+      wechatGroup: {
+        title: feedbackConfigForm.wechatGroup.title,
+        description: feedbackConfigForm.wechatGroup.description
+      },
+      officialAccount: {
+        title: feedbackConfigForm.officialAccount.title,
+        description: feedbackConfigForm.officialAccount.description,
+        url: feedbackConfigForm.officialAccount.url
+      }
+    })
+    if (!response.success) throw new Error(response.error || '反馈配置保存失败')
+    applyFeedbackConfig(response.data || {})
+    feedbackConfigStatus.value = '反馈配置已保存，用户刷新反馈页即可看到最新内容。'
+  } catch (error) {
+    feedbackConfigStatus.value = error.message || '反馈配置保存失败'
+  } finally {
+    isSavingFeedbackConfig.value = false
+  }
+}
+
+const uploadFeedbackImage = async (key, event) => {
+  const input = event?.target
+  const file = input?.files?.[0]
+  if (!file) return
+  feedbackUploadingKey.value = key
+  feedbackConfigStatus.value = ''
+  try {
+    const response = await uploadAdminFeedbackImage(key, file)
+    if (!response.success) throw new Error(response.error || '图片上传失败')
+    applyFeedbackConfig(response.data?.config || {})
+    feedbackConfigStatus.value = '图片已上传并保存，反馈页会使用新图片。'
+  } catch (error) {
+    feedbackConfigStatus.value = error.message || '图片上传失败'
+  } finally {
+    feedbackUploadingKey.value = ''
+    if (input) input.value = ''
+  }
 }
 
 const regionPercent = (region) => {
@@ -688,6 +850,22 @@ onMounted(() => {
 .admin-status-pill.is-complete { background: rgba(16, 185, 129, 0.12); color: rgb(4, 120, 87); }
 .admin-status-pill.is-pending { background: rgba(245, 158, 11, 0.14); color: rgb(180, 83, 9); }
 .admin-side-panel { display: grid; gap: 14px; }
+.admin-feedback-config-card { gap: 14px; }
+.admin-feedback-config-card, .admin-config-form, .admin-feedback-assets article { display: grid; }
+.admin-config-form, .admin-feedback-assets { gap: 12px; margin-top: 14px; }
+.admin-config-form label, .admin-feedback-assets label { display: grid; gap: 6px; color: rgb(113, 113, 122); font-size: 12px; font-weight: 750; }
+.admin-config-form textarea, .admin-feedback-assets textarea { min-height: 84px; resize: vertical; }
+.admin-feedback-assets { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.admin-feedback-assets article { gap: 10px; border: 1px solid rgba(228, 228, 231, 0.82); border-radius: 22px; background: rgba(250, 250, 250, 0.62); padding: 12px; }
+.dark .admin-feedback-assets article { border-color: rgba(63, 63, 70, 0.9); background: rgba(39, 39, 42, 0.58); }
+.admin-feedback-preview { display: grid; aspect-ratio: 1; place-items: center; overflow: hidden; border: 1px dashed rgba(161, 161, 170, 0.8); border-radius: 18px; background: rgba(244, 244, 245, 0.76); color: rgb(113, 113, 122); font-size: 12px; text-align: center; }
+.dark .admin-feedback-preview { border-color: rgba(82, 82, 91, 0.9); background: rgba(24, 24, 27, 0.62); }
+.admin-feedback-preview img { width: 100%; height: 100%; object-fit: cover; }
+.admin-upload-button { display: grid !important; place-items: center; min-height: 42px; cursor: pointer; border-radius: 999px; background: rgb(24, 24, 27); color: white !important; font-size: 13px !important; font-weight: 800 !important; text-align: center; }
+.admin-upload-button input { display: none; }
+.admin-config-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+.admin-config-status { border-radius: 16px; background: rgba(244, 244, 245, 0.88); padding: 12px; color: rgb(63, 63, 70); font-size: 12px; line-height: 1.6; }
+.dark .admin-config-status { background: rgba(39, 39, 42, 0.75); color: rgb(212, 212, 216); }
 .admin-error, .admin-loading, .admin-empty-inline, .admin-skeleton-chart { margin-top: 14px; border-radius: 18px; background: rgba(244, 244, 245, 0.85); padding: 18px; color: rgb(113, 113, 122); text-align: center; }
 .admin-skeleton-chart { min-height: 238px; background: linear-gradient(90deg, rgba(244, 244, 245, 0.6), rgba(228, 228, 231, 0.9), rgba(244, 244, 245, 0.6)); background-size: 220% 100%; animation: adminShimmer 1.3s ease-in-out infinite; }
 .admin-error { background: rgba(254, 226, 226, 0.8); color: rgb(185, 28, 28); }
@@ -717,6 +895,6 @@ onMounted(() => {
 @media (prefers-reduced-motion: reduce) { .admin-skeleton-chart { animation: none; } .admin-primary-button, .admin-secondary-button, .admin-user-row, .admin-located-list button { transition: none; } }
 @media (max-width: 1280px) { .admin-metric-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } .admin-radar-grid, .admin-map-layout, .admin-layout { grid-template-columns: 1fr; } }
 @media (max-width: 920px) { .admin-map-content { grid-template-columns: 1fr; } .admin-filter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 720px) { .admin-hero { align-items: stretch; flex-direction: column; } .admin-hero-actions, .admin-pagination { flex-wrap: wrap; } .admin-metric-grid, .admin-filter-grid, .admin-user-row { grid-template-columns: 1fr; } .admin-behavior-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 720px) { .admin-feedback-assets, .admin-hero { align-items: stretch; flex-direction: column; } .admin-hero-actions, .admin-pagination { flex-wrap: wrap; } .admin-metric-grid, .admin-filter-grid, .admin-user-row { grid-template-columns: 1fr; } .admin-behavior-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 </style>
 

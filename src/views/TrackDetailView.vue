@@ -487,7 +487,7 @@ const metricCards = computed(() => {
   if (type === 'learning') {
     return [
       { label: '学习笔记', value: metrics.noteCount || 0, hint: '已沉淀的学习笔记数量' },
-      { label: '完成课程', value: metrics.completionCount || 0, hint: '已经完成的微课程数量' },
+      { label: '学习完成', value: metrics.completionCount || 0, hint: '已经完成的学习记录数量' },
       { label: '7 天活动', value: metrics.weekActivity || 0, hint: '最近 7 天学习笔记与完成记录合计' },
       { label: '轨道沉淀', value: trackLearningNotes.value.length, hint: '从学习页直接沉淀到这条轨道的记录' }
     ]
@@ -511,9 +511,9 @@ const metricCards = computed(() => {
 
   if (type === 'pipeline') {
     return [
-      { label: '内容阶段', value: '7', hint: '热点到复盘的完整流水线阶段' },
+      { label: '内容阶段', value: '7', hint: '信号到复盘的完整流水线阶段' },
       { label: '今日重点', value: '选题', hint: '先从一个真实来源开始推进' },
-      { label: '下一步', value: '研究', hint: '把热点转成可验证的内容角度' }
+      { label: '下一步', value: '研究', hint: '把信号转成可验证的内容角度' }
     ]
   }
 
@@ -611,7 +611,7 @@ const nextStepSuggestions = computed(() => {
   if (type === 'pipeline') {
     return [
       {
-        title: weakTrend ? '先放入一个真实热点或选题' : '推进当前内容阶段',
+        title: weakTrend ? '先放入一个真实信号或选题' : '推进当前内容阶段',
         description: '内容轨道不追求一次写完，先让一个条目从收件箱向前移动。',
         actionLabel: '打开内容创作',
         action: () => router.push('/creator')

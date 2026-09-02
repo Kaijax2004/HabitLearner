@@ -14,6 +14,13 @@
         @remove-priority="removeTodayPriority"
       />
 
+      <FirstStepGuide
+        v-if="shouldShowFirstStepGuide"
+        :stats="firstStepStats"
+        @select="handleFirstStepSelect"
+        @dismiss="dismissFirstStepGuide"
+      />
+
       <div v-if="workspaceError" class="dashboard-error">{{ workspaceError }}</div>
 
       <section class="dashboard-main-grid">
@@ -99,6 +106,7 @@ import DashboardExecution from '@/views/dashboard/DashboardExecution.vue'
 import DashboardStatus from '@/views/dashboard/DashboardStatus.vue'
 import DashboardLoop from '@/views/dashboard/DashboardLoop.vue'
 import DashboardHabitManager from '@/views/dashboard/DashboardHabitManager.vue'
+import FirstStepGuide from '@/components/FirstStepGuide.vue'
 import {
   chatWithMascotAssistant,
   getWorkspaceBootstrap,
@@ -121,6 +129,7 @@ const todayAiLoading = ref(false)
 const todayAiRemoteAdvice = ref(null)
 const todayAiErrorCode = ref('')
 const todayAiErrorMessage = ref('')
+const isFirstStepDismissed = ref(localStorage.getItem('habitlearner:first-step-dismissed') === '1')
 
 const user = computed(() => authStore.user)
 
@@ -137,7 +146,7 @@ const creatorNextAction = computed(() => {
   const item = creatorSnapshot.value.nextItem
   if (!item) {
     return {
-      title: '先记录一个热点或选题',
+      title: '先记录一个信号或选题',
       description: '把灵感放进内容流水线，后续再决定是否写作。'
     }
   }
@@ -231,6 +240,23 @@ const greeting = computed(() => {
 const dashboardGreeting = computed(() => {
   const name = user.value?.name?.trim()
   return name ? `${greeting.value} ${name}` : greeting.value
+})
+
+const firstStepStats = computed(() => ({
+  plans: Number(workspaceToday.value?.statusBar?.todayPlanCount || 0),
+  priorities: selectedPriorityItems.value.length,
+  captures: pendingCaptureCount.value,
+  creatorItems: Number(creatorSnapshot.value.total || 0)
+}))
+
+const shouldShowFirstStepGuide = computed(() => {
+  if (isFirstStepDismissed.value || isWorkspaceLoading.value || !workspaceToday.value) return false
+  const hasStarted = firstStepStats.value.plans > 0
+    || firstStepStats.value.priorities > 0
+    || firstStepStats.value.captures > 0
+    || firstStepStats.value.creatorItems > 0
+    || Number(workspaceToday.value?.statusBar?.focusMinutes || 0) > 0
+  return !hasStarted
 })
 
 const loadWorkspaceToday = async ({ force = false } = {}) => {
@@ -349,6 +375,26 @@ const handlePrimaryDashboardAction = async () => {
     label: primaryDashboardAction.value?.label || ''
   })
   primaryDashboardAction.value?.action?.()
+}
+
+const handleFirstStepSelect = async (key) => {
+  await recordDashboardEvent('onboarding.first_step_click', { key })
+  if (key === 'mentor') {
+    await generateTodayAiAdvice()
+    return
+  }
+  const target = {
+    plan: '/plan',
+    hotspots: '/hotspots',
+    guide: '/guide'
+  }[key]
+  if (target) router.push(target)
+}
+
+const dismissFirstStepGuide = async () => {
+  isFirstStepDismissed.value = true
+  localStorage.setItem('habitlearner:first-step-dismissed', '1')
+  await recordDashboardEvent('onboarding.first_step_dismiss', firstStepStats.value)
 }
 
 const dayPreviewItems = (day) => {
@@ -555,6 +601,11 @@ const generateTodayAiAdvice = async () => {
 
 onMounted(async () => {
   await loadWorkspaceToday()
+  recordDashboardEvent('workspace.today.view', {
+    hasPriorities: selectedPriorityItems.value.length > 0,
+    scheduleCount: todayScheduleBlocks.value.length,
+    showFirstStepGuide: shouldShowFirstStepGuide.value
+  })
   recordDashboardEvent('dashboard_daily_start_view', {
     hasPriorities: selectedPriorityItems.value.length > 0,
     scheduleCount: todayScheduleBlocks.value.length
@@ -592,3 +643,5 @@ onMounted(async () => {
   }
 }
 </style>
+
+

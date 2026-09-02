@@ -16,6 +16,7 @@ const routes = [
   { path: '/insights', name: 'Insights', component: () => import('@/views/InsightsView.vue'), meta: { requiresAuth: true } },
   { path: '/tracks', name: 'Tracks', component: () => import('@/views/TracksView.vue'), meta: { requiresAuth: true } },
   { path: '/tracks/:id', name: 'TrackDetail', component: () => import('@/views/TrackDetailView.vue'), meta: { requiresAuth: true } },
+  { path: '/hotspots', name: 'HotspotRadar', component: () => import('@/views/HotspotRadarView.vue'), meta: { requiresAuth: true } },
   { path: '/creator', name: 'CreatorWorkspace', component: () => import('@/views/CreatorWorkspaceView.vue'), meta: { requiresAuth: true } },
   { path: '/habit/create', name: 'HabitCreate', component: () => import('@/views/HabitFormView.vue'), meta: { requiresAuth: true } },
   { path: '/habit/:id', name: 'HabitDetail', component: () => import('@/views/HabitDetailView.vue'), meta: { requiresAuth: true } },
@@ -29,6 +30,7 @@ const routes = [
   { path: '/profile/pet-settings', name: 'PetSettings', component: () => import('@/views/PetSettingsView.vue'), meta: { requiresAuth: true } },
   { path: '/admin/users', name: 'AdminUsers', component: () => import('@/views/AdminUsersView.vue'), meta: { requiresAuth: true, requiresAdmin: true } },
   { path: '/guide', name: 'UsageGuide', component: () => import('@/views/UsageGuideView.vue'), meta: { requiresAuth: true } },
+  { path: '/feedback', name: 'Feedback', component: () => import('@/views/FeedbackView.vue'), meta: { requiresAuth: true } },
   { path: '/reminder-test', name: 'ReminderTest', component: () => import('@/views/ReminderTestView.vue'), meta: { requiresAuth: true } }
 ]
 
@@ -94,4 +96,5 @@ router.onError(() => {
 })
 
 export default router
+
 

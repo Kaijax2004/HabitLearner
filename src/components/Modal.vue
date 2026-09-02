@@ -3,7 +3,7 @@
     <Transition name="modal">
       <div 
         v-if="show" 
-        class="fixed inset-0 z-50 flex items-center justify-center p-4"
+        class="fixed inset-0 z-[2200] flex items-center justify-center p-4"
         @click="handleBackdropClick"
       >
         <!-- 背景遮罩 -->

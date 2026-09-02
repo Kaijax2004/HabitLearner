@@ -12,9 +12,9 @@
     </div>
 
     <aside class="app-sidebar hidden lg:fixed lg:inset-y-0 lg:flex lg:flex-col">
-      <div class="flex h-full flex-col border-r border-zinc-200 bg-white/90 backdrop-blur-apple dark:border-zinc-800 dark:bg-zinc-950/90">
-        <div class="sidebar-brand-row flex items-center gap-4 border-b border-zinc-200 px-6 py-6 dark:border-zinc-800">
-          <div class="sidebar-logo flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-[1.35rem] bg-zinc-950 p-1 text-white shadow-sm dark:bg-zinc-950 dark:text-white">
+      <div class="app-sidebar-surface flex h-full flex-col">
+        <div class="sidebar-brand-row flex items-center gap-4 px-6 py-6">
+          <div class="sidebar-logo flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden bg-zinc-950 p-1 text-white dark:bg-zinc-950 dark:text-white">
             <Logo :size="isSidebarCollapsed ? 'default' : 'xl'" />
           </div>
           <div class="sidebar-brand-copy min-w-0">
@@ -41,11 +41,9 @@
               v-for="item in group.items"
               :key="item.name"
               :to="item.to"
-              class="sidebar-nav-link flex items-center rounded-apple px-4 py-3 text-sm font-medium transition-all duration-200"
+              class="sidebar-nav-link flex items-center px-4 py-3 text-sm font-medium"
               :title="isSidebarCollapsed ? item.label : ''"
-              :class="isActive(item.to)
-                ? 'bg-zinc-100 text-zinc-950 dark:bg-white/10 dark:text-white'
-                : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-950 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-white'"
+              :class="isActive(item.to) ? 'is-active' : ''"
             >
               <component
                 :is="item.icon"
@@ -101,16 +99,16 @@
     </nav>
 
     <header class="app-content-offset hidden lg:block">
-      <div class="sticky top-0 z-40 border-b border-zinc-200 bg-white/90 backdrop-blur-apple dark:border-zinc-800 dark:bg-zinc-950/90">
+      <div class="app-topbar-surface sticky top-0 z-40">
         <div class="app-topbar-container px-6 py-4 lg:px-8">
           <div class="flex items-center justify-between gap-4">
             <div class="flex items-center">
               <button
                 v-if="showBackButton"
                 @click="handleBack"
-                class="mr-3 rounded-full p-2 transition-colors hover:bg-zinc-100 dark:hover:bg-white/10"
+                class="mobile-icon-button mr-3"
               >
-                <svg class="h-5 w-5 text-zinc-950 dark:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
@@ -120,13 +118,13 @@
             <div class="flex items-center gap-3">
               <button
                 @click="themeStore.toggleTheme()"
-                class="rounded-full p-2 transition-colors hover:bg-zinc-100 dark:hover:bg-white/10"
+                class="mobile-icon-button"
                 :title="themeStore.isDarkMode ? '切换到浅色模式' : '切换到深色模式'"
               >
-                <svg v-if="themeStore.isDarkMode" class="h-5 w-5 text-zinc-950 dark:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg v-if="themeStore.isDarkMode" class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
                 </svg>
-                <svg v-else class="h-5 w-5 text-zinc-950 dark:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg v-else class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
                 </svg>
               </button>
@@ -266,6 +264,7 @@ const navigationGroups = [
       { name: 'dashboard', label: '\u4eca\u65e5', to: '/dashboard', icon: 'HomeIcon' },
       { name: 'plan', label: '\u8ba1\u5212', to: '/plan', icon: 'CalendarIcon' },
       { name: 'tracks', label: '\u8f68\u9053', to: '/tracks', icon: 'TrackIcon' },
+      { name: 'feedback', label: '\u53cd\u9988', to: '/feedback', icon: 'FeedbackIcon' },
       { name: 'profile', label: '\u6211\u7684', to: '/profile', icon: 'UserIcon' }
     ]
   },
@@ -275,6 +274,7 @@ const navigationGroups = [
       { name: 'learning', label: '\u5b66\u4e60', to: '/learning', icon: 'BookOpenIcon' },
       { name: 'focus', label: '\u4e13\u6ce8', to: '/focus', icon: 'FocusIcon' },
       { name: 'captures', label: '\u6536\u96c6', to: '/captures', icon: 'InboxIcon' },
+      { name: 'hotspots', label: '\u70ed\u70b9\u96f7\u8fbe', to: '/hotspots', icon: 'RadarIcon' },
       { name: 'review', label: '\u590d\u76d8', to: '/review', icon: 'ReviewIcon' },
       { name: 'insights', label: '\u6d1e\u5bdf', to: '/insights', icon: 'InsightsIcon' },
       { name: 'creator', label: '\u5185\u5bb9\u521b\u4f5c', to: '/creator', icon: 'CreatorIcon' }
@@ -295,9 +295,10 @@ const mobileWorkspaceGroups = computed(() => [
         learning: '\u5b66\u4e60\u5185\u5bb9\u4e0e\u7b14\u8bb0',
         focus: '\u756a\u8304\u949f\u4e0e\u6df1\u5ea6\u6267\u884c',
         captures: '\u5feb\u901f\u6536\u96c6\u548c\u8f6c\u5316',
+        hotspots: '\u591a\u5e73\u53f0\u70ed\u641c\u805a\u5408\u548c\u9009\u9898\u5224\u65ad',
         review: '\u4eca\u65e5\u590d\u76d8\u548c\u6c89\u6dc0',
         insights: '\u8f68\u9053\u8d8b\u52bf\u4e0e\u6d1e\u5bdf',
-        creator: '\u70ed\u70b9\u3001\u9009\u9898\u4e0e\u53d1\u5e03'
+        creator: '\u9009\u9898\u3001\u8349\u7a3f\u4e0e\u53d1\u5e03'
       }[item.name] || ''
     })) || []
   },
@@ -305,7 +306,11 @@ const mobileWorkspaceGroups = computed(() => [
     label: '\u63a7\u5236\u4e2d\u5fc3',
     items: [
       { name: 'guide', label: '\u4f7f\u7528\u6559\u7a0b', to: '/guide', icon: 'GuideIcon', description: '\u529f\u80fd\u8bf4\u660e\u548c\u65e5\u5e38\u5de5\u4f5c\u6d41' },
-      ...(isAdmin.value ? [{ name: 'admin-users', label: '\u7528\u6237\u7ba1\u7406', to: '/admin/users', icon: 'UserIcon', description: '\u589e\u957f\u3001\u6d3b\u8dc3\u548c\u7528\u6237\u753b\u50cf' }] : []),
+      { name: 'feedback-center', label: '\u53cd\u9988\u5171\u521b', to: '/feedback', icon: 'FeedbackIcon', description: '\u5fae\u4fe1\u7fa4\u3001\u516c\u4f17\u53f7\u548c\u95ee\u9898\u53cd\u9988' },
+      ...(isAdmin.value ? [
+        { name: 'admin-users', label: '\u7528\u6237\u7ba1\u7406', to: '/admin/users', icon: 'UserIcon', description: '\u589e\u957f\u3001\u6d3b\u8dc3\u548c\u7528\u6237\u753b\u50cf' },
+        { name: 'admin-feedback', label: '\u5171\u521b\u7ef4\u62a4', to: '/feedback#admin-maintenance', icon: 'FeedbackIcon', description: '\u66ff\u6362\u7fa4\u4e8c\u7ef4\u7801\u548c\u516c\u4f17\u53f7\u622a\u56fe' }
+      ] : []),
       { name: 'ai-providers', label: 'AI \u8bbe\u7f6e', to: '/profile/ai-providers', icon: 'SparkIcon', description: '\u7edf\u4e00\u4f9b\u5e94\u5546\u548c\u6a21\u578b' },
       { name: 'ai-skills', label: 'AI \u6280\u80fd', to: '/profile/ai-skills', icon: 'SparkIcon', description: '\u7ba1\u7406\u5185\u7f6e\u4e0e\u81ea\u5b9a\u4e49 skills' },
       { name: 'appearance', label: '\u5916\u89c2\u4e3b\u9898', to: '/profile/appearance', icon: 'BrushIcon', description: '\u80cc\u666f\u3001\u914d\u8272\u548c\u5bc6\u5ea6' },
@@ -435,6 +440,14 @@ const CreatorIcon = {
   `
 }
 
+const RadarIcon = {
+  template: `
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 20a8 8 0 100-16 8 8 0 000 16zM12 16a4 4 0 100-8 4 4 0 000 8zM12 12h7" />
+    </svg>
+  `
+}
+
 const GridIcon = {
   template: `
     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -467,6 +480,13 @@ const BellIcon = {
   `
 }
 
+const FeedbackIcon = {
+  template: `
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h8M8 14h5m8-2a9 9 0 11-3.2-6.9L21 4l-1.1 3.2A8.96 8.96 0 0121 12z" />
+    </svg>
+  `
+}
 const GuideIcon = {
   template: `
     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -503,10 +523,12 @@ export default {
     BookOpenIcon,
     UserIcon,
     CreatorIcon,
+    RadarIcon,
     GridIcon,
     SparkIcon,
     BrushIcon,
     BellIcon,
+    FeedbackIcon,
     GuideIcon
   }
 }
@@ -535,6 +557,29 @@ export default {
   width: var(--app-sidebar-width);
   transition: width 0.22s ease;
 }
+.app-sidebar-surface {
+  border-right: 1px solid var(--workbench-border);
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--workbench-glass-highlight) 56%, transparent), transparent 48%),
+    color-mix(in srgb, var(--workbench-surface) 92%, transparent);
+  box-shadow:
+    inset -1px 0 0 color-mix(in srgb, var(--workbench-glass-highlight) 38%, transparent),
+    12px 0 44px color-mix(in srgb, var(--workbench-glass-shadow) 42%, transparent);
+  backdrop-filter: blur(var(--workbench-backdrop-blur)) saturate(175%);
+  -webkit-backdrop-filter: blur(var(--workbench-backdrop-blur)) saturate(175%);
+}
+
+.app-topbar-surface {
+  border-bottom: 1px solid var(--workbench-border);
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--workbench-glass-highlight) 48%, transparent), transparent 54%),
+    color-mix(in srgb, var(--workbench-surface) 88%, transparent);
+  box-shadow:
+    inset 0 1px 0 var(--workbench-glass-highlight),
+    0 12px 32px color-mix(in srgb, var(--workbench-glass-shadow) 48%, transparent);
+  backdrop-filter: blur(var(--workbench-backdrop-blur)) saturate(175%);
+  -webkit-backdrop-filter: blur(var(--workbench-backdrop-blur)) saturate(175%);
+}
 
 .app-content-offset {
   transition: padding-left 0.18s ease;
@@ -557,14 +602,13 @@ export default {
 
 .mobile-brand-nav {
   border-bottom: 1px solid var(--workbench-border);
-  background: rgb(247 246 243 / 0.88);
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--workbench-glass-highlight) 48%, transparent), transparent 52%),
+    color-mix(in srgb, var(--workbench-surface) 88%, transparent);
   color: var(--workbench-text);
-  backdrop-filter: blur(18px);
-  box-shadow: 0 12px 30px rgba(32, 31, 29, 0.05);
-}
-
-.dark .mobile-brand-nav {
-  background: rgb(16 16 15 / 0.9);
+  box-shadow: 0 12px 30px color-mix(in srgb, var(--workbench-glass-shadow) 48%, transparent);
+  backdrop-filter: blur(var(--workbench-backdrop-blur)) saturate(175%);
+  -webkit-backdrop-filter: blur(var(--workbench-backdrop-blur)) saturate(175%);
 }
 
 .mobile-brand-mark {
@@ -603,17 +647,18 @@ export default {
   justify-content: center;
   border: 1px solid var(--workbench-border);
   border-radius: 999px;
-  background: rgb(255 255 255 / 0.58);
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--workbench-glass-highlight) 46%, transparent), transparent 54%),
+    var(--workbench-surface-muted);
   color: var(--workbench-text);
-  transition: transform var(--workbench-motion-duration) var(--workbench-ease), background var(--workbench-motion-duration) var(--workbench-ease);
+  box-shadow: inset 0 1px 0 var(--workbench-glass-highlight);
+  backdrop-filter: blur(calc(var(--workbench-backdrop-blur) * 0.62)) saturate(150%);
+  -webkit-backdrop-filter: blur(calc(var(--workbench-backdrop-blur) * 0.62)) saturate(150%);
+  transition: transform var(--workbench-motion-duration) var(--workbench-ease), background var(--workbench-motion-duration) var(--workbench-ease), border-color var(--workbench-motion-duration) var(--workbench-ease);
 }
 
 .mobile-icon-button:active {
   transform: scale(0.96);
-}
-
-.dark .mobile-icon-button {
-  background: rgb(24 24 27 / 0.68);
 }
 
 .mobile-bottom-nav {
@@ -631,17 +676,17 @@ export default {
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 0.22rem;
   border: 1px solid var(--workbench-border);
-  border-radius: 1.45rem;
-  background: rgb(255 255 255 / 0.88);
+  border-radius: 1.65rem;
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--workbench-glass-highlight) 52%, transparent), transparent 52%),
+    color-mix(in srgb, var(--workbench-surface) 90%, transparent);
   padding: 0.35rem;
-  box-shadow: 0 18px 44px rgba(32, 31, 29, 0.16);
-  backdrop-filter: blur(18px);
+  box-shadow:
+    inset 0 1px 0 var(--workbench-glass-highlight),
+    0 18px 44px color-mix(in srgb, var(--workbench-glass-shadow) 78%, transparent);
+  backdrop-filter: blur(var(--workbench-backdrop-blur)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--workbench-backdrop-blur)) saturate(180%);
   pointer-events: auto;
-}
-
-.dark .mobile-bottom-nav-inner {
-  background: rgb(16 16 15 / 0.9);
-  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.36);
 }
 
 .mobile-nav-item {
@@ -661,6 +706,7 @@ export default {
 .mobile-nav-item.is-active {
   background: var(--workbench-text);
   color: var(--workbench-page);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.18), 0 8px 18px color-mix(in srgb, var(--workbench-glass-shadow) 62%, transparent);
 }
 
 .mobile-nav-item:active {
@@ -684,11 +730,16 @@ export default {
   margin-inline: auto;
   overflow: hidden;
   border: 1px solid var(--workbench-border);
-  border-radius: 1.65rem 1.65rem 1.25rem 1.25rem;
+  border-radius: 1.9rem 1.9rem 1.35rem 1.35rem;
   background:
     radial-gradient(circle at 92% 0%, rgb(var(--workbench-accent-rgb) / 0.12), transparent 30%),
+    linear-gradient(145deg, color-mix(in srgb, var(--workbench-glass-highlight) 52%, transparent), transparent 52%),
     var(--workbench-surface);
-  box-shadow: 0 28px 78px rgba(32, 31, 29, 0.24);
+  box-shadow:
+    inset 0 1px 0 var(--workbench-glass-highlight),
+    0 28px 78px color-mix(in srgb, var(--workbench-glass-shadow) 86%, transparent);
+  backdrop-filter: blur(var(--workbench-backdrop-blur)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--workbench-backdrop-blur)) saturate(180%);
 }
 
 .mobile-workspace-handle {
@@ -753,15 +804,14 @@ export default {
   align-content: start;
   gap: 0.45rem;
   border: 1px solid var(--workbench-border);
-  border-radius: 1.1rem;
-  background: rgb(255 255 255 / 0.58);
+  border-radius: calc(var(--workbench-radius) * 0.82);
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--workbench-glass-highlight) 42%, transparent), transparent 54%),
+    var(--workbench-surface-muted);
   color: var(--workbench-text);
   padding: 0.9rem;
-  transition: transform var(--workbench-motion-duration) var(--workbench-ease), border-color var(--workbench-motion-duration) var(--workbench-ease), background var(--workbench-motion-duration) var(--workbench-ease);
-}
-
-.dark .mobile-workspace-link {
-  background: rgb(24 24 27 / 0.58);
+  box-shadow: inset 0 1px 0 var(--workbench-glass-highlight);
+  transition: transform var(--workbench-motion-duration) var(--workbench-ease), border-color var(--workbench-motion-duration) var(--workbench-ease), background var(--workbench-motion-duration) var(--workbench-ease), box-shadow var(--workbench-motion-duration) var(--workbench-ease);
 }
 
 .mobile-workspace-link.is-active,
@@ -844,6 +894,7 @@ export default {
 
 .sidebar-logo,
 .sidebar-nav-link,
+.sidebar-collapse-button,
 .sidebar-collapse-button svg {
   transition: all var(--workbench-motion-duration) var(--workbench-ease);
 }
@@ -860,6 +911,24 @@ export default {
 .sidebar-nav-link {
   position: relative;
   overflow: hidden;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  color: var(--workbench-text-muted);
+  transition: transform var(--workbench-motion-duration) var(--workbench-ease), color var(--workbench-motion-duration) var(--workbench-ease), background var(--workbench-motion-duration) var(--workbench-ease), border-color var(--workbench-motion-duration) var(--workbench-ease);
+}
+
+.sidebar-nav-link:hover {
+  border-color: var(--workbench-border);
+  background: var(--workbench-surface-muted);
+  color: var(--workbench-text);
+  transform: translateX(2px);
+}
+
+.sidebar-nav-link.is-active {
+  border-color: color-mix(in srgb, var(--workbench-border) 70%, rgb(var(--workbench-accent-rgb) / 0.28));
+  background: var(--workbench-surface-muted);
+  color: var(--workbench-text);
+  box-shadow: inset 0 1px 0 var(--workbench-glass-highlight);
 }
 
 .sidebar-nav-link::before {
@@ -874,6 +943,7 @@ export default {
   transition: opacity var(--workbench-motion-duration) var(--workbench-ease), transform var(--workbench-motion-duration) var(--workbench-ease);
 }
 
+.sidebar-nav-link.is-active::before,
 .sidebar-nav-link[aria-current='page']::before {
   opacity: 1;
   transform: translateX(0);
@@ -887,15 +957,19 @@ export default {
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
+  border: 1px solid var(--workbench-border);
   border-radius: 999px;
-  color: rgb(82 82 91);
-  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+  background: var(--workbench-surface-muted);
+  color: var(--workbench-text-muted);
+  box-shadow: inset 0 1px 0 var(--workbench-glass-highlight);
+  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
 }
 
 .sidebar-collapse-button:hover,
 .sidebar-collapse-button:focus-visible {
-  background: rgba(39, 39, 42, 0.08);
-  color: rgb(24 24 27);
+  border-color: rgb(var(--workbench-accent-rgb) / 0.28);
+  background: var(--workbench-surface);
+  color: var(--workbench-text);
   outline: none;
 }
 
@@ -1024,3 +1098,4 @@ export default {
   }
 }
 </style>
+

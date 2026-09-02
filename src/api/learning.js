@@ -10,9 +10,7 @@ export const refreshDailyLearningCard = (payload = {}) => api.post('/learning/da
 
 export const getCourseById = (id) => api.get(`/learning/courses/${id}`)
 
-export const getVideoRecommendations = (params = {}) => api.get('/learning/recommendations', { params })
 
-export const prefetchVideoRecommendations = (data = {}) => api.post('/learning/recommendations/prefetch', data)
 
 export const getCourseNote = (id) => api.get(`/learning/courses/${id}/note`)
 

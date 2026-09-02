@@ -136,31 +136,6 @@
                 </div>
               </div>
             </BaseCard>
-
-            <BaseCard title="主题推荐视频">
-              <div v-if="recommendationsLoading" class="py-8 text-center text-sm text-zinc-500 dark:text-zinc-400">
-                正在加载推荐视频...
-              </div>
-              <div v-else-if="videoRecommendations.length" class="space-y-3">
-                <a
-                  v-for="video in videoRecommendations"
-                  :key="video.videoId"
-                  :href="video.url"
-                  target="_blank"
-                  rel="noreferrer"
-                  class="block overflow-hidden rounded-3xl border border-zinc-200 bg-white transition hover:-translate-y-0.5 hover:shadow-lg dark:border-zinc-800 dark:bg-zinc-950"
-                >
-                  <img :src="video.thumbnail" :alt="video.title" class="h-36 w-full object-cover" />
-                  <div class="space-y-2 p-4">
-                    <div class="line-clamp-2 text-sm font-semibold leading-6 text-zinc-950 dark:text-white">{{ video.title }}</div>
-                    <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ video.channelTitle || 'YouTube' }}</div>
-                  </div>
-                </a>
-              </div>
-              <div v-else class="rounded-3xl border border-dashed border-zinc-300 bg-zinc-50 p-4 text-sm leading-7 text-zinc-500 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-400">
-                {{ recommendationsMessage }}
-              </div>
-            </BaseCard>
           </aside>
         </section>
       </template>
@@ -192,9 +167,6 @@ const course = ref(null)
 const note = ref('')
 const savedNote = ref('')
 const lastSavedAt = ref('')
-const recommendationsLoading = ref(false)
-const recommendationsMessage = ref('当前主题暂未加载推荐视频。')
-const videoRecommendations = ref([])
 
 const courseId = computed(() => route.params.id)
 
@@ -282,35 +254,12 @@ const loadCourse = async () => {
     note.value = response.data.note || ''
     savedNote.value = response.data.note || ''
     lastSavedAt.value = ''
-    await loadRecommendations()
   } catch (err) {
     error('课程加载失败', {
       description: err.message || '请稍后重试'
     })
   } finally {
     isLoading.value = false
-  }
-}
-
-const loadRecommendations = async () => {
-  recommendationsLoading.value = true
-  try {
-    const response = await learningAPI.getVideoRecommendations({
-      courseId: courseId.value,
-      limit: 4
-    })
-
-    if (!response.success) {
-      throw new Error(response.error || '推荐视频加载失败')
-    }
-
-    videoRecommendations.value = Array.isArray(response.data?.items) ? response.data.items : []
-    recommendationsMessage.value = response.data?.message || '当前主题暂未加载推荐视频。'
-  } catch (err) {
-    videoRecommendations.value = []
-    recommendationsMessage.value = err.message || '推荐视频加载失败，请稍后重试。'
-  } finally {
-    recommendationsLoading.value = false
   }
 }
 

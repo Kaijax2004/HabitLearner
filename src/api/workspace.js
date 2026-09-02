@@ -62,6 +62,7 @@ export const getWorkspaceInsights = (params = {}) => api.get('/workspace/insight
 export const listQuickCaptures = (params = {}) => api.get('/workspace/captures', params)
 export const createQuickCapture = (payload) => api.post('/workspace/captures', payload)
 export const updateQuickCapture = (id, payload) => api.put(`/workspace/captures/${id}`, payload)
+export const deleteQuickCapture = (id) => api.delete(`/workspace/captures/${id}`)
 export const batchUpdateQuickCaptures = (payload) => api.put('/workspace/captures/batch', payload)
 export const linkQuickCapture = (id, payload) => api.post(`/workspace/captures/${id}/link`, payload)
 export const getReviewEntry = (params = {}) => api.get('/workspace/reviews', params)
